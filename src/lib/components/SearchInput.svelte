@@ -148,7 +148,7 @@
 				/>
 
 				<button type="submit">
-					<IconPlay size="20" weight="bold" /> Load Video
+					<IconPlay size="20" weight="bold" /> <span class="search-button-text">Load Video</span>
 				</button>
 			</form>
 
@@ -386,8 +386,33 @@
 	}
 
 	@media (max-width: 768px) {
-		.search-form-wrapper {
-			max-width: 100%;
+		.search-container {
+			right: 0.5rem;
+			left: auto;
+			width: auto;
+		}
+
+		.search-form-wrapper:not(.centered) {
+			width: auto;
+		}
+
+		form {
+			flex-wrap: nowrap;
+			padding: 0.5rem;
+		}
+
+		input[type='text'] {
+			flex-grow: 1;
+			font-size: 0.9rem;
+			padding: 0.7rem 0.9rem;
+			margin-bottom: 0;
+		}
+
+		form button {
+			flex-grow: 0;
+			justify-content: center;
+			padding: 0.7rem 1.2rem;
+			font-size: 0.9rem;
 		}
 
 		.recent-videos-dropdown {
@@ -416,8 +441,40 @@
 	}
 
 	@media (max-width: 480px) {
+		.search-container {
+			top: 0.5rem;
+		}
+
+		.search-icon-button {
+			width: 40px;
+			height: 40px;
+		}
+
+		.search-icon-button :global(svg) {
+			width: 20px;
+			height: 20px;
+		}
+
+		form {
+			padding: 0.4rem;
+		}
+
+		input[type='text'] {
+			font-size: 0.8rem;
+			padding: 0.5rem 0.75rem;
+		}
+
+		form button {
+			font-size: 0.8rem;
+			padding: 0.6rem 0.8rem;
+		}
+
+		.search-button-text {
+			display: none;
+		}
+
 		.recent-videos-dropdown {
-			max-height: 450px;
+			max-height: 400px;
 		}
 
 		.recent-video-thumbnail {
@@ -426,17 +483,11 @@
 		}
 
 		.video-info {
-			font-size: 0.8rem;
+			font-size: 0.75rem;
 		}
 
-		form button {
-			padding: 0.75rem 1rem;
-			font-size: 0.9rem;
-		}
-
-		input[type='text'] {
-			font-size: 0.9rem;
-			padding: 0.6rem 0.8rem;
+		.video-time-ago {
+			font-size: 0.7rem;
 		}
 	}
 </style>

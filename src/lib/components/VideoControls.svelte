@@ -85,22 +85,24 @@
 	/>
 	<div class="time-display">{formatTime(playerState.duration)}</div>
 
-	<button class="volume-btn" on:click={toggleMute}>
-		{#if playerState.isMuted || playerState.volume === 0}
-			<SpeakerSlash size="20" weight="bold" />
-		{:else}
-			<SpeakerHigh size="20" weight="bold" />
-		{/if}
-	</button>
-	<input
-		type="range"
-		min="0"
-		max="100"
-		bind:value={playerState.volume}
-		on:input={handleVolumeChange}
-		class="volume-bar"
-		style="--volume-progress: {playerState.volume || 0}%;"
-	/>
+	<div class="volume-controls">
+		<button class="volume-btn" on:click={toggleMute}>
+			{#if playerState.isMuted || playerState.volume === 0}
+				<SpeakerSlash size="20" weight="bold" />
+			{:else}
+				<SpeakerHigh size="20" weight="bold" />
+			{/if}
+		</button>
+		<input
+			type="range"
+			min="0"
+			max="100"
+			bind:value={playerState.volume}
+			on:input={handleVolumeChange}
+			class="volume-bar"
+			style="--volume-progress: {playerState.volume || 0}%;"
+		/>
+	</div>
 
 	<button class="fullscreen-btn" on:click={toggleFullscreen}>
 		{#if playerState.isFullscreen}
@@ -245,5 +247,30 @@
 		border-radius: 50%;
 		background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
 		cursor: pointer;
+	}
+
+	.volume-controls {
+		display: flex;
+		align-items: center;
+	}
+
+	@media (max-width: 768px) {
+		.controls-container {
+			padding: 5px;
+		}
+
+		.volume-bar {
+			display: none;
+		}
+
+		.time-display {
+			margin: 0 5px;
+			font-size: 0.8rem;
+			min-width: 35px;
+		}
+
+		.seek-bar {
+			margin: 0 5px;
+		}
 	}
 </style>

@@ -228,4 +228,10 @@
 		justify-content: center;
 		align-items: center;
 	}
+
+	@media (max-width: 768px) {
+		.sync-button {
+			font-size: 0.9rem;
+		}
+	}
 </style>

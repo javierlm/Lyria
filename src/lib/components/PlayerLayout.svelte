@@ -94,11 +94,11 @@
 
 	@media (max-width: 768px) and (orientation: portrait) {
 		.title-container {
-			font-size: 0.7rem;
+			font-size: 0.5rem;
 		}
 
 		.copy-button {
-			font-size: 0.7rem;
+			font-size: 0.5rem;
 		}
 	}
 

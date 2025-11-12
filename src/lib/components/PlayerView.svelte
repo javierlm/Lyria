@@ -2,13 +2,59 @@
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { playerState } from '$lib/stores/playerStore.svelte';
-	import { loadVideo, toggleFullscreen } from '$lib/actions/playerActions';
+	import { loadVideo, toggleFullscreen, pause, play } from '$lib/actions/playerActions';
 	import VideoControls from '$lib/components/VideoControls.svelte';
+	import { stopPropagation } from 'svelte/legacy';
 
 	let playerContainer: HTMLElement;
 	let showControls = $state(false);
 	let hideControlsTimeout: ReturnType<typeof setTimeout> | undefined;
 	let currentLoadedVideoId: string | null = null;
+	let isTouch = $state(false);
+
+	const HIDE_DELAY = 3000;
+
+	function resetHideControlsTimer() {
+		if (hideControlsTimeout) {
+			clearTimeout(hideControlsTimeout);
+			hideControlsTimeout = undefined;
+		}
+		// Hide controls automatically if video is playing
+		if (playerState.isPlaying) {
+			hideControlsTimeout = setTimeout(() => {
+				showControls = false;
+				hideControlsTimeout = undefined;
+			}, HIDE_DELAY);
+		}
+	}
+
+	function showControlsAndResetTimer() {
+		showControls = true;
+		resetHideControlsTimer();
+	}
+
+	function handleContainerClick(e: MouseEvent | TouchEvent) {
+		if (isTouch) {
+			// Mobile devices
+			e.preventDefault();
+			if (showControls) {
+				showControls = false;
+				if (hideControlsTimeout) {
+					clearTimeout(hideControlsTimeout);
+					hideControlsTimeout = undefined;
+				}
+			} else {
+				showControlsAndResetTimer();
+			}
+		} else {
+			if (playerState.isPlaying) {
+				pause();
+			} else {
+				play();
+			}
+			showControlsAndResetTimer();
+		}
+	}
 
 	$effect(() => {
 		if (playerState.videoId && playerState.videoId !== currentLoadedVideoId) {
@@ -20,7 +66,15 @@
 		}
 	});
 
+	$effect(() => {
+		if (playerState.isPlaying && showControls) {
+			resetHideControlsTimer();
+		}
+	});
+
 	onMount(() => {
+		isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 		const handleFullscreenChange = () => {
 			playerState.isFullscreen = !!document.fullscreenElement;
 		};
@@ -51,16 +105,48 @@
 	class="player-container"
 	class:fullscreen={playerState.isFullscreen}
 	role="region"
-	onmouseenter={() => {
-		if (hideControlsTimeout) {
-			clearTimeout(hideControlsTimeout);
+	onmouseenter={(e) => {
+		if (!isTouch) {
+			e.stopPropagation();
+			showControlsAndResetTimer();
 		}
-		showControls = true;
 	}}
-	onmouseleave={() => {
-		hideControlsTimeout = setTimeout(() => {
-			showControls = false;
-		}, 3000);
+	onmouseleave={(e) => {
+		if (!isTouch) {
+			e.stopPropagation();
+			resetHideControlsTimer();
+		}
+	}}
+	onmousemove={(e) => {
+		if (!isTouch) {
+			e.stopPropagation();
+			showControlsAndResetTimer();
+		}
+	}}
+	onclick={(e) => {
+		const target = e.target as HTMLElement;
+		if (
+			target === playerContainer ||
+			target.id === 'player' ||
+			target.classList.contains('subtitles') ||
+			target.classList.contains('subtitle-line')
+		) {
+			e.stopPropagation();
+			handleContainerClick(e);
+		}
+	}}
+	ontouchend={(e) => {
+		const target = e.target as HTMLElement;
+		if (
+			target === playerContainer ||
+			target.id === 'player' ||
+			target.classList.contains('subtitles') ||
+			target.classList.contains('subtitle-line')
+		) {
+			e.stopPropagation();
+			e.preventDefault();
+			handleContainerClick(e);
+		}
 	}}
 >
 	<div id="player"></div>
@@ -78,7 +164,34 @@
 		{/key}
 	{/if}
 
-	<div class="video-controls-wrapper" class:show={showControls}>
+	<div
+		class="video-controls-wrapper"
+		class:show={showControls}
+		onclick={(e) => e.stopPropagation()}
+		ontouchstart={(e) => e.stopPropagation()}
+		onmouseenter={(e) => {
+			if (!isTouch) {
+				e.stopPropagation();
+				if (hideControlsTimeout) {
+					clearTimeout(hideControlsTimeout);
+				}
+			}
+		}}
+		onmousemove={(e) => {
+			if (!isTouch) {
+				e.stopPropagation();
+				if (hideControlsTimeout) {
+					clearTimeout(hideControlsTimeout);
+				}
+			}
+		}}
+		onmouseleave={(e) => {
+			if (!isTouch) {
+				e.stopPropagation();
+				resetHideControlsTimer();
+			}
+		}}
+	>
 		<VideoControls on:toggleFullscreen={handleToggleFullscreen} />
 	</div>
 </div>
@@ -105,15 +218,17 @@
 		width: 100%;
 		opacity: 0;
 		visibility: hidden;
+		pointer-events: none;
 		transition:
 			opacity 0.3s ease-out,
 			visibility 0.3s ease-out;
-		z-index: 2;
+		z-index: 10;
 	}
 
 	.video-controls-wrapper.show {
 		opacity: 1;
 		visibility: visible;
+		pointer-events: auto;
 	}
 
 	.fullscreen {
@@ -133,6 +248,8 @@
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
+		z-index: 0;
+		pointer-events: none;
 	}
 
 	.subtitles {
@@ -146,6 +263,7 @@
 		font-family: inter;
 		opacity: 0.9;
 		pointer-events: none;
+		z-index: 2;
 	}
 
 	.subtitle-line {
@@ -175,10 +293,10 @@
 	@media (max-width: 768px) and (orientation: portrait) {
 		.subtitles {
 			bottom: 20px;
-			font-size: 1.2rem;
+			font-size: 0.9rem;
 		}
 		.translated-subtitle {
-			font-size: 1rem;
+			font-size: 0.7rem;
 		}
 	}
 </style>
