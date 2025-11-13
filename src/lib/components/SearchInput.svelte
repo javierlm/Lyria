@@ -292,6 +292,8 @@
 	}
 
 	.recent-videos-dropdown {
+		--row-height: 89px;
+		--visible-rows: 6;
 		position: absolute;
 		top: calc(100% + 0.5rem);
 		left: 0;
@@ -299,7 +301,7 @@
 		background-color: var(--card-background);
 		border-radius: 0.75rem;
 		box-shadow: 0 10px 30px var(--shadow-color);
-		max-height: 535.5px;
+		max-height: calc(var(--row-height) * var(--visible-rows));
 		overflow-y: auto;
 		width: 100%;
 		transform: translateX(0);
@@ -416,7 +418,8 @@
 		}
 
 		.recent-videos-dropdown {
-			max-height: 500px;
+			--row-height: 64.38px;
+			--visible-rows: 8;
 		}
 
 		.recent-video-item {
@@ -474,7 +477,8 @@
 		}
 
 		.recent-videos-dropdown {
-			max-height: 400px;
+			--row-height: 58.75px;
+			--visible-rows: 6;
 		}
 
 		.recent-video-thumbnail {

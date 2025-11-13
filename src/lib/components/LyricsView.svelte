@@ -289,7 +289,7 @@
 	@media (max-width: 768px) {
 		.lyrics-container {
 			padding: 1rem;
-			margin: 1rem;
+			margin: 1rem 0;
 		}
 
 		.lyrics-header {
@@ -299,7 +299,7 @@
 
 		.lyric-line {
 			padding: 0.6rem 0.5rem;
-			font-size: 0.9rem;
+			font-size: 0.8rem;
 		}
 
 		.lyrics-header h2 {
