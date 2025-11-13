@@ -5,7 +5,6 @@ export const supportedLanguages: Map<string, string> = new Map([
 	['DA', 'Danish'],
 	['DE', 'German'],
 	['EL', 'Greek'],
-	['EN', 'English'],
 	['EN-GB', 'English (British)'],
 	['EN-US', 'English (American)'],
 	['ES', 'Spanish'],
@@ -24,7 +23,6 @@ export const supportedLanguages: Map<string, string> = new Map([
 	['NB', 'Norwegian Bokmål'],
 	['NL', 'Dutch'],
 	['PL', 'Polish'],
-	['PT', 'Portuguese'],
 	['PT-BR', 'Portuguese (Brazilian)'],
 	['PT-PT', 'Portuguese (Portugal)'],
 	['RO', 'Romanian'],
@@ -41,26 +39,42 @@ export const supportedLanguages: Map<string, string> = new Map([
 	['ZH-HANT', 'Chinese (traditional)']
 ]);
 
+const DEFAULT_LANGUAGE = 'EN-US';
+
 export function getLanguage(): string {
 	if (typeof window === 'undefined') {
-		return 'EN-US';
+		return DEFAULT_LANGUAGE;
 	}
 
-	const savedLanguage = localStorage.getItem('language');
-	if (savedLanguage && supportedLanguages.has(savedLanguage)) {
-		return savedLanguage;
+	const savedLanguage = localStorage.getItem('language')?.toUpperCase();
+	if (savedLanguage) {
+		if (supportedLanguages.has(savedLanguage)) return savedLanguage;
+		const savedBaseLanguage = savedLanguage.split('-')[0];
+		if (supportedLanguages.has(savedBaseLanguage)) return savedBaseLanguage;
 	}
 
-	const browserLanguage = navigator.language.split('-')[0].toUpperCase();
-	if (supportedLanguages.has(browserLanguage)) {
-		return browserLanguage;
+	const navLangs =
+		navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language];
+	for (const lang of navLangs) {
+		if (!lang) continue;
+		const upper = lang.toUpperCase();
+
+		if (supportedLanguages.has(upper)) {
+			return upper;
+		}
+
+		const base = upper.split('-')[0];
+		if (supportedLanguages.has(base)) {
+			return base;
+		}
 	}
 
-	return 'EN-US';
+	return DEFAULT_LANGUAGE;
 }
 
 export function setLanguage(language: string) {
-	if (typeof window !== 'undefined' && supportedLanguages.has(language)) {
-		localStorage.setItem('language', language);
+	const upperCaseLanguage = language.toUpperCase();
+	if (typeof window !== 'undefined' && supportedLanguages.has(upperCaseLanguage)) {
+		localStorage.setItem('language', upperCaseLanguage);
 	}
 }
