@@ -2,12 +2,21 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 
+	let { isPlayerView = false } = $props();
+
 	let logo: HTMLDivElement;
 	let container: HTMLDivElement;
-	let isAnimated = false; // New state variable to control animation
+	let isAnimated = $state(false);
+	let isPulsing = $state(false);
 
 	// Event handlers
 	const handleLogoClick = () => {
+		if (isPlayerView) {
+			isPulsing = true;
+			setTimeout(() => {
+				isPulsing = false;
+			}, 300);
+		}
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		goto('/'); // Navigate to the main page immediately
 	};
@@ -34,7 +43,14 @@
 
 <div>
 	<div class="container" bind:this={container}>
-		<div class="lyria-logo" class:animated={isAnimated} id="logo" bind:this={logo}>
+		<div
+			class="lyria-logo"
+			class:animated={isAnimated}
+			class:player-view-hover={isPlayerView}
+			class:pulsing={isPulsing}
+			id="logo"
+			bind:this={logo}
+		>
 			<span class="letter primary" data-char="L">L</span>
 			<span class="letter primary" data-char="y">y</span>
 			<span class="letter secondary" data-char="r">r</span>
@@ -69,10 +85,35 @@
 		cursor: pointer; /* Add hand pointer on hover */
 		text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3); /* Added text-shadow */
 		opacity: 0; /* Initially hidden */
+		transition:
+			opacity 0.4s ease-in-out,
+			transform 0.2s ease-in-out,
+			filter 0.2s ease-in-out;
 	}
 
 	.lyria-logo.animated {
 		opacity: 1; /* Make the container visible when animated */
+	}
+
+	.lyria-logo.player-view-hover:hover {
+		transform: scale(1.05);
+		filter: brightness(1.2);
+	}
+
+	.lyria-logo.pulsing {
+		animation: pulse 0.3s ease-in-out;
+	}
+
+	@keyframes pulse {
+		0% {
+			transform: scale(1);
+		}
+		50% {
+			transform: scale(1.1);
+		}
+		100% {
+			transform: scale(1);
+		}
 	}
 
 	.letter {

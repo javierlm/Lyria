@@ -30,7 +30,7 @@
 <svelte:window bind:innerWidth={windowWidth} />
 <div class="main-content-wrapper">
 	<div class="logo-container-main">
-		<Logo />
+		<Logo isPlayerView={true} />
 	</div>
 	<SearchInput />
 
