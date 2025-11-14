@@ -5,6 +5,7 @@ import { getPlayer, setPlayer, playerState } from '$lib/stores/playerStore.svelt
 import { parseTitle } from '$lib/utils';
 
 let syncInterval: NodeJS.Timeout;
+const HUMAN_REACTION_TIME_MS = 500;
 
 function loadYouTubeAPI() {
 	return new Promise<void>((resolve) => {
@@ -83,7 +84,7 @@ function startSync() {
 
 		if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
 			const t = playerState.currentTime * 1000;
-			const adjustedTime = t + playerState.timingOffset;
+			const adjustedTime = t - playerState.timingOffset;
 			const activeIndex = playerState.lines.findLastIndex((l) => adjustedTime >= l.startTimeMs);
 
 			if (activeIndex !== playerState.currentLineIndex) {
@@ -248,7 +249,7 @@ export function seekTo(time: number) {
 
 		if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
 			const t = time * 1000;
-			const adjustedTime = t + playerState.timingOffset;
+			const adjustedTime = t - playerState.timingOffset;
 			const activeIndex = playerState.lines.findLastIndex((l) => adjustedTime >= l.startTimeMs);
 
 			if (activeIndex !== playerState.currentLineIndex) {
@@ -286,9 +287,30 @@ export function unMute() {
 }
 
 export function adjustTiming(offset: number) {
-	playerState.timingOffset = offset;
-	const videoUrl = `https://www.youtube.com/watch?v=${playerState.videoId}`;
-	videoService.setVideoDelay(videoUrl, offset);
+	let finalOffset = offset;
+
+	if (playerState.lines.length > 0 && playerState.duration > 0) {
+		const firstLineWithText = playerState.lines.find((l) => l.text.trim().length > 0);
+		const lastLineWithText = playerState.lines.findLast((l) => l.text.trim().length > 0);
+
+		if (firstLineWithText && lastLineWithText) {
+			const firstLineTime = firstLineWithText.startTimeMs;
+			const lastLineTime = lastLineWithText.startTimeMs;
+			const videoDurationMs = playerState.duration * 1000;
+
+			const minOffset = -firstLineTime;
+			const maxOffset = videoDurationMs - lastLineTime;
+
+			finalOffset = Math.max(minOffset, Math.min(offset, maxOffset));
+		}
+	}
+
+	playerState.timingOffset = finalOffset;
+
+	if (playerState.videoId) {
+		const videoUrl = `https://www.youtube.com/watch?v=${playerState.videoId}`;
+		videoService.setVideoDelay(videoUrl, finalOffset);
+	}
 }
 
 export function toggleFullscreen(element: HTMLElement | null) {
@@ -309,9 +331,9 @@ export function syncTimingToFirstLine() {
 	if (!player) return;
 
 	const currentTime = player.getCurrentTime() * 1000;
-	const firstLine = playerState.lines[0];
+	const firstLine = playerState.lines.find((l) => l.text.trim().length > 0);
 	if (firstLine) {
-		const newTimingOffset = firstLine.startTimeMs - currentTime;
+		const newTimingOffset = currentTime - firstLine.startTimeMs - HUMAN_REACTION_TIME_MS;
 		const roundedTimingOffset = Math.round(newTimingOffset);
 		adjustTiming(roundedTimingOffset);
 	}

@@ -15,7 +15,7 @@
 	const iconSize = $derived(windowWidth > 768 ? 30 : 16);
 
 	const adjustedTimes = $derived(
-		playerState.lines.map((line) => line.startTimeMs + playerState.timingOffset * -1)
+		playerState.lines.map((line) => Math.max(0, line.startTimeMs + playerState.timingOffset))
 	);
 
 	// Update the active line position whenever currentLineIndex changes or window is resized
