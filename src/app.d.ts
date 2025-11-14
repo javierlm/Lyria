@@ -1,5 +1,11 @@
 // See https://kit.svelte.dev/docs/types#app
 // for information about these interfaces
+declare namespace svelte.JSX {
+	interface HTMLAttributes {
+		'on:swipe'?: (event: CustomEvent<{ x: number; y: number; dx: number; dy: number }>) => void;
+	}
+}
+
 declare global {
 	namespace App {
 		// interface Error {}

@@ -11,4 +11,5 @@ export interface IVideoRepository {
 	getVideoDelay(videoUrl: string): Promise<number | undefined>;
 	addRecentVideo(video: RecentVideo): Promise<void>;
 	getRecentVideos(): Promise<RecentVideo[]>;
+	deleteRecentVideo(videoId: string): Promise<void>;
 }

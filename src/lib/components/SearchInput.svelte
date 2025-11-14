@@ -3,13 +3,13 @@
 	import { slide } from 'svelte/transition';
 	import IconPlay from 'phosphor-svelte/lib/Play';
 	import IconMagnifyingGlass from 'phosphor-svelte/lib/MagnifyingGlass';
-	import IconClock from 'phosphor-svelte/lib/Clock';
 	import { videoService } from '$lib/data/videoService';
 	import type { RecentVideo } from '$lib/data/IVideoRepository';
 	import { extractVideoId } from '$lib/utils';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { playerState } from '$lib/stores/playerStore.svelte';
+	import RecentVideoItem from './RecentVideoItem.svelte';
 
 	export let centered = false;
 
@@ -59,41 +59,10 @@
 		loadVideoFromUrl(url);
 	}
 
-	function formatTimeAgo(timestamp: number): string {
-		const now = Date.now();
-		const seconds = Math.floor((now - timestamp) / 1000);
-
-		if (seconds < 60) {
-			return `${seconds} seconds ago`;
-		}
-
-		const minutes = Math.floor(seconds / 60);
-		if (minutes < 60) {
-			return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-		}
-
-		const hours = Math.floor(minutes / 60);
-		if (hours < 24) {
-			return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-		}
-
-		const days = Math.floor(hours / 24);
-		if (days < 7) {
-			return `${days} day${days === 1 ? '' : 's'} ago`;
-		}
-
-		const weeks = Math.floor(days / 7);
-		if (weeks < 4) {
-			return `${weeks} week${weeks === 1 ? '' : 's'} ago`;
-		}
-
-		const months = Math.floor(days / 30);
-		if (months < 12) {
-			return `${months} month${months === 1 ? '' : 's'} ago`;
-		}
-
-		const years = Math.floor(days / 365);
-		return `${years} year${years === 1 ? '' : 's'} ago`;
+	async function handleDeleteRecentVideo(event: CustomEvent<string>) {
+		const videoId = event.detail;
+		await videoService.deleteRecentVideo(videoId);
+		loadRecentVideos();
 	}
 
 	onMount(() => {
@@ -159,25 +128,11 @@
 					out:slide={{ duration: 300 }}
 				>
 					{#each recentVideos as video (video.videoId)}
-						<button
-							class="recent-video-item"
-							on:click={() => handleRecentVideoClick(video.videoId)}
-						>
-							{#if video.thumbnailUrl}
-								<img src={video.thumbnailUrl} alt={video.track} class="recent-video-thumbnail" />
-							{/if}
-							<div class="video-details">
-								<div class="video-info">
-									<span class="recent-video-artist">{video.artist}</span> -
-									<span class="recent-video-track">{video.track}</span>
-								</div>
-
-								<div class="video-time-ago">
-									<IconClock size="16" weight="bold" />
-									<span>{formatTimeAgo(video.timestamp)}</span>
-								</div>
-							</div>
-						</button>
+						<RecentVideoItem
+							{video}
+							on:select={(e) => handleRecentVideoClick(e.detail)}
+							on:delete={handleDeleteRecentVideo}
+						/>
 					{/each}
 				</div>
 			{/if}
@@ -307,69 +262,6 @@
 		transform: translateX(0);
 		scrollbar-width: auto;
 		scrollbar-color: var(--primary-color) var(--card-background);
-	}
-
-	.recent-video-item {
-		display: flex;
-		align-items: center;
-		width: 100%;
-		padding: 1rem;
-		text-align: left;
-		background: none;
-		border: none;
-		border-bottom: 1px solid var(--border-color);
-		cursor: pointer;
-		font-size: 1rem;
-		color: var(--text-color);
-		transition: background-color 0.2s ease;
-		overflow: hidden;
-		gap: 1rem;
-	}
-
-	.recent-video-item:last-child {
-		border-bottom: none;
-	}
-
-	.recent-video-item:hover {
-		background-color: #f3f4f6;
-	}
-
-	.recent-video-thumbnail {
-		width: 100px;
-		height: 56.25px;
-		object-fit: cover;
-		border-radius: 4px;
-		margin-right: 1rem;
-		flex-shrink: 0;
-	}
-
-	.video-details {
-		display: flex;
-		flex-direction: column;
-		flex-grow: 1;
-		text-align: left;
-		min-width: 0;
-		flex-shrink: 1;
-	}
-
-	.video-info {
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		margin-bottom: 0.25rem;
-	}
-
-	.recent-video-artist {
-		font-weight: 600;
-	}
-
-	.video-time-ago {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		color: #6b7280;
-		font-size: 0.875rem;
-		flex-shrink: 0;
 	}
 
 	.recent-videos-dropdown::-webkit-scrollbar {

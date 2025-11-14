@@ -165,6 +165,19 @@ class IndexedDBVideoRepository implements IVideoRepository {
 				reject('Error getting recent videos: ' + (event.target as IDBRequest).error);
 		});
 	}
+
+	async deleteRecentVideo(videoId: string): Promise<void> {
+		const db = await this.openDB();
+		const transaction = db.transaction([RECENT_VIDEOS_STORE], 'readwrite');
+		const store = transaction.objectStore(RECENT_VIDEOS_STORE);
+
+		return new Promise((resolve, reject) => {
+			const request = store.delete(videoId);
+			request.onsuccess = () => resolve();
+			request.onerror = (event) =>
+				reject('Error deleting recent video: ' + (event.target as IDBRequest).error);
+		});
+	}
 }
 
 export const indexedDBVideoRepository = new IndexedDBVideoRepository();
