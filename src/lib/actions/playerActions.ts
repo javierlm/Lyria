@@ -153,6 +153,15 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 			onReady: (event) => handlePlayerReady(event, videoId),
 			onStateChange: (event) => {
 				playerState.isPlaying = event.data === YT.PlayerState.PLAYING;
+				if (event.data === YT.PlayerState.BUFFERING) {
+					playerState.isSeeking = true;
+				} else if (
+					event.data === YT.PlayerState.PLAYING ||
+					event.data === YT.PlayerState.PAUSED ||
+					event.data === YT.PlayerState.ENDED
+				) {
+					playerState.isSeeking = false;
+				}
 			}
 		}
 	});

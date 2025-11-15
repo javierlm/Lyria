@@ -29,11 +29,18 @@
 			playerState.lines[playerState.currentLineIndex]?.text;
 
 		if (hasActiveLineWithText) {
-			const activeRow = lyricRowRefs[playerState.currentLineIndex];
-			if (activeRow) {
-				activeLineOffset = activeRow.offsetTop;
-				activeLineHeight = activeRow.offsetHeight;
-			}
+			// Espera a que el navegador termine el layout
+			requestAnimationFrame(() => {
+				const activeRow = lyricRowRefs[playerState.currentLineIndex];
+				const container = lyricsContentRef;
+				if (activeRow && container) {
+					const rowRect = activeRow.getBoundingClientRect();
+					const containerRect = container.getBoundingClientRect();
+
+					activeLineOffset = rowRect.top - containerRect.top + container.scrollTop;
+					activeLineHeight = rowRect.height;
+				}
+			});
 		} else {
 			activeLineHeight = 0;
 			activeLineOffset = 0;
@@ -199,6 +206,7 @@
 	}
 
 	.lyric-row {
+		box-sizing: border-box;
 		display: grid;
 		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
@@ -229,7 +237,13 @@
 		font-weight: bold;
 	}
 
+	/* .lyric-row.current .lyric-line {
+		transform: scale(1.02);
+	} */
+
 	.lyric-line {
+		margin: 0;
+		line-height: 1.5;
 		cursor: pointer;
 		padding: 0.8rem 2rem;
 		border-radius: 8px;

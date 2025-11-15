@@ -22,7 +22,8 @@ export const playerState = $state({
 	isTranslatedTextReady: false,
 	lyricsAreSynced: false,
 	userLang: getLanguage(), // Initialize userLang using getLanguage()
-	id: 0
+	id: 0,
+	isSeeking: false
 });
 
 let playerInstance: YT.Player | null = null;
