@@ -304,13 +304,14 @@ export function adjustTiming(offset: number) {
 
 		if (firstLineWithText && lastLineWithText) {
 			const firstLineTime = firstLineWithText.startTimeMs;
-			const lastLineTime = lastLineWithText.startTimeMs;
 			const videoDurationMs = playerState.duration * 1000;
 
 			const minOffset = -firstLineTime;
-			const maxOffset = videoDurationMs - lastLineTime;
+			const maxOffset = Math.abs(videoDurationMs - lastLineWithText.startTimeMs);
 
-			finalOffset = Math.max(minOffset, Math.min(offset, maxOffset));
+			if (minOffset <= maxOffset) {
+				finalOffset = Math.max(minOffset, Math.min(offset, maxOffset));
+			}
 		}
 	}
 
