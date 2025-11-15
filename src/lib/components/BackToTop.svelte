@@ -50,8 +50,8 @@
 		color: white;
 		border: none;
 		border-radius: 50%;
-		width: 50px;
-		height: 50px;
+		width: 48px;
+		height: 48px;
 		font-size: 24px;
 		cursor: pointer;
 		display: flex;

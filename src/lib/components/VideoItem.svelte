@@ -86,6 +86,7 @@
 		transition: background-color 0.2s ease;
 		overflow: hidden;
 		gap: 1rem;
+		min-height: 88px;
 	}
 
 	.video-item:last-child {
@@ -160,6 +161,7 @@
 			padding: 0.75rem;
 			flex-wrap: nowrap;
 			gap: 0.75rem;
+			min-height: 64px;
 		}
 
 		.video-info {
@@ -178,6 +180,10 @@
 	}
 
 	@media (max-width: 480px) {
+		.video-item {
+			min-height: 58px;
+		}
+
 		.video-thumbnail {
 			width: 60px;
 			height: 33.75px;

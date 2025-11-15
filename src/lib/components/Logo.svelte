@@ -10,7 +10,8 @@
 	let isPulsing = $state(false);
 
 	// Event handlers
-	const handleLogoClick = () => {
+	const handleLogoClick = (event: MouseEvent) => {
+		event.preventDefault();
 		if (isPlayerView) {
 			isPulsing = true;
 			setTimeout(() => {
@@ -18,14 +19,11 @@
 			}, 300);
 		}
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto('/'); // Navigate to the main page immediately
+		goto('/');
 	};
 
 	onMount(() => {
 		const createdStyles: HTMLStyleElement[] = [];
-
-		// Add event listeners
-		logo.addEventListener('click', handleLogoClick);
 
 		// Trigger animation after a short delay to ensure initial render is complete
 		const animationTimeout = setTimeout(() => {
@@ -34,14 +32,13 @@
 
 		// Cleanup on component destruction
 		return () => {
-			logo.removeEventListener('click', handleLogoClick);
 			createdStyles.forEach((style) => style.remove());
 			clearTimeout(animationTimeout); // Clear timeout on destroy
 		};
 	});
 </script>
 
-<div>
+<a href="/" onclick={handleLogoClick} class="logo-anchor">
 	<div class="container" bind:this={container}>
 		<div
 			class="lyria-logo"
@@ -61,9 +58,15 @@
 			</div>
 		</div>
 	</div>
-</div>
+</a>
 
 <style>
+	.logo-anchor {
+		text-decoration: none;
+		display: inline-block;
+		position: relative;
+	}
+
 	* {
 		margin: 0;
 		padding: 0;
@@ -89,6 +92,7 @@
 			opacity 0.4s ease-in-out,
 			transform 0.2s ease-in-out,
 			filter 0.2s ease-in-out;
+		padding-bottom: 25px;
 	}
 
 	.lyria-logo.animated {
@@ -186,7 +190,7 @@
 	/* Línea decorativa inferior */
 	.underline {
 		position: absolute;
-		bottom: -20px;
+		bottom: 0;
 		left: 0;
 		height: 5px;
 		background: linear-gradient(90deg, var(--text-color) 5%, var(--primary-color) 50%);

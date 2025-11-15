@@ -247,7 +247,7 @@
 	}
 
 	.recent-videos-dropdown {
-		--row-height: 89px;
+		--row-height: 88.25px;
 		--visible-rows: 6;
 		position: absolute;
 		top: calc(100% + 0.5rem);
@@ -310,7 +310,7 @@
 		}
 
 		.recent-videos-dropdown {
-			--row-height: 64.38px;
+			--row-height: 65px;
 			--visible-rows: 8;
 		}
 
@@ -369,7 +369,7 @@
 		}
 
 		.recent-videos-dropdown {
-			--row-height: 58.75px;
+			--row-height: 59px;
 			--visible-rows: 6;
 		}
 
