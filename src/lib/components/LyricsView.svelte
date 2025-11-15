@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { playerState } from '$lib/stores/playerStore.svelte';
+	import { LyricsStates, playerState } from '$lib/stores/playerStore.svelte';
 	import { seekTo } from '$lib/actions/playerActions';
 	import { FileText, Translate } from 'phosphor-svelte';
 	import LanguageSelector from '$lib/components/LanguageSelector.svelte';
@@ -83,64 +83,75 @@
 	</div>
 
 	<div class="lyrics-content" bind:this={lyricsContentRef}>
-		{#if playerState.currentLineIndex !== null && playerState.currentLineIndex >= 0 && activeLineHeight > 0}
-			<div
-				class="active-line-background"
-				style="transform: translateY({activeLineOffset}px); height: {activeLineHeight}px;"
-			></div>
-		{/if}
-
-		{#each playerState.lines as line, i (i)}
-			{#if line.text}
+		{#if playerState.lyricsState === LyricsStates.Loading}
+			<div class="no-lyrics-message">
+				<p>Lyrics on their way! Just a little wait!... ✍️</p>
+			</div>
+		{:else if playerState.lyricsState === LyricsStates.NotFound}
+			<div class="no-lyrics-message">
+				<FileText size={iconSize * 2} weight="bold" />
+				<p>No lyrics found for this song</p>
+			</div>
+		{:else if playerState.lyricsState === LyricsStates.Found}
+			{#if playerState.currentLineIndex !== null && playerState.currentLineIndex >= 0 && activeLineHeight > 0}
 				<div
-					class="lyric-row"
-					class:hovered={hoveredIndex === i}
-					class:current={playerState.currentLineIndex === i}
-					class:clickable={playerState.lyricsAreSynced}
-					bind:this={lyricRowRefs[i]}
-					onmouseenter={() => (hoveredIndex = i)}
-					onmouseleave={() => (hoveredIndex = null)}
-					onclick={() => {
-						if (playerState.lyricsAreSynced) seekTo(adjustedTimes[i] / 1000);
-					}}
-					onkeydown={(e) => {
-						if (playerState.lyricsAreSynced && (e.key === 'Enter' || e.key === ' ')) {
-							seekTo(adjustedTimes[i] / 1000);
-						}
-					}}
-					role="button"
-					tabindex="0"
-				>
-					<button
-						type="button"
-						class="lyric-line original"
-						class:not-synced={!playerState.lyricsAreSynced}
-					>
-						<span class="lyric-text-container">
-							<span class="sizer">{line.text}</span>
-							<span class="content">{line.text}</span>
-						</span>
-					</button>
-
-					{#if playerState.lyricsAreSynced}
-						<strong class="timestamp">
-							<span>{formatTimestamp(adjustedTimes[i])}</span>
-						</strong>
-					{/if}
-
-					<button
-						type="button"
-						class="lyric-line translated"
-						class:not-synced={!playerState.lyricsAreSynced}
-					>
-						<span class="lyric-text-container">
-							<span class="sizer">{playerState.translatedLines[i]?.text || ''}</span>
-							<span class="content">{playerState.translatedLines[i]?.text || ''}</span>
-						</span>
-					</button>
-				</div>
+					class="active-line-background"
+					style="transform: translateY({activeLineOffset}px); height: {activeLineHeight}px;"
+				></div>
 			{/if}
-		{/each}
+
+			{#each playerState.lines as line, i (i)}
+				{#if line.text}
+					<div
+						class="lyric-row"
+						class:hovered={hoveredIndex === i}
+						class:current={playerState.currentLineIndex === i}
+						class:clickable={playerState.lyricsAreSynced}
+						bind:this={lyricRowRefs[i]}
+						onmouseenter={() => (hoveredIndex = i)}
+						onmouseleave={() => (hoveredIndex = null)}
+						onclick={() => {
+							if (playerState.lyricsAreSynced) seekTo(adjustedTimes[i] / 1000);
+						}}
+						onkeydown={(e) => {
+							if (playerState.lyricsAreSynced && (e.key === 'Enter' || e.key === ' ')) {
+								seekTo(adjustedTimes[i] / 1000);
+							}
+						}}
+						role="button"
+						tabindex="0"
+					>
+						<button
+							type="button"
+							class="lyric-line original"
+							class:not-synced={!playerState.lyricsAreSynced}
+						>
+							<span class="lyric-text-container">
+								<span class="sizer">{line.text}</span>
+								<span class="content">{line.text}</span>
+							</span>
+						</button>
+
+						{#if playerState.lyricsAreSynced}
+							<strong class="timestamp">
+								<span>{formatTimestamp(adjustedTimes[i])}</span>
+							</strong>
+						{/if}
+
+						<button
+							type="button"
+							class="lyric-line translated"
+							class:not-synced={!playerState.lyricsAreSynced}
+						>
+							<span class="lyric-text-container">
+								<span class="sizer">{playerState.translatedLines[i]?.text || ''}</span>
+								<span class="content">{playerState.translatedLines[i]?.text || ''}</span>
+							</span>
+						</button>
+					</div>
+				{/if}
+			{/each}
+		{/if}
 	</div>
 </div>
 
@@ -326,5 +337,21 @@
 		display: flex;
 		justify-content: center;
 		margin-bottom: 1rem;
+	}
+
+	.no-lyrics-message {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 2rem;
+		text-align: center;
+		color: var(--text-color-light);
+		font-size: 1rem;
+		gap: 1rem;
+	}
+
+	.no-lyrics-message p {
+		margin: 0;
 	}
 </style>

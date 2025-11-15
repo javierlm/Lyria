@@ -1,8 +1,8 @@
-import { getSyncedLyrics } from '$lib/lrclib';
+import { getSyncedLyrics, type LyricsResult } from '$lib/lrclib';
 import { videoService } from '$lib/data/videoService';
 import { getLanguage, setLanguage } from '$lib/language';
-import { getPlayer, setPlayer, playerState } from '$lib/stores/playerStore.svelte';
-import { parseTitle } from '$lib/utils';
+import { getPlayer, setPlayer, playerState, LyricsStates } from '$lib/stores/playerStore.svelte';
+import { parseTitle, removeJunkSuffixes } from '$lib/utils';
 
 let syncInterval: NodeJS.Timeout;
 const HUMAN_REACTION_TIME_MS = 500;
@@ -120,6 +120,7 @@ function resetPlayerState() {
 	playerState.currentLineIndex = -1;
 	playerState.isTranslatedTextReady = false;
 	playerState.lyricsAreSynced = false;
+	playerState.lyricsState = LyricsStates.Idle;
 	playerState.duration = 0;
 	playerState.currentTime = 0;
 	playerState.isPlaying = false;
@@ -175,37 +176,90 @@ async function loadAndApplyVideoDelay(videoId: string) {
 	}
 }
 
-async function updateVideoMetadata(player: YT.Player) {
+async function fetchAndProcessLyrics(player: YT.Player) {
+	playerState.lyricsState = LyricsStates.Loading;
 	const videoData = player.getVideoData();
-	const parsed = parseTitle(videoData.title);
-	playerState.artist = parsed.artist;
-	playerState.track = parsed.track;
+	const duration = player.getDuration();
+
+	const result = await searchLyricsWithStrategies(videoData, duration);
+	updatePlayerState(result, videoData);
+
+	if (result.found) {
+		await translateLyrics(getLanguage());
+	}
 }
 
-async function fetchAndProcessLyrics(player: YT.Player) {
-	let result = await getSyncedLyrics(playerState.track, playerState.artist, player.getDuration());
+async function searchLyricsWithStrategies(
+	videoData: YT.VideoData,
+	duration: number
+): Promise<LyricsResult> {
+	const strategies = [tryCleanedTitle, tryParsedTitle, tryInvertedParameters];
 
-	if (!result.found) {
-		console.log(
-			`No lyrics found for "${playerState.track}" by "${playerState.artist}". Retrying with inverted parameters.`
-		);
-		result = await getSyncedLyrics(playerState.artist, playerState.track, player.getDuration());
-		if (result.lyrics.length > 0) {
-			console.log(`Successfully found lyrics with inverted parameters.`);
-			[playerState.artist, playerState.track] = [playerState.track, playerState.artist];
-		}
+	for (const strategy of strategies) {
+		const result = await strategy(videoData, duration);
+		if (result.found) return result;
 	}
 
+	return { found: false, synced: false, lyrics: [] };
+}
+
+async function tryCleanedTitle(videoData: YT.VideoData, duration: number): Promise<LyricsResult> {
+	const cleanedTitle = removeJunkSuffixes(videoData.title);
+	console.log(`Attempting lyric search with cleaned raw title: "${cleanedTitle}"`);
+
+	return await getSyncedLyrics(cleanedTitle, '', duration);
+}
+
+async function tryParsedTitle(videoData: YT.VideoData, duration: number): Promise<LyricsResult> {
+	console.log('Cleaned raw title search failed. Proceeding with full parsing logic.');
+
+	const parsedTitle = parseTitle(videoData.title);
+	const artist = parsedTitle.artist || videoData.author;
+	const track = parsedTitle.track;
+
+	if (!parsedTitle.artist) {
+		console.log(`Parsed artist was empty, using YouTube channel name: "${artist}"`);
+	}
+
+	return await getSyncedLyrics(track, artist, duration);
+}
+
+async function tryInvertedParameters(
+	videoData: YT.VideoData,
+	duration: number
+): Promise<LyricsResult> {
+	const parsedTitle = parseTitle(videoData.title);
+	const artist = parsedTitle.artist || videoData.author;
+	const track = parsedTitle.track;
+
+	console.log(`No lyrics found for "${track}" by "${artist}". Retrying with inverted parameters.`);
+
+	const result = await getSyncedLyrics(artist, track, duration);
+
+	if (result.found) {
+		console.log('Successfully found lyrics with inverted parameters.');
+	}
+
+	return result;
+}
+
+function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
+	// Update artist and track
+	if (result.found && result.artistName && result.trackName) {
+		playerState.artist = result.artistName;
+		playerState.track = result.trackName;
+	} else {
+		const parsedTitle = parseTitle(videoData.title);
+		playerState.artist = parsedTitle.artist || videoData.author;
+		playerState.track = parsedTitle.track;
+	}
+
+	// Update lyrics state
+	playerState.lyricsState = result.found ? LyricsStates.Found : LyricsStates.NotFound;
 	playerState.lyricsAreSynced = result.synced;
 	playerState.lines = result.lyrics;
 	playerState.id = result.id || 0;
-
-	if (playerState.lines.length > 0) {
-		const userLang = getLanguage();
-		playerState.userLang = userLang;
-		console.log('ID LRCLib: ', playerState.id);
-		await translateLyrics(userLang);
-	}
+	playerState.userLang = getLanguage();
 }
 
 function initializePlayerProperties(player: YT.Player) {
@@ -232,8 +286,8 @@ async function handlePlayerReady(event: YT.PlayerEvent, videoId: string) {
 	const player = event.target;
 	setPlayer(player);
 
-	await updateVideoMetadata(player);
 	await fetchAndProcessLyrics(player);
+
 	initializePlayerProperties(player);
 
 	startSync();
