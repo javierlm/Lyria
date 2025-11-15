@@ -2,7 +2,12 @@ const BASE_URL_SEARCH = 'https://lrclib.net/api/search';
 
 const SIMILARITY_THRESHOLD = 0.8;
 const HIGH_SIMILARITY = 0.9;
-const DECENT_SIMILARITY = 0.7;
+const DECENT_SIMILARITY = 0.6;
+const BONUS_SIMILARITY = 0.1;
+const FULL_SIMILARITY = 1.0;
+
+const TRACK_MULTIPLIER = 0.6;
+const ARTIST_MULTIPLIER = 0.4;
 
 export interface SyncedLine {
 	startTimeMs: number;
@@ -27,6 +32,8 @@ export interface LyricsResult {
 	found: boolean;
 	synced: boolean;
 	id?: number;
+	artistName?: string;
+	trackName?: string;
 }
 
 // Function to calculate the
@@ -132,16 +139,30 @@ function findBestMatch(
 
 	for (const result of results) {
 		const trackSimilarity = jaroWinkler(track.toLowerCase(), result.trackName.toLowerCase());
-		const artistSimilarity = jaroWinkler(artist.toLowerCase(), result.artistName.toLowerCase());
-		const albumSimilarity = jaroWinkler(track.toLowerCase(), result.albumName.toLowerCase());
 
-		let effectiveSimilarity = (trackSimilarity + artistSimilarity) / 2;
-
-		if (albumSimilarity > HIGH_SIMILARITY && artistSimilarity > DECENT_SIMILARITY) {
-			effectiveSimilarity = Math.max(effectiveSimilarity, albumSimilarity);
-		} else if (albumSimilarity > DECENT_SIMILARITY) {
-			effectiveSimilarity = effectiveSimilarity * 0.9 + albumSimilarity * 0.1;
+		if (trackSimilarity < DECENT_SIMILARITY) {
+			continue;
 		}
+
+		let effectiveSimilarity: number;
+
+		// If no artist is provided, base similarity only on track.
+		if (!artist || artist.trim() === '') {
+			effectiveSimilarity = trackSimilarity;
+		} else {
+			// Original logic for when an artist is provided.
+			const artistSimilarity = jaroWinkler(artist.toLowerCase(), result.artistName.toLowerCase());
+			const albumSimilarity = jaroWinkler(track.toLowerCase(), result.albumName.toLowerCase());
+
+			effectiveSimilarity =
+				trackSimilarity * TRACK_MULTIPLIER + artistSimilarity * ARTIST_MULTIPLIER;
+
+			if (albumSimilarity > HIGH_SIMILARITY) {
+				effectiveSimilarity += BONUS_SIMILARITY;
+			}
+		}
+
+		effectiveSimilarity = Math.min(effectiveSimilarity, FULL_SIMILARITY);
 
 		if (effectiveSimilarity >= SIMILARITY_THRESHOLD) {
 			if (effectiveSimilarity > highestOverallSimilarity) {
@@ -181,7 +202,9 @@ function parseLyrics(match: LRCLibResponse): LyricsResult {
 			plainLyrics: match.plainLyrics,
 			found: true,
 			synced: true,
-			id: match.id
+			id: match.id,
+			artistName: match.artistName,
+			trackName: match.trackName
 		};
 	}
 
@@ -195,7 +218,9 @@ function parseLyrics(match: LRCLibResponse): LyricsResult {
 		plainLyrics: match.plainLyrics,
 		found: true,
 		synced: false,
-		id: match.id
+		id: match.id,
+		artistName: match.artistName,
+		trackName: match.trackName
 	};
 }
 
@@ -204,7 +229,17 @@ export async function getSyncedLyrics(
 	artist: string,
 	duration: number
 ): Promise<LyricsResult> {
-	const url = `${BASE_URL_SEARCH}?q=${encodeURIComponent(artist + ' ' + track)}&duration=${duration}`;
+	//Avoid Chinese, Japanese and Korean characters from tracks when searching for lyrics
+	const sanitizedTrack = track
+		.replace(
+			/[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uffef\u4e00-\u9faf\uac00-\ud7af]/g,
+			''
+		)
+		.trim();
+
+	const url = `${BASE_URL_SEARCH}?q=${encodeURIComponent(
+		artist + ' ' + sanitizedTrack
+	)}&duration=${duration}`;
 	console.log('URL:', url);
 
 	try {
@@ -218,7 +253,7 @@ export async function getSyncedLyrics(
 		}
 
 		const data: LRCLibResponse[] = await res.json();
-		const finalMatch = findBestMatch(data, track, artist);
+		const finalMatch = findBestMatch(data, sanitizedTrack, artist);
 
 		if (finalMatch) {
 			return parseLyrics(finalMatch);
