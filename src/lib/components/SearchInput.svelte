@@ -27,7 +27,7 @@
 		const id = extractVideoId(url);
 		if (id) {
 			const currentPath = $page.url.pathname;
-			const newUrlString = `${currentPath}?url=${encodeURIComponent(url)}`;
+			const newUrlString = `play?id=${encodeURIComponent(id)}`;
 			// eslint-disable-next-line svelte/no-navigation-without-resolve
 			goto(newUrlString, { noScroll: true });
 			showSearchField = false;
