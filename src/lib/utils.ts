@@ -71,6 +71,20 @@ type ParseState = {
 
 type PipelineStep = (state: ParseState) => ParseState;
 
+// Normalize handles of social networks and camelCase
+const normalizeHandles: PipelineStep = (state) => {
+	const normalized = state.title
+		// Remove @
+		.replace(/@([a-zA-Z0-9_]+)/g, '$1')
+		// Separate camelCase and PascalCase
+		.replace(/([a-z])([A-Z])/g, '$1 $2')
+		// Separate numbers of letters
+		.replace(/([a-zA-Z])(\d)/g, '$1 $2')
+		.replace(/(\d)([a-zA-Z])/g, '$1 $2');
+
+	return { ...state, title: normalized };
+};
+
 //Extracts featured artists from parenthesis, square brackets with "ft" or "feat"
 const extractFeaturedFromBrackets: PipelineStep = (state) => {
 	const featured: string[] = state.featured ? [state.featured] : [];
@@ -105,7 +119,7 @@ const removeJunkSuffixesStep: PipelineStep = (state) => ({
 
 // Tries to find first separator and divide the title between artist and song
 const splitArtistAndTrack: PipelineStep = (state) => {
-	const separators = [' - ', ' – ', '-', ' | '];
+	const separators = [' - ', ' – ', '-', ' | ', ' x '];
 
 	for (const sep of separators) {
 		const idx = state.title.indexOf(sep);
@@ -160,26 +174,35 @@ const mergeFeaturedIntoArtist: PipelineStep = (state) => {
 	return { ...state, artist };
 };
 
+// Remove common punctuation marks
+const removePunctuation: PipelineStep = (state) => {
+	const newState = {
+		...state,
+		artist: state.artist
+			.replace(/[!"#$%&'()*+,\-./:;<=>?@[\\]^_`{|}~""''«»—–—´`¨;:！]/g, '')
+			.trim(),
+		track: state.track.replace(/[!"#$%&'()*+,\-./:;<=>?@[\\]^_`{|}~""''«»—–—´`¨;:！]/g, '').trim()
+	};
+	return newState;
+};
+
 // Final cleanup of whitespaces, symbols and final separators
 const finalCleanup: PipelineStep = (state) => ({
 	...state,
-	artist: state.artist.replace(/&/g, '').replace(/\s+/g, ' ').trim(),
-	track: state.track
-		.replace(/&/g, '')
-		.replace(/\s+/g, ' ')
-		.replace(/-\s*$/, '')
-		.split('|')[0]
-		.trim()
+	artist: state.artist.replace(/\s+/g, ' ').trim(),
+	track: state.track.replace(/\s+/g, ' ').replace(/-\s*$/, '').split('|')[0].trim()
 });
 
 // Pipeline of transformations
 const pipeline: PipelineStep[] = [
+	normalizeHandles,
 	extractFeaturedFromBrackets,
 	removeBrackets,
 	removeJunkSuffixesStep,
 	splitArtistAndTrack,
 	extractFeaturedFromParts,
 	mergeFeaturedIntoArtist,
+	removePunctuation,
 	finalCleanup
 ];
 

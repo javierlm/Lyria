@@ -33,6 +33,10 @@ const testCases = [
 	{
 		input: 'Afterlife (from the Netflix series "Devil May Cry") - Official Music Video',
 		expected: { artist: '', track: 'Afterlife' }
+	},
+	{
+		input: 'BABYMETAL x @ElectricCallboy - RATATATA (OFFICIAL VIDEO)',
+		expected: { artist: 'BABYMETAL x Electric Callboy', track: 'RATATATA' }
 	}
 ];
 
