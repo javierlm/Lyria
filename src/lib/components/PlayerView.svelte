@@ -154,10 +154,10 @@
 	{#if playerState.lyricsAreSynced}
 		{#key playerState.currentLine}
 			<div class="subtitles" in:slide={{ duration: 300 }}>
-				{#if playerState.currentLine}
+				{#if playerState.showOriginalSubtitle && playerState.currentLine}
 					<div class="subtitle-line">{playerState.currentLine}</div>
 				{/if}
-				{#if playerState.currentTranslatedLine}
+				{#if playerState.showTranslatedSubtitle && playerState.currentTranslatedLine}
 					<div class="subtitle-line translated-subtitle">{playerState.currentTranslatedLine}</div>
 				{/if}
 			</div>

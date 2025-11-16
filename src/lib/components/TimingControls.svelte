@@ -171,6 +171,7 @@
 		font-size: 1rem;
 		transition: all 0.3s ease;
 		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+		height: 42px;
 	}
 
 	.sync-button:hover:not(:disabled) {

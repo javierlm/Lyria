@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { LyricsStates, playerState } from '$lib/stores/playerStore.svelte';
 	import { seekTo } from '$lib/actions/playerActions';
-	import { FileText, Translate } from 'phosphor-svelte';
+	import { FileText, Translate, Eye, EyeSlash } from 'phosphor-svelte';
 	import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 
 	let hoveredIndex: number | null = $state(null);
@@ -12,7 +12,7 @@
 	let activeLineHeight = $state(0);
 	let windowWidth = $state(0);
 
-	const iconSize = $derived(windowWidth > 768 ? 30 : 16);
+	const iconSize = $derived(windowWidth > 768 ? 30 : 20);
 
 	const adjustedTimes = $derived(
 		playerState.lines.map((line) => Math.max(0, line.startTimeMs + playerState.timingOffset))
@@ -69,15 +69,54 @@
 
 <div class="lyrics-container" bind:this={lyricsContainerRef}>
 	{#if playerState.translatedLines.length > 0}
-		<div class="language-selector">
+		<div class="controls-wrapper">
+			<button
+				class="toggle-visibility"
+				onpointerdown={(event) => {
+					if (event.button === 0) {
+						playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
+					}
+				}}
+				aria-label={playerState.showOriginalSubtitle
+					? 'Hide original subtitles'
+					: 'Show original subtitles'}
+			>
+				{#if playerState.showOriginalSubtitle}
+					<Eye size={20} />
+				{:else}
+					<EyeSlash size={20} />
+				{/if}
+			</button>
 			<LanguageSelector />
+			<button
+				class="toggle-visibility"
+				onpointerdown={(event) => {
+					if (event.button === 0) {
+						playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
+					}
+				}}
+				aria-label={playerState.showTranslatedSubtitle
+					? 'Hide translated subtitles'
+					: 'Show translated subtitles'}
+			>
+				{#if playerState.showTranslatedSubtitle}
+					<Eye size={20} />
+				{:else}
+					<EyeSlash size={20} />
+				{/if}
+			</button>
 		</div>
+	{:else}
+		<div style="height: 42px; margin-bottom: 1rem;"></div>
 	{/if}
 	<div class="lyrics-header">
-		<h2 class="original-header"><FileText size={iconSize} weight="bold" /> Original Lyrics</h2>
+		<h2 class="original-header">
+			<FileText size={iconSize} weight="bold" /> <span class="header-text">Original Lyrics</span>
+		</h2>
 		<div class="translated-header-container">
 			<h2 class="translated-header">
-				<Translate size={iconSize} weight="bold" /> Translated Lyrics
+				<Translate size={iconSize} weight="bold" />
+				<span class="header-text">Translated Lyrics</span>
 			</h2>
 		</div>
 	</div>
@@ -156,14 +195,17 @@
 </div>
 
 <style>
+	:root {
+		--middle-col-width: 192px;
+	}
+
 	.lyrics-container {
 		margin: 2rem auto;
 		max-width: 1200px;
-		padding: 0 1rem;
+		padding: 2rem;
 		background-color: var(--card-background);
 		border-radius: 12px;
 		box-shadow: 0 10px 30px var(--shadow-color);
-		padding: 2rem;
 		position: relative;
 		overflow: hidden;
 	}
@@ -189,8 +231,8 @@
 
 	.lyrics-header {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 2rem;
+		grid-template-columns: 1fr var(--middle-col-width) 1fr;
+		gap: 0.5rem;
 		padding-bottom: 1rem;
 		border-bottom: 1px solid var(--border-color);
 		align-items: start;
@@ -206,6 +248,25 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.5rem;
+		margin: 0;
+	}
+
+	.original-header {
+		grid-column: 1;
+	}
+
+	.translated-header-container {
+		grid-column: 3;
+	}
+
+	.controls-wrapper {
+		display: grid;
+		grid-template-columns: 1fr var(--middle-col-width) 1fr;
+		gap: 0.5rem;
+		align-items: center;
+		margin-bottom: 1rem;
+		width: 100%;
+		padding: 0;
 	}
 
 	.translated-header-container {
@@ -219,7 +280,7 @@
 	.lyric-row {
 		box-sizing: border-box;
 		display: grid;
-		grid-template-columns: 1fr auto 1fr;
+		grid-template-columns: 1fr var(--middle-col-width) 1fr;
 		align-items: center;
 		border-bottom: 1px solid var(--border-color);
 		gap: 0.5rem;
@@ -228,6 +289,11 @@
 		position: relative;
 		z-index: 1;
 		min-height: 3rem;
+	}
+
+	.controls-wrapper :nth-child(2) {
+		max-width: var(--middle-col-width);
+		width: 100%;
 	}
 
 	.lyric-row.clickable {
@@ -248,15 +314,11 @@
 		font-weight: bold;
 	}
 
-	/* .lyric-row.current .lyric-line {
-		transform: scale(1.02);
-	} */
-
 	.lyric-line {
 		margin: 0;
 		line-height: 1.5;
 		cursor: pointer;
-		padding: 0.8rem 2rem;
+		padding: 0.8rem 0;
 		border-radius: 8px;
 		background: none;
 		border: none;
@@ -311,32 +373,152 @@
 		text-align: center;
 	}
 
+	.controls-wrapper {
+		display: grid;
+		grid-template-columns: 1fr var(--middle-col-width) 1fr;
+		gap: 0.5rem;
+		align-items: center;
+		margin-bottom: 1rem;
+		width: 100%;
+		padding: 0;
+	}
+
+	.controls-wrapper > button:first-child {
+		justify-self: center;
+		margin-right: 0;
+	}
+
+	.controls-wrapper > :nth-child(2) {
+		justify-self: center;
+	}
+
+	.controls-wrapper > button:last-child {
+		justify-self: center;
+		margin-left: 0;
+	}
+
+	.toggle-visibility {
+		background: none;
+		border: 1px solid var(--border-color);
+		color: var(--text-color);
+		padding: 10px;
+		border-radius: 8px;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: background-color 0.2s;
+		width: 42px;
+		height: 42px;
+		box-sizing: border-box;
+	}
+
 	@media (max-width: 768px) {
+		:root {
+			--middle-col-width: 60px;
+		}
+
 		.lyrics-container {
 			padding: 1rem;
 			margin: 1rem 0;
 		}
 
 		.lyrics-header {
-			grid-template-columns: 1fr 1fr;
-			gap: 1rem;
-		}
-
-		.lyric-line {
-			padding: 0.6rem 0.5rem;
-			font-size: 0.8rem;
+			display: grid;
+			grid-template-columns: 1fr var(--middle-col-width) 1fr;
+			gap: 0.5rem;
+			align-items: center;
 		}
 
 		.lyrics-header h2 {
+			margin: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			align-self: center;
+			justify-self: center;
+			width: 100%;
 			font-size: 1rem;
+		}
+
+		.original-header {
+			grid-column: 1;
+		}
+
+		.translated-header-container {
+			grid-column: 3;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 0.5rem;
+			position: relative;
+			align-self: center;
+			justify-self: center;
+			width: 100%;
+			text-align: center;
+		}
+
+		.lyric-row {
+			grid-template-columns: minmax(0, 1fr) var(--middle-col-width) minmax(0, 1fr); /* Use mobile-specific middle column width */
+			gap: 0.5rem;
+		}
+
+		.lyric-line {
+			padding: 0.6rem 0.25rem;
+			font-size: 0.7rem;
+			word-break: break-word;
+			white-space: normal;
+			min-width: 0;
+		}
+
+		.controls-wrapper {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			gap: 1rem;
+			margin-bottom: 1rem;
+			width: 100%;
+		}
+
+		.controls-wrapper > :nth-child(2) {
+			width: 140px;
+			max-width: 140px;
+		}
+
+		.timestamp {
+			font-weight: bold;
+			color: black;
+			text-align: center;
+			font-size: 0.8rem;
+		}
+
+		.toggle-visibility {
+			background: none;
+			border: 1px solid var(--border-color);
+			color: var(--text-color);
+			padding: 10px;
+			border-radius: 8px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: background-color 0.2s;
+			height: 40px;
+			box-sizing: border-box;
 		}
 	}
 
-	.language-selector {
-		width: 100%;
-		display: flex;
-		justify-content: center;
-		margin-bottom: 1rem;
+	@media (max-width: 480px) {
+		.lyrics-header h2 .header-text {
+			display: none;
+		}
+	}
+
+	.toggle-visibility:hover {
+		background-color: var(--hover-background);
+		box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5); /* Added box-shadow */
 	}
 
 	.no-lyrics-message {

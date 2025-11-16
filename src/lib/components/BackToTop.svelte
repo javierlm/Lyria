@@ -66,4 +66,11 @@
 	.back-to-top.show {
 		opacity: 1;
 	}
+
+	@media (max-width: 480px) {
+		.back-to-top {
+			width: 40px;
+			height: 40px;
+		}
+	}
 </style>

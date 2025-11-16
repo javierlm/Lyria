@@ -120,7 +120,7 @@
 	});
 </script>
 
-<div class="select-wrapper" style="width: {maxDropdownWidth ? `${maxDropdownWidth}px` : 'auto'};">
+<div class="select-wrapper" style="--max-dropdown-width: {maxDropdownWidth ? `${maxDropdownWidth}px` : 'auto'};">
 	<button class="select-button" onclick={() => (dropdownOpen = !dropdownOpen)}>
 		<div class="selected-option">
 			<span class="flag-icon {currentLang.flagClass}"></span>
@@ -196,6 +196,7 @@
 		font-size: 0.8rem;
 		transition: all 0.3s ease;
 		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+		height: 42px;
 	}
 
 	:global(body.dark-mode) .select-button {
@@ -503,5 +504,11 @@
 		box-shadow:
 			0 4px 12px rgba(239, 68, 68, 0.5),
 			0 0 20px rgba(220, 38, 38, 0.3);
+	}
+
+	@media (max-width: 768px) {
+		.select-wrapper {
+			width: 140px;
+		}
 	}
 </style>

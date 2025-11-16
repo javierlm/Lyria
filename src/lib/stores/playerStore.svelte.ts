@@ -33,7 +33,9 @@ export const playerState = $state({
 	lyricsState: LyricsStates.Idle as LyricsState,
 	userLang: getLanguage(), // Initialize userLang using getLanguage()
 	id: 0,
-	isSeeking: false
+	isSeeking: false,
+	showOriginalSubtitle: true,
+	showTranslatedSubtitle: true
 });
 
 let playerInstance: YT.Player | null = null;

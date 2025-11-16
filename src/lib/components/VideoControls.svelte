@@ -6,6 +6,7 @@
 	import SpeakerSlash from 'phosphor-svelte/lib/SpeakerSlash';
 	import IconArrowsOutSimple from 'phosphor-svelte/lib/ArrowsOutSimple';
 	import IconArrowsInSimple from 'phosphor-svelte/lib/ArrowsInSimple';
+	import { Eye, EyeSlash } from 'phosphor-svelte';
 
 	import { playerState } from '$lib/stores/playerStore.svelte';
 	import { play, pause, seekTo, setVolume, mute, unMute } from '$lib/actions/playerActions';
@@ -64,7 +65,7 @@
 </script>
 
 <div class="controls-container">
-	<button class="play-pause-btn" on:click={togglePlayPause}>
+	<button class="play-pause-btn" onclick={togglePlayPause}>
 		{#if playerState.isPlaying}
 			<IconPause size="20" weight="bold" />
 		{:else}
@@ -79,14 +80,14 @@
 		max={playerState.duration}
 		value={playerState.currentTime}
 		step="0.1"
-		on:input={handleSeek}
+		oninput={handleSeek}
 		class="seek-bar"
 		style="--progress: {(playerState.currentTime / playerState.duration) * 100 || 0}%;"
 	/>
 	<div class="time-display">{formatTime(playerState.duration)}</div>
 
 	<div class="volume-controls">
-		<button class="volume-btn" on:click={toggleMute}>
+		<button class="volume-btn" onclick={toggleMute}>
 			{#if playerState.isMuted || playerState.volume === 0}
 				<SpeakerSlash size="20" weight="bold" />
 			{:else}
@@ -98,13 +99,46 @@
 			min="0"
 			max="100"
 			bind:value={playerState.volume}
-			on:input={handleVolumeChange}
+			oninput={handleVolumeChange}
 			class="volume-bar"
 			style="--volume-progress: {playerState.volume || 0}%;"
 		/>
 	</div>
 
-	<button class="fullscreen-btn" on:click={toggleFullscreen}>
+	<div class="subtitles-controls">
+		<button
+			class="subtitles-btn"
+			onpointerdown={(event) => {
+				if (event.button === 0) {
+					playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
+				}
+			}}
+		>
+			{#if playerState.showOriginalSubtitle}
+				<Eye size="20" weight="bold" />
+			{:else}
+				<EyeSlash size="20" weight="bold" />
+			{/if}
+			<span>Original</span>
+		</button>
+		<button
+			class="subtitles-btn"
+			onpointerdown={(event) => {
+				if (event.button === 0) {
+					playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
+				}
+			}}
+		>
+			{#if playerState.showTranslatedSubtitle}
+				<Eye size="20" weight="bold" />
+			{:else}
+				<EyeSlash size="20" weight="bold" />
+			{/if}
+			<span>Translated</span>
+		</button>
+	</div>
+
+	<button class="fullscreen-btn" onclick={toggleFullscreen}>
 		{#if playerState.isFullscreen}
 			<IconArrowsInSimple size="20" weight="bold" />
 		{:else}
@@ -129,7 +163,8 @@
 
 	.play-pause-btn,
 	.volume-btn,
-	.fullscreen-btn {
+	.fullscreen-btn,
+	.subtitles-btn {
 		background: none;
 		border: none;
 		color: white;
@@ -145,13 +180,28 @@
 
 	.play-pause-btn:hover,
 	.volume-btn:hover,
-	.fullscreen-btn:hover {
+	.fullscreen-btn:hover,
+	.subtitles-btn:hover {
 		background-color: rgba(var(--primary-color-rgb), 0.3);
 		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 	}
 
-	.fullscreen-btn {
+	.subtitles-controls {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 		margin-left: auto;
+	}
+
+	    .subtitles-btn {
+	        display: flex;
+	        align-items: center;
+	        gap: 0.25rem;
+	        padding: 5px 10px;
+	        border-radius: 5px;
+	    }
+	.fullscreen-btn {
+		margin-left: 1rem;
 	}
 
 	.time-display {
@@ -255,6 +305,14 @@
 	}
 
 	@media (max-width: 768px) {
+		.subtitles-controls {
+			display: none;
+		}
+
+		.player-container.fullscreen .subtitles-controls {
+			display: flex;
+		}
+
 		.controls-container {
 			padding: 5px;
 		}
@@ -274,3 +332,4 @@
 		}
 	}
 </style>
+
