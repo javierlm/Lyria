@@ -119,7 +119,7 @@ const removeJunkSuffixesStep: PipelineStep = (state) => ({
 
 // Tries to find first separator and divide the title between artist and song
 const splitArtistAndTrack: PipelineStep = (state) => {
-	const separators = [' - ', ' – ', '-', ' | ', ' x '];
+	const separators = [' - ', ' – ', ' | ', ' x '];
 
 	for (const sep of separators) {
 		const idx = state.title.indexOf(sep);
@@ -179,9 +179,13 @@ const removePunctuation: PipelineStep = (state) => {
 	const newState = {
 		...state,
 		artist: state.artist
-			.replace(/[!"#$%&'()*+,\-./:;<=>?@[\\]^_`{|}~""''«»—–—´`¨;:！]/g, '')
+			.replace(/-/g, ' ')
+			.replace(/[!"#$%&'()*+,./:;<=>?@[\\]^_`{|}~""''«»—–—´`¨;:！]/g, '')
 			.trim(),
-		track: state.track.replace(/[!"#$%&'()*+,\-./:;<=>?@[\\]^_`{|}~""''«»—–—´`¨;:！]/g, '').trim()
+		track: state.track
+			.replace(/-/g, ' ')
+			.replace(/[!"#$%&'()*+,./:;<=>?@[\\]^_`{|}~""''«»—–—´`¨;:！]/g, '')
+			.trim()
 	};
 	return newState;
 };

@@ -14,7 +14,6 @@ const testCases = [
 		expected: { artist: 'Artist Other Another Singer', track: 'Track' }
 	},
 	{ input: 'Artist – Track', expected: { artist: 'Artist', track: 'Track' } },
-	{ input: 'Artist-Track', expected: { artist: 'Artist', track: 'Track' } },
 	{ input: 'Artist ft. Other - Track', expected: { artist: 'Artist Other', track: 'Track' } },
 	{ input: 'Artist feat. Other - Track', expected: { artist: 'Artist Other', track: 'Track' } },
 	{
@@ -37,6 +36,10 @@ const testCases = [
 	{
 		input: 'BABYMETAL x @ElectricCallboy - RATATATA (OFFICIAL VIDEO)',
 		expected: { artist: 'BABYMETAL x Electric Callboy', track: 'RATATATA' }
+	},
+	{
+		input: 'Artist ft. Other Compound-Surname - Song Name (Official Video)',
+		expected: { artist: 'Artist Other Compound Surname', track: 'Song Name' }
 	}
 ];
 
