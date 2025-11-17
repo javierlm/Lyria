@@ -1,9 +1,4 @@
-import type { TranslationProvider } from './TranslationProvider';
-
-export type LibreTranslateResponse = {
-	translatedText: string[];
-	alternatives?: string[];
-};
+import { type TranslationProvider, type TranslationResponse } from './TranslationProvider';
 
 export type LanguageDetection = {
 	language: string;
@@ -31,7 +26,7 @@ export class LibreTranslateTranslator implements TranslationProvider {
 		sourceLanguage: string,
 		targetLanguage: string | undefined,
 		text: string[]
-	): Promise<LibreTranslateResponse> {
+	): Promise<TranslationResponse> {
 		const body: {
 			q: string[];
 			source: string;
@@ -57,10 +52,10 @@ export class LibreTranslateTranslator implements TranslationProvider {
 			throw new Error(`Translation API failed with status ${res.status}: ${await res.text()}`);
 		}
 
-		const responseData = await res.json();
-		const translatedResponse: LibreTranslateResponse = {
-			translatedText: (responseData as LibreTranslateResponse)?.translatedText || [],
-			alternatives: (responseData as LibreTranslateResponse)?.alternatives || []
+		const responseData: TranslationResponse = await res.json();
+		const translatedResponse: TranslationResponse = {
+			translatedText: responseData?.translatedText || [],
+			alternatives: responseData?.alternatives || []
 		};
 
 		if (translatedResponse.translatedText.length === 0) {

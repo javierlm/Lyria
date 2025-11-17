@@ -3,6 +3,7 @@
 	import { seekTo } from '$lib/actions/playerActions';
 	import { FileText, Translate, Eye, EyeSlash } from 'phosphor-svelte';
 	import LanguageSelector from '$lib/components/LanguageSelector.svelte';
+	import { getPrimaryLanguage } from '$lib/utils';
 
 	let hoveredIndex: number | null = $state(null);
 	let lyricsContainerRef: HTMLDivElement | null = $state(null);
@@ -13,9 +14,19 @@
 	let windowWidth = $state(0);
 
 	const iconSize = $derived(windowWidth > 768 ? 30 : 20);
+	const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
 
 	const adjustedTimes = $derived(
 		playerState.lines.map((line) => Math.max(0, line.startTimeMs + playerState.timingOffset))
+	);
+
+	let shouldDeemphasizeTranslatedLyrics = $derived(
+		!!(
+			playerState.detectedSourceLanguage &&
+			getPrimaryLanguage(playerState.detectedSourceLanguage) ===
+				getPrimaryLanguage(playerState.userLang) &&
+			(playerState.percentageOfDetectedLanguages ?? 0) >= PORCENTAGE_LANGUAGE_THRESHOLD
+		)
 	);
 
 	// Update the active line position whenever currentLineIndex changes or window is resized
@@ -181,6 +192,7 @@
 							type="button"
 							class="lyric-line translated"
 							class:not-synced={!playerState.lyricsAreSynced}
+							class:deemphasized={shouldDeemphasizeTranslatedLyrics}
 						>
 							<span class="lyric-text-container">
 								<span class="sizer">{playerState.translatedLines[i]?.text || ''}</span>
@@ -411,6 +423,11 @@
 		width: 42px;
 		height: 42px;
 		box-sizing: border-box;
+	}
+
+	.lyric-line.deemphasized {
+		color: var(--text-color-light);
+		opacity: 0.4;
 	}
 
 	@media (max-width: 768px) {

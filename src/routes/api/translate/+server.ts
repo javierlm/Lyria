@@ -2,15 +2,14 @@ import { LibreTranslateTranslator } from '$lib/LibreTranslateTranslator';
 import { DeepLTranslator } from '$lib/DeepLTranslator';
 import type { RequestHandler } from './$types';
 import { TRANSLATION_PROVIDER } from '$env/static/private';
-import type { TranslationProvider } from '$lib/TranslationProvider';
+import type { TranslationProvider, TranslationResponse } from '$lib/TranslationProvider';
 import { json } from '@sveltejs/kit';
 import { FileSystemAndMemoryCacheProvider } from '$lib/cache/FsAndMemCacheProvider';
 import { VercelKvCacheProvider } from '$lib/cache/VercelKvCacheProvider';
 import type { CacheProvider } from '$lib/cache/CacheProvider';
-import type { LibreTranslateResponse } from '$lib/LibreTranslateTranslator';
 import { VERCEL } from '$env/static/private';
 
-const cacheProvider: CacheProvider<LibreTranslateResponse> =
+const cacheProvider: CacheProvider<TranslationResponse> =
 	VERCEL === '1' ? new VercelKvCacheProvider() : new FileSystemAndMemoryCacheProvider();
 
 // Initialize the persistent cache when the server starts
@@ -53,7 +52,11 @@ export const POST: RequestHandler = async ({ request }) => {
 		emptyLineIndices.forEach((index) => {
 			reconstructedTranslatedText.splice(index, 0, '');
 		});
-		return json({ translatedText: reconstructedTranslatedText });
+		return json({
+			translatedText: reconstructedTranslatedText,
+			detectedSourceLanguage: cachedResponse.detectedSourceLanguage,
+			percentageOfDetectedLanguages: cachedResponse.percentageOfDetectedLanguages
+		});
 	}
 
 	let translator: TranslationProvider;
@@ -77,7 +80,11 @@ export const POST: RequestHandler = async ({ request }) => {
 			reconstructedTranslatedText.splice(index, 0, '');
 		});
 
-		return json({ translatedText: reconstructedTranslatedText });
+		return json({
+			translatedText: reconstructedTranslatedText,
+			detectedSourceLanguage: translatedResponse.detectedSourceLanguage,
+			percentageOfDetectedLanguages: translatedResponse.percentageOfDetectedLanguages
+		});
 	} catch (error) {
 		console.error('Translation error:', error);
 		return json(

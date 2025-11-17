@@ -2,10 +2,12 @@ import { getSyncedLyrics, type LyricsResult } from '$lib/lrclib';
 import { videoService } from '$lib/data/videoService';
 import { getLanguage, setLanguage } from '$lib/language';
 import { getPlayer, setPlayer, playerState, LyricsStates } from '$lib/stores/playerStore.svelte';
-import { parseTitle, removeJunkSuffixes } from '$lib/utils';
+import { parseTitle, removeJunkSuffixes, getPrimaryLanguage } from '$lib/utils';
+import type { TranslationResponse } from '$lib/TranslationProvider';
 
 let syncInterval: NodeJS.Timeout;
 const HUMAN_REACTION_TIME_MS = 500;
+const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
 
 function loadYouTubeAPI() {
 	return new Promise<void>((resolve) => {
@@ -45,7 +47,10 @@ export async function translateLyrics(targetLang: string) {
 			);
 		}
 
-		const { translatedText } = await response.json();
+		const translationResponse: TranslationResponse = await response.json();
+
+		const { translatedText, detectedSourceLanguage, percentageOfDetectedLanguages } =
+			translationResponse;
 
 		if (!translatedText || !Array.isArray(translatedText)) {
 			throw new Error('Invalid translatedText received from server.');
@@ -57,11 +62,39 @@ export async function translateLyrics(targetLang: string) {
 				text: translatedText[index]
 			}));
 			playerState.isTranslatedTextReady = true;
+			playerState.detectedSourceLanguage = detectedSourceLanguage;
+			playerState.percentageOfDetectedLanguages = percentageOfDetectedLanguages;
+
+			updateTranslatedSubtitleVisibility(
+				targetLang,
+				detectedSourceLanguage,
+				percentageOfDetectedLanguages
+			);
 		} else {
 			console.warn('Mismatch in line count between original and translated lyrics');
 		}
 	} catch (error) {
 		console.error('Translation failed:', error);
+	}
+}
+
+function updateTranslatedSubtitleVisibility(
+	targetLang: string,
+	detectedSourceLanguage: string | undefined,
+	percentageOfDetectedLanguages: number | undefined
+) {
+	const isSameLanguage =
+		detectedSourceLanguage &&
+		getPrimaryLanguage(detectedSourceLanguage) === getPrimaryLanguage(targetLang);
+
+	if (
+		detectedSourceLanguage &&
+		(percentageOfDetectedLanguages ?? 0) >= PORCENTAGE_LANGUAGE_THRESHOLD &&
+		isSameLanguage
+	) {
+		playerState.showTranslatedSubtitle = false;
+	} else {
+		playerState.showTranslatedSubtitle = true;
 	}
 }
 
@@ -124,6 +157,9 @@ function resetPlayerState() {
 	playerState.duration = 0;
 	playerState.currentTime = 0;
 	playerState.isPlaying = false;
+	playerState.detectedSourceLanguage = undefined;
+	playerState.percentageOfDetectedLanguages = undefined;
+	playerState.showTranslatedSubtitle = true;
 }
 
 export async function loadVideo(videoId: string, elementId: string, initialOffset?: number) {

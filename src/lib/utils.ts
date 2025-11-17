@@ -225,6 +225,11 @@ export function extractVideoId(url: string): string | null {
 	return match ? match[1] : null;
 }
 
+export function getPrimaryLanguage(lang: string): string {
+	if (!lang) return '';
+	return lang.split('-')[0].toLowerCase();
+}
+
 export function debounce<T extends (...args: unknown[]) => void>(
 	func: T,
 	delay: number
