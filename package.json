@@ -12,7 +12,8 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint .",
-    "test": "vitest"
+    "test": "vitest",
+    "typesafe-i18n": "typesafe-i18n"
   },
   "devDependencies": {
     "@eslint/compat": "^1.4.1",
@@ -41,6 +42,7 @@
     "@types/youtube": "^0.1.2",
     "@upstash/redis": "^1.35.6",
     "deepl-node": "^1.21.0",
-    "events": "^3.3.0"
+    "events": "^3.3.0",
+    "typesafe-i18n": "^5.26.2"
   }
 }

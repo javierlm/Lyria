@@ -1,20 +1,20 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { LibreTranslateResponse } from '../LibreTranslateTranslator';
+import type { TranslationResponse } from '../TranslationProvider';
 import type { CacheProvider, CacheValue } from './CacheProvider';
 
 const CACHE_DIR = path.join(process.cwd(), 'cache');
 const CACHE_FILE = path.join(CACHE_DIR, 'translationCache.json');
 
-export class FileSystemAndMemoryCacheProvider implements CacheProvider<LibreTranslateResponse> {
-	private cache = new Map<string, CacheValue<LibreTranslateResponse>>();
+export class FileSystemAndMemoryCacheProvider implements CacheProvider<TranslationResponse> {
+	private cache = new Map<string, CacheValue<TranslationResponse>>();
 	private saveTimeout: NodeJS.Timeout | null = null;
 
 	async initialize(): Promise<void> {
 		await this.loadCache();
 	}
 
-	async get(key: string): Promise<LibreTranslateResponse | undefined> {
+	async get(key: string): Promise<TranslationResponse | undefined> {
 		const entry = this.cache.get(key);
 		if (!entry) return undefined;
 
@@ -29,10 +29,10 @@ export class FileSystemAndMemoryCacheProvider implements CacheProvider<LibreTran
 
 	async set(
 		key: string,
-		value: LibreTranslateResponse,
+		value: TranslationResponse,
 		opts?: { ttlMs?: number | null; meta?: Record<string, unknown> }
 	): Promise<void> {
-		const entry: CacheValue<LibreTranslateResponse> = {
+		const entry: CacheValue<TranslationResponse> = {
 			value,
 			expiresAt: opts?.ttlMs ? Date.now() + opts.ttlMs : null,
 			meta: opts?.meta
@@ -63,7 +63,7 @@ export class FileSystemAndMemoryCacheProvider implements CacheProvider<LibreTran
 			await fs.mkdir(CACHE_DIR, { recursive: true });
 			const data = await fs.readFile(CACHE_FILE, 'utf-8');
 			const parsedData = JSON.parse(data);
-			this.cache = new Map<string, CacheValue<LibreTranslateResponse>>(parsedData);
+			this.cache = new Map<string, CacheValue<TranslationResponse>>(parsedData);
 			console.log('Translation cache loaded from disk.');
 		} catch (error: unknown) {
 			if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
@@ -71,7 +71,7 @@ export class FileSystemAndMemoryCacheProvider implements CacheProvider<LibreTran
 			} else {
 				console.error('Error loading translation cache:', error);
 			}
-			this.cache = new Map<string, CacheValue<LibreTranslateResponse>>();
+			this.cache = new Map<string, CacheValue<TranslationResponse>>();
 		}
 	}
 

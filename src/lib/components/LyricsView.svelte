@@ -4,6 +4,7 @@
 	import { FileText, Translate, Eye, EyeSlash } from 'phosphor-svelte';
 	import LanguageSelector from '$lib/components/LanguageSelector.svelte';
 	import { getPrimaryLanguage } from '$lib/utils';
+	import { LL } from '$i18n/i18n-svelte';
 
 	let hoveredIndex: number | null = $state(null);
 	let lyricsContainerRef: HTMLDivElement | null = $state(null);
@@ -89,8 +90,8 @@
 					}
 				}}
 				aria-label={playerState.showOriginalSubtitle
-					? 'Hide original subtitles'
-					: 'Show original subtitles'}
+					? $LL.lyrics.hideOriginal()
+					: $LL.lyrics.showOriginal()}
 			>
 				{#if playerState.showOriginalSubtitle}
 					<Eye size={20} />
@@ -107,8 +108,8 @@
 					}
 				}}
 				aria-label={playerState.showTranslatedSubtitle
-					? 'Hide translated subtitles'
-					: 'Show translated subtitles'}
+					? $LL.lyrics.hideTranslated()
+					: $LL.lyrics.showTranslated()}
 			>
 				{#if playerState.showTranslatedSubtitle}
 					<Eye size={20} />
@@ -122,12 +123,13 @@
 	{/if}
 	<div class="lyrics-header">
 		<h2 class="original-header">
-			<FileText size={iconSize} weight="bold" /> <span class="header-text">Original Lyrics</span>
+			<FileText size={iconSize} weight="bold" />
+			<span class="header-text">{$LL.lyrics.original()}</span>
 		</h2>
 		<div class="translated-header-container">
 			<h2 class="translated-header">
 				<Translate size={iconSize} weight="bold" />
-				<span class="header-text">Translated Lyrics</span>
+				<span class="header-text">{$LL.lyrics.translated()}</span>
 			</h2>
 		</div>
 	</div>
@@ -135,12 +137,12 @@
 	<div class="lyrics-content" bind:this={lyricsContentRef}>
 		{#if playerState.lyricsState === LyricsStates.Loading}
 			<div class="no-lyrics-message">
-				<p>Lyrics on their way! Just a little wait!... ✍️</p>
+				<p>{$LL.lyrics.loading()}</p>
 			</div>
 		{:else if playerState.lyricsState === LyricsStates.NotFound}
 			<div class="no-lyrics-message">
 				<FileText size={iconSize * 2} weight="bold" />
-				<p>No lyrics found for this song</p>
+				<p>{$LL.lyrics.notFound()}</p>
 			</div>
 		{:else if playerState.lyricsState === LyricsStates.Found}
 			{#if playerState.currentLineIndex !== null && playerState.currentLineIndex >= 0 && activeLineHeight > 0}
@@ -425,7 +427,7 @@
 		box-sizing: border-box;
 	}
 
-	.lyric-line.deemphasized {
+	.lyric-line.deemphasized .content {
 		color: var(--text-color-light);
 		opacity: 0.4;
 	}

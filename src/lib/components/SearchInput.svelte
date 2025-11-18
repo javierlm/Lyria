@@ -10,6 +10,7 @@
 	import { page } from '$app/stores';
 	import { playerState } from '$lib/stores/playerStore.svelte';
 	import RecentVideoItem from './RecentVideoItem.svelte';
+	import { LL } from '$i18n/i18n-svelte';
 
 	export let centered = false;
 
@@ -109,7 +110,7 @@
 				<input
 					type="text"
 					name="url"
-					placeholder="Enter YouTube URL"
+					placeholder={$LL.search.placeholder()}
 					use:autofocus
 					bind:this={searchInputRef}
 					on:focus={loadRecentVideos}
@@ -117,7 +118,8 @@
 				/>
 
 				<button type="submit">
-					<IconPlay size="20" weight="bold" /> <span class="search-button-text">Load Video</span>
+					<IconPlay size="20" weight="bold" />
+					<span class="search-button-text">{$LL.search.loadVideo()}</span>
 				</button>
 			</form>
 
@@ -367,6 +369,8 @@
 		.search-button-text {
 			display: none;
 		}
+
+
 
 		.recent-videos-dropdown {
 			--row-height: 59px;

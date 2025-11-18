@@ -2,8 +2,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { playerState } from '$lib/stores/playerStore.svelte';
 	import { handleLanguageChange as dispatchLangChange } from '$lib/actions/playerActions';
-	import { supportedLanguages } from '$lib/language';
 	import { CaretDown } from 'phosphor-svelte';
+	import LL from '$i18n/i18n-svelte';
 
 	const languageFlags: { [key: string]: string } = {
 		AR: 'sa', // Saudi Arabia
@@ -48,13 +48,13 @@
 		'ZH-HANT': 'tw' // Taiwan (traditional)
 	};
 
-	const languages = Array.from(supportedLanguages.entries())
-		.map(([code, name]) => ({
+	const languages = $derived(
+		Object.keys($LL.lyricsLanguages).map((code) => ({
 			code,
-			name,
+			name: $LL.lyricsLanguages[code as keyof typeof $LL.lyricsLanguages](),
 			flagClass: languageFlags[code] || 'unknown' // Use a default class if not found
 		}))
-		.filter((lang) => lang.flagClass !== 'unknown');
+	);
 
 	let dropdownOpen = $state(false);
 	let maxDropdownWidth = $state(0); // State to store the maximum width
@@ -120,7 +120,10 @@
 	});
 </script>
 
-<div class="select-wrapper" style="--max-dropdown-width: {maxDropdownWidth ? `${maxDropdownWidth}px` : 'auto'};">
+<div
+	class="select-wrapper"
+	style="--max-dropdown-width: {maxDropdownWidth ? `${maxDropdownWidth}px` : 'auto'};"
+>
 	<button class="select-button" onclick={() => (dropdownOpen = !dropdownOpen)}>
 		<div class="selected-option">
 			<span class="flag-icon {currentLang.flagClass}"></span>

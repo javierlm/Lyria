@@ -5,6 +5,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { debounce } from '$lib/utils';
+	import LL from '$i18n/i18n-svelte';
 
 	let editing = $state(false);
 	let inputElement: HTMLInputElement | null = $state(null);
@@ -81,6 +82,8 @@
 			onmousedown={() => startDelayChange(-100)}
 			onmouseup={stopDelayChange}
 			onmouseleave={stopDelayChange}
+			aria-label={$LL.controls.decreaseTimingOffset()}
+			title={$LL.controls.decreaseTimingOffset()}
 		>
 			<MinusCircle size="24" weight="bold" />
 		</button>
@@ -108,6 +111,8 @@
 			onmousedown={() => startDelayChange(100)}
 			onmouseup={stopDelayChange}
 			onmouseleave={stopDelayChange}
+			aria-label={$LL.controls.increaseTimingOffset()}
+			title={$LL.controls.increaseTimingOffset()}
 		>
 			<PlusCircle size="24" weight="bold" />
 		</button>
@@ -116,9 +121,11 @@
 		onclick={syncTimingToFirstLine}
 		disabled={!playerState.lyricsAreSynced}
 		class="sync-button"
+		aria-label={$LL.controls.syncWithCurrentTime()}
+		title={$LL.controls.syncWithCurrentTime()}
 	>
 		<ArrowsClockwise size="20" weight="bold" />
-		Sync with current time
+		{$LL.controls.syncWithCurrentTime()}
 	</button>
 </div>
 

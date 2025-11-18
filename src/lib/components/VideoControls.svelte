@@ -7,6 +7,7 @@
 	import IconArrowsOutSimple from 'phosphor-svelte/lib/ArrowsOutSimple';
 	import IconArrowsInSimple from 'phosphor-svelte/lib/ArrowsInSimple';
 	import { Eye, EyeSlash } from 'phosphor-svelte';
+	import LL from '$i18n/i18n-svelte';
 
 	import { playerState } from '$lib/stores/playerStore.svelte';
 	import { play, pause, seekTo, setVolume, mute, unMute } from '$lib/actions/playerActions';
@@ -65,7 +66,7 @@
 </script>
 
 <div class="controls-container">
-	<button class="play-pause-btn" onclick={togglePlayPause}>
+	<button class="play-pause-btn" onclick={togglePlayPause} aria-label={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()} title={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}>
 		{#if playerState.isPlaying}
 			<IconPause size="20" weight="bold" />
 		{:else}
@@ -87,7 +88,7 @@
 	<div class="time-display">{formatTime(playerState.duration)}</div>
 
 	<div class="volume-controls">
-		<button class="volume-btn" onclick={toggleMute}>
+		<button class="volume-btn" onclick={toggleMute} aria-label={playerState.isMuted || playerState.volume === 0 ? $LL.controls.unmute() : $LL.controls.mute()} title={playerState.isMuted || playerState.volume === 0 ? $LL.controls.unmute() : $LL.controls.mute()}>
 			{#if playerState.isMuted || playerState.volume === 0}
 				<SpeakerSlash size="20" weight="bold" />
 			{:else}
@@ -113,13 +114,14 @@
 					playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
 				}
 			}}
+			title={playerState.showOriginalSubtitle ? $LL.lyrics.hideOriginal() : $LL.lyrics.showOriginal()}
 		>
 			{#if playerState.showOriginalSubtitle}
 				<Eye size="20" weight="bold" />
 			{:else}
 				<EyeSlash size="20" weight="bold" />
 			{/if}
-			<span>Original</span>
+			<span>{$LL.controls.original()}</span>
 		</button>
 		<button
 			class="subtitles-btn"
@@ -128,17 +130,18 @@
 					playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
 				}
 			}}
+			title={playerState.showTranslatedSubtitle ? $LL.lyrics.hideTranslated() : $LL.lyrics.showTranslated()}
 		>
 			{#if playerState.showTranslatedSubtitle}
 				<Eye size="20" weight="bold" />
 			{:else}
 				<EyeSlash size="20" weight="bold" />
 			{/if}
-			<span>Translated</span>
+			<span>{$LL.controls.translated()}</span>
 		</button>
 	</div>
 
-	<button class="fullscreen-btn" onclick={toggleFullscreen}>
+	<button class="fullscreen-btn" onclick={toggleFullscreen} aria-label={playerState.isFullscreen ? $LL.controls.exitFullscreen() : $LL.controls.enterFullscreen()} title={playerState.isFullscreen ? $LL.controls.exitFullscreen() : $LL.controls.enterFullscreen()}>
 		{#if playerState.isFullscreen}
 			<IconArrowsInSimple size="20" weight="bold" />
 		{:else}

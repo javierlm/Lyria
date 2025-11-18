@@ -318,7 +318,6 @@ async function addCurrentVideoToRecents(videoId: string) {
 }
 
 async function handlePlayerReady(event: YT.PlayerEvent, videoId: string) {
-	console.log('YouTube Player onReady event fired for videoId:', videoId);
 	const player = event.target;
 	setPlayer(player);
 

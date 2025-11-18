@@ -5,8 +5,8 @@
 	import PlayerView from '$lib/components/PlayerView.svelte';
 	import TimingControls from '$lib/components/TimingControls.svelte';
 	import LyricsView from '$lib/components/LyricsView.svelte';
-	import BackToTop from '$lib/components/BackToTop.svelte';
 	import { Copy, Check } from 'phosphor-svelte';
+	import LL from '$i18n/i18n-svelte';
 
 	let windowWidth = $state(0);
 	const iconSize = $derived(windowWidth > 768 ? 24 : 16);
@@ -37,7 +37,7 @@
 	<div class="title-container">
 		<h1>{playerState.artist ? `${playerState.artist} - ${playerState.track}` : '\u00A0'}</h1>
 		{#if playerState.artist && playerState.track}
-			<button onclick={copyURL} class="copy-button" aria-label="Copy URL">
+			<button onclick={copyURL} class="copy-button" aria-label={$LL.controls.copyUrl()}>
 				{#if copied}
 					<Check size={iconSize} />
 				{:else}
@@ -57,7 +57,6 @@
 
 	<LyricsView />
 </div>
-<BackToTop />
 
 <style>
 	.logo-container-main {

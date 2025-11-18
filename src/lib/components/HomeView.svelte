@@ -37,7 +37,7 @@
 		width: 100%;
 		max-width: 800px;
 		padding: 0 1rem;
-		box-sizing: border-box;
+		box-sizing: border-sizing;
 	}
 
 	.logo-container {
