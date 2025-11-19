@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { CaretUp } from 'phosphor-svelte';
+	import { playerState } from '$lib/stores/playerStore.svelte';
 
-	let showButton = false;
+	let showButton = $state(false);
+	let isVisible = $derived(showButton && !playerState.isFullscreen);
 
 	function scrollToTop() {
 		window.scrollTo({
@@ -35,8 +37,8 @@
 	});
 </script>
 
-{#if showButton}
-	<button class="back-to-top show" on:click={scrollToTop}>
+{#if isVisible}
+	<button class="back-to-top show" onclick={scrollToTop}>
 		<CaretUp size={32} />
 	</button>
 {/if}
