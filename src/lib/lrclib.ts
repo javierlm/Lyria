@@ -208,6 +208,40 @@ function calculateWordBasedMatch(
 	return Math.min(score, FULL_SIMILARITY);
 }
 
+function calculateDurationScore(targetDuration: number, resultDuration: number): number {
+	if (!targetDuration || targetDuration <= 0) return 1.0;
+
+	const diff = targetDuration - resultDuration;
+	const absDiff = Math.abs(diff);
+
+	// Case 0: Perfect match (or very close)
+	// If the difference is very small (e.g. < 5 seconds), give a big bonus
+	if (absDiff < 5) return 1.15;
+
+	// Case 1: Video is longer than lyrics (diff >= 0)
+	// This is common (intros, outros, credits).
+	if (diff >= 0) {
+		// Tier 2: Close match (within 60s)
+		// Give a moderate bonus to prefer this over a "safe but far" match
+		if (diff <= 60) return 1.1;
+
+		// Tier 3: Safe match (within 3 minutes)
+		if (diff <= 180) return 1.0;
+
+		// Tier 4: Long match
+		// If it's more than 3 minutes longer, start penalizing slowly
+		const extraDiff = diff - 180;
+		const tolerance = 180; // Slow decay
+		return 1 / (1 + Math.pow(extraDiff / tolerance, 2));
+	}
+
+	// Case 2: Video is shorter than lyrics (diff < 0)
+	// This usually means the video is a cut version or wrong match. Be strict.
+	// We allow a small margin (e.g. 10s) for metadata inconsistencies.
+	const tolerance = 15; // Strict decay
+	return 1 / (1 + Math.pow(absDiff / tolerance, 2));
+}
+
 // Calculate the best score considering multiple scenarios
 function calculateFlexibleScore(
 	searchTrack: string,
@@ -238,10 +272,38 @@ function calculateFlexibleScore(
 	return scores.length > 0 ? Math.min(Math.max(...scores), FULL_SIMILARITY) : 0;
 }
 
+/* Get the true duration of the video from the synced lyrics 
+	Sometimes lyric's API duration attribute is not correct, so we need to get the last timestamp
+	for a more accurate duration
+*/
+function getTrueDuration(result: LRCLibResponse): number {
+	if (!result.syncedLyrics) return result.duration;
+
+	const lastBracketIndex = result.syncedLyrics.lastIndexOf('[');
+	if (lastBracketIndex === -1) return result.duration;
+
+	const potentialTimestamp = result.syncedLyrics.substring(lastBracketIndex);
+	const match = potentialTimestamp.match(/^\[(\d+):(\d+(\.\d+)?)\]/);
+
+	if (match) {
+		const minutes = parseInt(match[1]);
+		const seconds = parseFloat(match[2]);
+		const maxTime = minutes * 60 + seconds;
+
+		// Only use maxTime if it's significantly larger than duration (e.g. > 10s difference)
+		if (maxTime > result.duration + 10) {
+			return maxTime;
+		}
+	}
+
+	return result.duration;
+}
+
 function findBestMatch(
 	results: LRCLibResponse[],
 	track: string,
-	artist: string
+	artist: string,
+	targetDuration: number
 ): LRCLibResponse | undefined {
 	let bestOverallMatch: LRCLibResponse | undefined;
 	let highestOverallSimilarity = -1;
@@ -257,10 +319,15 @@ function findBestMatch(
 	console.log('📊 Threshold:', baseThreshold);
 
 	for (const result of results) {
-		const effectiveSimilarity = calculateFlexibleScore(track, artist, result);
+		const textSimilarity = calculateFlexibleScore(track, artist, result);
+		const trueDuration = getTrueDuration(result);
+		const durationScore = calculateDurationScore(targetDuration, trueDuration);
+
+		// Combined score
+		const effectiveSimilarity = textSimilarity * durationScore;
 
 		console.log(
-			`  - ${result.artistName} - ${result.trackName}: ${effectiveSimilarity.toFixed(3)}`
+			`  - ${result.artistName} - ${result.trackName}: ${effectiveSimilarity.toFixed(3)} (Text: ${textSimilarity.toFixed(3)}, Dur: ${durationScore.toFixed(3)}) - ID: ${result.id}`
 		);
 
 		if (effectiveSimilarity >= baseThreshold) {
@@ -283,7 +350,7 @@ function findBestMatch(
 			finalMatch.artistName,
 			'-',
 			finalMatch.trackName,
-			`(${highestOverallSimilarity.toFixed(3)})`
+			`(${highestOverallSimilarity.toFixed(3)}) - ID: ${finalMatch.id}`
 		);
 	} else {
 		console.log('❌ No suitable match found');
@@ -387,7 +454,7 @@ export async function getSyncedLyrics(
 		const data: LRCLibResponse[] = await res.json();
 		console.log(`📦 Results received: ${data.length}`);
 
-		const finalMatch = findBestMatch(data, sanitizedTrack, sanitizedArtist);
+		const finalMatch = findBestMatch(data, sanitizedTrack, sanitizedArtist, duration);
 
 		if (finalMatch) {
 			return parseLyrics(finalMatch);
