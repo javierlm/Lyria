@@ -1,11 +1,11 @@
-import type { Translation } from '../i18n-types'
+import type { Translation } from '../i18n-types';
 
 const en = {
 	appName: 'Lyria',
 	// Search
 	search: {
 		placeholder: 'Enter YouTube URL',
-		loadVideo: 'Load Video',
+		loadVideo: 'Load Video'
 	},
 	// Lyrics
 	lyrics: {
@@ -16,7 +16,7 @@ const en = {
 		hideOriginal: 'Hide original subtitles',
 		showOriginal: 'Show original subtitles',
 		hideTranslated: 'Hide translated subtitles',
-		showTranslated: 'Show translated subtitles',
+		showTranslated: 'Show translated subtitles'
 	},
 	// Video Controls
 	controls: {
@@ -32,7 +32,7 @@ const en = {
 		enterFullscreen: 'Enter fullscreen',
 		exitFullscreen: 'Exit fullscreen',
 		decreaseTimingOffset: 'Decrease timing offset',
-		increaseTimingOffset: 'Increase timing offset',
+		increaseTimingOffset: 'Increase timing offset'
 	},
 	// Footer
 	footer: {
@@ -40,11 +40,11 @@ const en = {
 		license: 'Released under the {license} License',
 		author: 'Created with passion by {author}',
 		mit: 'MIT',
-		authorName: 'Javier López Medina',
+		authorName: 'Javier López Medina'
 	},
 	languages: {
 		en: 'English',
-		es: 'Spanish',
+		es: 'Spanish'
 	},
 	lyricsLanguages: {
 		AR: 'Arabic',
@@ -84,7 +84,7 @@ const en = {
 		VI: 'Vietnamese',
 		ZH: 'Chinese',
 		'ZH-HANS': 'Chinese (simplified)',
-		'ZH-HANT': 'Chinese (traditional)',
+		'ZH-HANT': 'Chinese (traditional)'
 	},
 	time: {
 		secondsAgo: '{0} second{{s}} ago',
@@ -93,8 +93,8 @@ const en = {
 		daysAgo: '{0} day{{s}} ago',
 		weeksAgo: '{0} week{{s}} ago',
 		monthsAgo: '{0} month{{s}} ago',
-		yearsAgo: '{0} year{{s}} ago',
-	},
-} satisfies Translation
+		yearsAgo: '{0} year{{s}} ago'
+	}
+} satisfies Translation;
 
-export default en
+export default en;

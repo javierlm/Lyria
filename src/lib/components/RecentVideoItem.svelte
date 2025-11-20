@@ -7,9 +7,10 @@
 
 	type Props = {
 		video: RecentVideo;
+		isFavorite?: boolean;
 	};
 
-	let { video }: Props = $props();
+	let { video, isFavorite = false }: Props = $props();
 
 	const dispatch = createEventDispatcher<{
 		delete: string;
@@ -48,7 +49,7 @@
 <div class="swipe-container" use:swipe={{ onSwipe, onSwipeEnd }}>
 	<div class="swipe-content" style="transform: translateX({translateX}px)">
 		<button class="recent-video-item" onclick={handleSelect} tabindex="0">
-			<VideoItem {video}>
+			<VideoItem {video} {isFavorite}>
 				{#snippet children()}
 					<div class="desktop-delete-action">
 						<button class="delete-button" onclick={handleDelete} aria-label="Delete video">

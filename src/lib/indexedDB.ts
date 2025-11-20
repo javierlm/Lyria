@@ -1,10 +1,12 @@
-import type { IVideoRepository, RecentVideo } from './data/IVideoRepository';
+import type { IVideoRepository, RecentVideo, FavoriteVideo } from './data/IVideoRepository';
+import { playerState } from './stores/playerStore.svelte';
 
 const DB_NAME = 'LyricsTubeDB';
 const VIDEO_DELAYS_STORE = 'videoDelays';
 const RECENT_VIDEOS_STORE = 'recentVideos';
-const DB_VERSION = 3;
-const RECENT_VIDEOS_LIMIT = 50;
+const FAVORITE_VIDEOS_STORE = 'favoriteVideos';
+const DB_VERSION = 4;
+const RECENT_VIDEOS_LIMIT = 100;
 
 let db: IDBDatabase | null = null;
 
@@ -47,6 +49,13 @@ class IndexedDBVideoRepository implements IVideoRepository {
 							cursor.continue();
 						}
 					};
+				}
+
+				if (!db.objectStoreNames.contains(FAVORITE_VIDEOS_STORE)) {
+					const favoriteVideosStore = db.createObjectStore(FAVORITE_VIDEOS_STORE, {
+						keyPath: 'videoId'
+					});
+					favoriteVideosStore.createIndex('addedAt', 'addedAt', { unique: false });
 				}
 			};
 
@@ -176,6 +185,79 @@ class IndexedDBVideoRepository implements IVideoRepository {
 			request.onsuccess = () => resolve();
 			request.onerror = (event) =>
 				reject('Error deleting recent video: ' + (event.target as IDBRequest).error);
+		});
+	}
+
+	async addFavoriteVideo(videoId: string): Promise<void> {
+		const db = await this.openDB();
+		const transaction = db.transaction([FAVORITE_VIDEOS_STORE], 'readwrite');
+		const store = transaction.objectStore(FAVORITE_VIDEOS_STORE);
+
+		return new Promise((resolve, reject) => {
+			const newFavoriteVideo: FavoriteVideo = {
+				videoId: videoId,
+				artist: playerState.artist,
+				track: playerState.track,
+				timestamp: Date.now(),
+				addedAt: Date.now(),
+				thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+			};
+			const request = store.put(newFavoriteVideo);
+			request.onsuccess = () => resolve();
+			request.onerror = (event) =>
+				reject('Error adding favorite video: ' + (event.target as IDBRequest).error);
+		});
+	}
+
+	async removeFavoriteVideo(videoId: string): Promise<void> {
+		const db = await this.openDB();
+		const transaction = db.transaction([FAVORITE_VIDEOS_STORE], 'readwrite');
+		const store = transaction.objectStore(FAVORITE_VIDEOS_STORE);
+
+		return new Promise((resolve, reject) => {
+			const request = store.delete(videoId);
+			request.onsuccess = () => resolve();
+			request.onerror = (event) =>
+				reject('Error removing favorite video: ' + (event.target as IDBRequest).error);
+		});
+	}
+
+	async getFavoriteVideos(): Promise<FavoriteVideo[]> {
+		const db = await this.openDB();
+		const transaction = db.transaction([FAVORITE_VIDEOS_STORE], 'readonly');
+		const store = transaction.objectStore(FAVORITE_VIDEOS_STORE);
+		const index = store.index('addedAt');
+
+		return new Promise((resolve, reject) => {
+			const request = index.openCursor(null, 'prev');
+			const videos: FavoriteVideo[] = [];
+			request.onsuccess = (event) => {
+				const cursor = (event.target as IDBRequest).result;
+				if (cursor) {
+					videos.push(cursor.value);
+					cursor.continue();
+				} else {
+					resolve(videos);
+				}
+			};
+			request.onerror = (event) =>
+				reject('Error getting favorite videos: ' + (event.target as IDBRequest).error);
+		});
+	}
+
+	async isFavorite(videoId: string): Promise<boolean> {
+		const db = await this.openDB();
+		const transaction = db.transaction([FAVORITE_VIDEOS_STORE], 'readonly');
+		const store = transaction.objectStore(FAVORITE_VIDEOS_STORE);
+
+		return new Promise((resolve, reject) => {
+			const request = store.get(videoId);
+			request.onsuccess = (event) => {
+				const result = (event.target as IDBRequest).result;
+				resolve(!!result);
+			};
+			request.onerror = (event) =>
+				reject('Error checking if video is favorite: ' + (event.target as IDBRequest).error);
 		});
 	}
 }

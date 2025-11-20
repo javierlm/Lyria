@@ -1,16 +1,18 @@
 <script lang="ts">
 	import type { RecentVideo } from '$lib/data/IVideoRepository';
 	import IconClock from 'phosphor-svelte/lib/Clock';
+	import IconHeart from 'phosphor-svelte/lib/Heart';
 	import type { Snippet } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import LL from '$i18n/i18n-svelte';
 
 	type Props = {
 		video: RecentVideo;
+		isFavorite?: boolean;
 		children?: Snippet;
 	};
 
-	let { video, children }: Props = $props();
+	let { video, isFavorite = false, children }: Props = $props();
 
 	function formatTimeAgo(timestamp: number): string {
 		const now = Date.now();
@@ -50,7 +52,7 @@
 	}
 </script>
 
-<div class="video-item" transition:fly={{ x: 100, duration: 300 }}>
+<div class="video-item" class:favorite={isFavorite} transition:fly={{ x: 100, duration: 300 }}>
 	{#if video.thumbnailUrl}
 		<img src={video.thumbnailUrl} alt={video.track} class="video-thumbnail" />
 	{/if}
@@ -60,9 +62,16 @@
 			<span class="video-track">{video.track}</span>
 		</div>
 
-		<div class="video-time-ago">
-			<IconClock size="16" weight="bold" />
-			<span>{formatTimeAgo(video.timestamp)}</span>
+		<div class="video-meta">
+			<div class="video-time-ago">
+				<IconClock size="16" weight="bold" />
+				<span>{formatTimeAgo(video.timestamp)}</span>
+			</div>
+			{#if isFavorite}
+				<div class="video-favorite">
+					<IconHeart size="20" weight="fill" color="var(--primary-color)" />
+				</div>
+			{/if}
 		</div>
 	</div>
 	<div class="video-actions">
@@ -88,6 +97,10 @@
 		overflow: hidden;
 		gap: 1rem;
 		min-height: 88px;
+	}
+
+	.video-item.favorite {
+		background-color: rgba(var(--primary-color-rgb), 0.08);
 	}
 
 	.video-item:last-child {
@@ -127,6 +140,12 @@
 		font-weight: 600;
 	}
 
+	.video-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
 	.video-time-ago {
 		display: flex;
 		align-items: center;
@@ -134,6 +153,12 @@
 		color: #6b7280;
 		font-size: 0.875rem;
 		flex-shrink: 0;
+	}
+
+	.video-favorite {
+		display: flex;
+		align-items: center;
+		color: var(--primary-color);
 	}
 
 	.video-actions {

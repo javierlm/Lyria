@@ -1,11 +1,11 @@
-import type { Translation } from '../i18n-types'
+import type { Translation } from '../i18n-types';
 
 const es = {
 	appName: 'Lyria',
 	// Search
 	search: {
 		placeholder: 'Introduce la URL de YouTube',
-		loadVideo: 'Cargar Video',
+		loadVideo: 'Cargar Video'
 	},
 	// Lyrics
 	lyrics: {
@@ -16,7 +16,7 @@ const es = {
 		hideOriginal: 'Ocultar subtítulos originales',
 		showOriginal: 'Mostrar subtítulos originales',
 		hideTranslated: 'Ocultar subtítulos traducidos',
-		showTranslated: 'Mostrar subtítulos traducidos',
+		showTranslated: 'Mostrar subtítulos traducidos'
 	},
 	// Video Controls
 	controls: {
@@ -24,6 +24,7 @@ const es = {
 		translated: 'Traducido',
 		copyUrl: 'Copiar URL',
 		syncWithCurrentTime: 'Sincronizar con el tiempo actual',
+		deleteVideo: 'Eliminar video',
 		play: 'Reproducir',
 		pause: 'Pausar',
 		mute: 'Silenciar',
@@ -31,7 +32,7 @@ const es = {
 		enterFullscreen: 'Pantalla completa',
 		exitFullscreen: 'Salir de pantalla completa',
 		decreaseTimingOffset: 'Disminuir desfase de tiempo',
-		increaseTimingOffset: 'Aumentar desfase de tiempo',
+		increaseTimingOffset: 'Aumentar desfase de tiempo'
 	},
 	// Footer
 	footer: {
@@ -39,7 +40,11 @@ const es = {
 		license: 'Publicado bajo la licencia {license}',
 		author: 'Creado con pasión por {author}',
 		mit: 'MIT',
-		authorName: 'Javier López Medina',
+		authorName: 'Javier López Medina'
+	},
+	languages: {
+		en: 'Inglés',
+		es: 'Español'
 	},
 	lyricsLanguages: {
 		AR: 'Árabe',
@@ -79,7 +84,7 @@ const es = {
 		VI: 'Vietnamita',
 		ZH: 'Chino',
 		'ZH-HANS': 'Chino (simplificado)',
-		'ZH-HANT': 'Chino (tradicional)',
+		'ZH-HANT': 'Chino (tradicional)'
 	},
 	time: {
 		secondsAgo: 'hace {0} segundo{{s}}',
@@ -88,8 +93,8 @@ const es = {
 		daysAgo: 'hace {0} día{{s}}',
 		weeksAgo: 'hace {0} semana{{s}}',
 		monthsAgo: 'hace {0} mes{{es}}',
-		yearsAgo: 'hace {0} año{{s}}',
-	},
-} satisfies Translation
+		yearsAgo: 'hace {0} año{{s}}'
+	}
+} satisfies Translation;
 
-export default es
+export default es;

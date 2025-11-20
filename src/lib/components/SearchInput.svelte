@@ -18,7 +18,7 @@
 	let searchContainerRef: HTMLDivElement;
 	let searchInputRef: HTMLInputElement;
 	let showRecentVideos = false;
-	let recentVideos: RecentVideo[] = [];
+	let recentVideos: (RecentVideo & { isFavorite?: boolean })[] = [];
 
 	function autofocus(node: HTMLElement) {
 		node.focus();
@@ -51,7 +51,24 @@
 	}
 
 	async function loadRecentVideos() {
-		recentVideos = await videoService.getRecentVideos();
+		const [recents, favorites] = await Promise.all([
+			videoService.getRecentVideos(),
+			videoService.getFavoriteVideos()
+		]);
+
+		const videoMap = new Map<string, RecentVideo & { isFavorite?: boolean }>();
+
+		favorites.forEach((fav) => {
+			videoMap.set(fav.videoId, { ...fav, isFavorite: true });
+		});
+
+		recents.forEach((recent) => {
+			const existing = videoMap.get(recent.videoId);
+			videoMap.set(recent.videoId, { ...recent, isFavorite: existing?.isFavorite ?? false });
+		});
+
+		recentVideos = Array.from(videoMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+
 		showRecentVideos = recentVideos.length > 0;
 	}
 
@@ -132,6 +149,7 @@
 					{#each recentVideos as video (video.videoId)}
 						<RecentVideoItem
 							{video}
+							isFavorite={video.isFavorite}
 							on:select={(e) => handleRecentVideoClick(e.detail)}
 							on:delete={handleDeleteRecentVideo}
 						/>
@@ -369,8 +387,6 @@
 		.search-button-text {
 			display: none;
 		}
-
-
 
 		.recent-videos-dropdown {
 			--row-height: 59px;

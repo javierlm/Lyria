@@ -5,13 +5,48 @@
 	import PlayerView from '$lib/components/PlayerView.svelte';
 	import TimingControls from '$lib/components/TimingControls.svelte';
 	import LyricsView from '$lib/components/LyricsView.svelte';
+	import LikeButton from '$lib/components/LikeButton.svelte';
 	import { Copy, Check } from 'phosphor-svelte';
 	import LL from '$i18n/i18n-svelte';
+
+	import { videoService } from '$lib/data/videoService';
 
 	let windowWidth = $state(0);
 	const iconSize = $derived(windowWidth > 768 ? 24 : 16);
 
 	let copied = $state(false);
+	let isFavorite = $state(false);
+
+	$effect(() => {
+		if (playerState.videoId) {
+			checkFavoriteStatus(playerState.videoId);
+		}
+	});
+
+	async function checkFavoriteStatus(videoId: string) {
+		isFavorite = await videoService.isFavorite(videoId);
+	}
+
+	async function toggleFavorite() {
+		if (!playerState.videoId || !playerState.artist || !playerState.track) return;
+
+		const videoId = playerState.videoId;
+		const wasFavorite = isFavorite;
+
+		isFavorite = !isFavorite;
+
+		try {
+			if (wasFavorite) {
+				await videoService.removeFavoriteVideo(videoId);
+			} else {
+				await videoService.addFavoriteVideo(videoId);
+			}
+		} catch (error) {
+			console.error('Error toggling favorite:', error);
+			// Rollback
+			isFavorite = wasFavorite;
+		}
+	}
 
 	function copyURL() {
 		const url = window.location.href;
@@ -37,7 +72,12 @@
 	<div class="title-container">
 		<h1>{playerState.artist ? `${playerState.artist} - ${playerState.track}` : '\u00A0'}</h1>
 		{#if playerState.artist && playerState.track}
-			<button onclick={copyURL} class="copy-button" aria-label={$LL.controls.copyUrl()}>
+			<LikeButton isLiked={isFavorite} onclick={toggleFavorite} />
+			<button
+				onclick={copyURL}
+				class="action-button copy-button"
+				aria-label={$LL.controls.copyUrl()}
+			>
 				{#if copied}
 					<Check size={iconSize} />
 				{:else}
@@ -80,7 +120,7 @@
 		margin-bottom: 1rem;
 	}
 
-	.copy-button {
+	.action-button {
 		background-color: #f0f0f0;
 		border: 1px solid #ccc;
 		cursor: pointer;
@@ -96,12 +136,12 @@
 			font-size: 0.5rem;
 		}
 
-		.copy-button {
+		.action-button {
 			font-size: 0.5rem;
 		}
 	}
 
-	.copy-button:hover {
+	.action-button:hover {
 		background-color: rgba(0, 0, 0, 0.1);
 	}
 
