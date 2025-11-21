@@ -34,7 +34,9 @@ export async function translateLyrics(targetLang: string) {
 				sourceLanguage: 'auto',
 				targetLanguage: targetLang,
 				text: lyricsText,
-				id: playerState.id
+				id: playerState.id,
+				artist: playerState.artist,
+				track: playerState.track
 			}),
 			headers: {
 				'Content-Type': 'application/json'

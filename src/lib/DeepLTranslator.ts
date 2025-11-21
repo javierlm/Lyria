@@ -23,16 +23,16 @@ function mapToDeepLTargetLanguage(lang: string | undefined): deepl.TargetLanguag
 
 	// DeepL requires specific region variants for some target languages
 	const targetMap: Record<string, string> = {
-		'EN': 'EN-US',
+		EN: 'EN-US',
 		'EN-GB': 'EN-GB',
 		'EN-US': 'EN-US',
-		'PT': 'PT-PT',
+		PT: 'PT-PT',
 		'PT-BR': 'PT-BR',
 		'PT-PT': 'PT-PT',
-		'ZH': 'ZH',
+		ZH: 'ZH',
 		'ZH-HANS': 'ZH', // DeepL uses ZH for simplified Chinese
 		'ZH-HANT': 'ZH', // DeepL doesn't support traditional Chinese as target
-		'ES': 'ES',
+		ES: 'ES',
 		'ES-419': 'ES' // DeepL doesn't have Latin American Spanish variant
 	};
 
@@ -49,7 +49,8 @@ export class DeepLTranslator implements TranslationProvider {
 	async translate(
 		sourceLanguage: string,
 		targetLanguage: string | undefined,
-		text: string[]
+		text: string[],
+		context?: string
 	): Promise<TranslationResponse> {
 		const mappedSource = mapToDeepLSourceLanguage(sourceLanguage);
 		const mappedTarget = mapToDeepLTargetLanguage(targetLanguage);
@@ -61,14 +62,27 @@ export class DeepLTranslator implements TranslationProvider {
 			mappedTarget
 		});
 
-		const results = await deeplClient.translateText(text, mappedSource, mappedTarget);
+		let textToTranslate = text;
+		if (context) {
+			textToTranslate = [context, ...text];
+		}
+
+		const results = await deeplClient.translateText(textToTranslate, mappedSource, mappedTarget, {
+			formality: 'prefer_less',
+			modelType: 'quality_optimized',
+			preserveFormatting: true,
+			splitSentences: 'off'
+		});
 
 		const translatedTexts: string[] = [];
 		const languageCounts: { [key: string]: number } = {};
 		let totalDetectedLanguagesCount = 0;
 
 		if (results && results.length > 0) {
-			results.forEach((result) => {
+			results.forEach((result, index) => {
+				// Skip context
+				if (context && index === 0) return;
+
 				translatedTexts.push(result.text);
 				if (result.detectedSourceLang) {
 					languageCounts[result.detectedSourceLang] =

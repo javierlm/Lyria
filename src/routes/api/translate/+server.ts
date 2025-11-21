@@ -7,10 +7,10 @@ import { json } from '@sveltejs/kit';
 import { FileSystemAndMemoryCacheProvider } from '$lib/cache/FsAndMemCacheProvider';
 import { VercelKvCacheProvider } from '$lib/cache/VercelKvCacheProvider';
 import type { CacheProvider } from '$lib/cache/CacheProvider';
-import { VERCEL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 const cacheProvider: CacheProvider<TranslationResponse> =
-	VERCEL === '1' ? new VercelKvCacheProvider() : new FileSystemAndMemoryCacheProvider();
+	env.VERCEL === '1' ? new VercelKvCacheProvider() : new FileSystemAndMemoryCacheProvider();
 
 // Initialize the persistent cache when the server starts
 cacheProvider.initialize();
@@ -24,7 +24,7 @@ function generateCacheKey(
 }
 
 export const POST: RequestHandler = async ({ request }) => {
-	const { sourceLanguage, targetLanguage, text, id } = await request.json();
+	const { sourceLanguage, targetLanguage, text, id, artist, track } = await request.json();
 
 	const originalText: string[] = text;
 	const emptyLineIndices: number[] = [];
@@ -68,10 +68,13 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	try {
+		const context = artist && track ? `Lyrics of the song "${track}" by "${artist}"` : undefined;
+
 		const translatedResponse = await translator.translate(
 			sourceLanguage,
 			targetLanguage,
-			textToTranslate
+			textToTranslate,
+			context
 		);
 		await cacheProvider.set(cacheKey, translatedResponse);
 

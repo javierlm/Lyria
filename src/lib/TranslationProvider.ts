@@ -9,6 +9,7 @@ export interface TranslationProvider {
 	translate(
 		sourceLanguage: string,
 		targetLanguage: string | undefined,
-		text: string[]
+		text: string[],
+		context?: string
 	): Promise<TranslationResponse>;
 }
