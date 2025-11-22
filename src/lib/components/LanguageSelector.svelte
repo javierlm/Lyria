@@ -50,9 +50,9 @@
 
 	const languages = $derived(
 		Object.keys($LL.lyricsLanguages).map((code) => ({
-			code,
+			code: code.toUpperCase(),
 			name: $LL.lyricsLanguages[code as keyof typeof $LL.lyricsLanguages](),
-			flagClass: languageFlags[code] || 'unknown' // Use a default class if not found
+			flagClass: languageFlags[code.toUpperCase()] || 'unknown' // Use a default class if not found
 		}))
 	);
 

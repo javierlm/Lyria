@@ -32,7 +32,9 @@ const es = {
 		enterFullscreen: 'Pantalla completa',
 		exitFullscreen: 'Salir de pantalla completa',
 		decreaseTimingOffset: 'Disminuir desfase de tiempo',
-		increaseTimingOffset: 'Aumentar desfase de tiempo'
+		increaseTimingOffset: 'Aumentar desfase de tiempo',
+		clickToStart: 'Haz clic para empezar',
+		loading: 'Cargando...'
 	},
 	// Footer
 	footer: {
@@ -94,7 +96,29 @@ const es = {
 		weeksAgo: 'hace {0} semana{{s}}',
 		monthsAgo: 'hace {0} mes{{es}}',
 		yearsAgo: 'hace {0} año{{s}}'
-	}
+	},
+	loadingPhrases: [
+		'🎵 Cargando tu temazo...',
+		'🎸 Afinando la guitarra invisible...',
+		'🎤 Calentando las cuerdas vocales...',
+		'🔑 Buscando el tono perfecto...',
+		'✨ Sacando brillo al micrófono...',
+		'🥁 Sincronizando con el ritmo...',
+		'😴 Despertando al batería...',
+		'🔓 Desbloqueando el groove...',
+		'💾 Cargando datos... o al menos fingiendo hacerlo.',
+		'🧮 Calculando el número exacto de nanosegundos que vas a esperar.',
+		'⏳ Casi, casi... (pero aún no).',
+		'💬 Cargando el mensaje que dice “Cargando…”.',
+		'🎡 Simulando progreso para mantenerte entretenido.',
+		'🎤 Buscando la letra... parece que el cantante aún no se la sabe.',
+		'🎧 Convenciendo al DJ para que le dé al play...',
+		'🎼 Ensayando el estribillo una última vez...',
+		'🕺 Practicando pasos de baile mientras esperas...',
+		'🐢 Cargando a la velocidad de una balada...',
+		'🎹 Afinando las teclas del piano...',
+		'📢 Probando los altavoces: Uno, dos, tres...'
+	]
 } satisfies Translation;
 
 export default es;

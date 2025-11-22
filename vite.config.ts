@@ -10,6 +10,7 @@ export default defineConfig({
 	plugins: [
 		SvelteKitPWA({
 			registerType: 'prompt',
+			includeAssets: ['favicon.svg', 'robots.txt'],
 			manifest: {
 				name: 'Lyria',
 				short_name: 'Lyria',

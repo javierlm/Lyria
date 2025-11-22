@@ -115,6 +115,14 @@ type RootTranslation = {
 		 * I​n​c​r​e​a​s​e​ ​t​i​m​i​n​g​ ​o​f​f​s​e​t
 		 */
 		increaseTimingOffset: string
+		/**
+		 * C​l​i​c​k​ ​t​o​ ​s​t​a​r​t
+		 */
+		clickToStart: string
+		/**
+		 * L​o​a​d​i​n​g​.​.​.
+		 */
+		loading: string
 	}
 	footer: {
 		/**
@@ -341,6 +349,88 @@ type RootTranslation = {
 		 */
 		yearsAgo: RequiredParams<'0'>
 	}
+	loadingPhrases: {
+		/**
+		 * �​�​ ​L​o​a​d​i​n​g​ ​y​o​u​r​ ​j​a​m​.​.​.
+		 */
+		'0': string
+		/**
+		 * �​�​ ​T​u​n​i​n​g​ ​t​h​e​ ​a​i​r​ ​g​u​i​t​a​r​.​.​.
+		 */
+		'1': string
+		/**
+		 * �​�​ ​W​a​r​m​i​n​g​ ​u​p​ ​t​h​e​ ​v​o​c​a​l​ ​c​o​r​d​s​.​.​.
+		 */
+		'2': string
+		/**
+		 * �​�​ ​F​i​n​d​i​n​g​ ​t​h​e​ ​r​i​g​h​t​ ​k​e​y​.​.​.
+		 */
+		'3': string
+		/**
+		 * ✨​ ​P​o​l​i​s​h​i​n​g​ ​t​h​e​ ​m​i​c​r​o​p​h​o​n​e​.​.​.
+		 */
+		'4': string
+		/**
+		 * �​�​ ​S​y​n​c​i​n​g​ ​w​i​t​h​ ​t​h​e​ ​r​h​y​t​h​m​.​.​.
+		 */
+		'5': string
+		/**
+		 * �​�​ ​A​s​k​i​n​g​ ​t​h​e​ ​d​r​u​m​m​e​r​ ​t​o​ ​w​a​k​e​ ​u​p​.​.​.
+		 */
+		'6': string
+		/**
+		 * �​�​ ​U​n​l​o​c​k​i​n​g​ ​t​h​e​ ​g​r​o​o​v​e​.​.​.
+		 */
+		'7': string
+		/**
+		 * �​�​ ​L​o​a​d​i​n​g​ ​d​a​t​a​.​.​.​ ​o​r​ ​a​t​ ​l​e​a​s​t​ ​p​r​e​t​e​n​d​i​n​g​ ​t​o​.
+		 */
+		'8': string
+		/**
+		 * �​�​ ​C​a​l​c​u​l​a​t​i​n​g​ ​t​h​e​ ​e​x​a​c​t​ ​n​u​m​b​e​r​ ​o​f​ ​n​a​n​o​s​e​c​o​n​d​s​ ​y​o​u​ ​w​i​l​l​ ​w​a​i​t​.
+		 */
+		'9': string
+		/**
+		 * ⏳​ ​A​l​m​o​s​t​ ​t​h​e​r​e​.​.​.​ ​(​b​u​t​ ​n​o​t​ ​q​u​i​t​e​)​.
+		 */
+		'10': string
+		/**
+		 * �​�​ ​L​o​a​d​i​n​g​ ​t​h​e​ ​m​e​s​s​a​g​e​ ​t​h​a​t​ ​s​a​y​s​ ​“​L​o​a​d​i​n​g​…​”​.
+		 */
+		'11': string
+		/**
+		 * �​�​ ​S​i​m​u​l​a​t​i​n​g​ ​p​r​o​g​r​e​s​s​ ​t​o​ ​k​e​e​p​ ​y​o​u​ ​e​n​t​e​r​t​a​i​n​e​d​.
+		 */
+		'12': string
+		/**
+		 * �​�​ ​L​o​o​k​i​n​g​ ​f​o​r​ ​t​h​e​ ​l​y​r​i​c​s​…​ ​s​e​e​m​s​ ​t​h​e​ ​s​i​n​g​e​r​ ​d​o​e​s​n​’​t​ ​k​n​o​w​ ​t​h​e​m​ ​e​i​t​h​e​r​.
+		 */
+		'13': string
+		/**
+		 * �​�​ ​C​o​n​v​i​n​c​i​n​g​ ​t​h​e​ ​D​J​ ​t​o​ ​p​r​e​s​s​ ​p​l​a​y​.​.​.
+		 */
+		'14': string
+		/**
+		 * �​�​ ​R​e​h​e​a​r​s​i​n​g​ ​t​h​e​ ​c​h​o​r​u​s​ ​o​n​e​ ​l​a​s​t​ ​t​i​m​e​.​.​.
+		 */
+		'15': string
+		/**
+		 * �​�​ ​P​r​a​c​t​i​c​i​n​g​ ​d​a​n​c​e​ ​m​o​v​e​s​ ​w​h​i​l​e​ ​y​o​u​ ​w​a​i​t​.​.​.
+		 */
+		'16': string
+		/**
+		 * �​�​ ​L​o​a​d​i​n​g​ ​a​t​ ​t​h​e​ ​s​p​e​e​d​ ​o​f​ ​a​ ​b​a​l​l​a​d​.​.​.
+		 */
+		'17': string
+		/**
+		 * �​�​ ​T​u​n​i​n​g​ ​t​h​e​ ​p​i​a​n​o​ ​k​e​y​s​.​.​.
+		 */
+		'18': string
+		/**
+		 * �​�​ ​T​e​s​t​i​n​g​ ​t​h​e​ ​s​p​e​a​k​e​r​s​:​ ​O​n​e​,​ ​t​w​o​,​ ​t​h​r​e​e​.​.​.
+		 */
+		'19': string
+	}
 }
 
 export type TranslationFunctions = {
@@ -445,6 +535,14 @@ export type TranslationFunctions = {
 		 * Increase timing offset
 		 */
 		increaseTimingOffset: () => LocalizedString
+		/**
+		 * Click to start
+		 */
+		clickToStart: () => LocalizedString
+		/**
+		 * Loading...
+		 */
+		loading: () => LocalizedString
 	}
 	footer: {
 		/**
@@ -661,6 +759,88 @@ export type TranslationFunctions = {
 		 * {0} year{{s}} ago
 		 */
 		yearsAgo: (arg0: string | number | boolean) => LocalizedString
+	}
+	loadingPhrases: {
+		/**
+		 * 🎵 Loading your jam...
+		 */
+		'0': () => LocalizedString
+		/**
+		 * 🎸 Tuning the air guitar...
+		 */
+		'1': () => LocalizedString
+		/**
+		 * 🎤 Warming up the vocal cords...
+		 */
+		'2': () => LocalizedString
+		/**
+		 * 🔑 Finding the right key...
+		 */
+		'3': () => LocalizedString
+		/**
+		 * ✨ Polishing the microphone...
+		 */
+		'4': () => LocalizedString
+		/**
+		 * 🥁 Syncing with the rhythm...
+		 */
+		'5': () => LocalizedString
+		/**
+		 * 😴 Asking the drummer to wake up...
+		 */
+		'6': () => LocalizedString
+		/**
+		 * 🔓 Unlocking the groove...
+		 */
+		'7': () => LocalizedString
+		/**
+		 * 💾 Loading data... or at least pretending to.
+		 */
+		'8': () => LocalizedString
+		/**
+		 * 🧮 Calculating the exact number of nanoseconds you will wait.
+		 */
+		'9': () => LocalizedString
+		/**
+		 * ⏳ Almost there... (but not quite).
+		 */
+		'10': () => LocalizedString
+		/**
+		 * 💬 Loading the message that says “Loading…”.
+		 */
+		'11': () => LocalizedString
+		/**
+		 * 🎡 Simulating progress to keep you entertained.
+		 */
+		'12': () => LocalizedString
+		/**
+		 * 🎤 Looking for the lyrics… seems the singer doesn’t know them either.
+		 */
+		'13': () => LocalizedString
+		/**
+		 * 🎧 Convincing the DJ to press play...
+		 */
+		'14': () => LocalizedString
+		/**
+		 * 🎼 Rehearsing the chorus one last time...
+		 */
+		'15': () => LocalizedString
+		/**
+		 * 🕺 Practicing dance moves while you wait...
+		 */
+		'16': () => LocalizedString
+		/**
+		 * 🐢 Loading at the speed of a ballad...
+		 */
+		'17': () => LocalizedString
+		/**
+		 * 🎹 Tuning the piano keys...
+		 */
+		'18': () => LocalizedString
+		/**
+		 * 📢 Testing the speakers: One, two, three...
+		 */
+		'19': () => LocalizedString
 	}
 }
 

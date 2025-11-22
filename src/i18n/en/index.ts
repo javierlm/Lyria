@@ -32,7 +32,9 @@ const en = {
 		enterFullscreen: 'Enter fullscreen',
 		exitFullscreen: 'Exit fullscreen',
 		decreaseTimingOffset: 'Decrease timing offset',
-		increaseTimingOffset: 'Increase timing offset'
+		increaseTimingOffset: 'Increase timing offset',
+		clickToStart: 'Click to start',
+		loading: 'Loading...'
 	},
 	// Footer
 	footer: {
@@ -94,7 +96,29 @@ const en = {
 		weeksAgo: '{0} week{{s}} ago',
 		monthsAgo: '{0} month{{s}} ago',
 		yearsAgo: '{0} year{{s}} ago'
-	}
+	},
+	loadingPhrases: [
+		'🎵 Loading your jam...',
+		'🎸 Tuning the air guitar...',
+		'🎤 Warming up the vocal cords...',
+		'🔑 Finding the right key...',
+		'✨ Polishing the microphone...',
+		'🥁 Syncing with the rhythm...',
+		'😴 Asking the drummer to wake up...',
+		'🔓 Unlocking the groove...',
+		'💾 Loading data... or at least pretending to.',
+		'🧮 Calculating the exact number of nanoseconds you will wait.',
+		'⏳ Almost there... (but not quite).',
+		'💬 Loading the message that says “Loading…”.',
+		'🎡 Simulating progress to keep you entertained.',
+		'🎤 Looking for the lyrics… seems the singer doesn’t know them either.',
+		'🎧 Convincing the DJ to press play...',
+		'🎼 Rehearsing the chorus one last time...',
+		'🕺 Practicing dance moves while you wait...',
+		'🐢 Loading at the speed of a ballad...',
+		'🎹 Tuning the piano keys...',
+		'📢 Testing the speakers: One, two, three...'
+	]
 } satisfies Translation;
 
 export default en;

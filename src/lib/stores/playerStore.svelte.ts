@@ -37,7 +37,8 @@ export const playerState = $state({
 	showOriginalSubtitle: true,
 	showTranslatedSubtitle: true,
 	detectedSourceLanguage: undefined as string | undefined,
-	percentageOfDetectedLanguages: undefined as number | undefined
+	percentageOfDetectedLanguages: undefined as number | undefined,
+	isLoadingVideo: false
 });
 
 let playerInstance: YT.Player | null = null;

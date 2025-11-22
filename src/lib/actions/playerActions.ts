@@ -169,6 +169,7 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 	resetPlayerState();
 
 	playerState.videoId = videoId;
+	playerState.isLoadingVideo = true;
 	if (initialOffset) {
 		playerState.timingOffset = initialOffset;
 	}
@@ -200,6 +201,9 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 					event.data === YT.PlayerState.ENDED
 				) {
 					playerState.isSeeking = false;
+					if (event.data === YT.PlayerState.PLAYING) {
+						playerState.isLoadingVideo = false;
+					}
 				}
 			}
 		}

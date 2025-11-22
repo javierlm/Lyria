@@ -6,6 +6,7 @@
 	import VideoControls from '$lib/components/VideoControls.svelte';
 	import { stopPropagation } from 'svelte/legacy';
 	import BackToTop from './BackToTop.svelte';
+	import LoadingScreen from './LoadingScreen.svelte';
 
 	let playerContainer: HTMLElement;
 	let showControls = $state(false);
@@ -196,6 +197,10 @@
 		<VideoControls on:toggleFullscreen={handleToggleFullscreen} />
 	</div>
 	<BackToTop />
+
+	{#if playerState.isLoadingVideo}
+		<LoadingScreen />
+	{/if}
 </div>
 
 <style>
