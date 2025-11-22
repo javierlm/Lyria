@@ -3,6 +3,7 @@
 	import { setLocale } from '$i18n/i18n-svelte';
 	import { loadLocaleAsync } from '$i18n/i18n-util.async';
 	import AppLanguageSelector from '$lib/components/AppLanguageSelector.svelte';
+	import ReloadPrompt from '$lib/components/ReloadPrompt.svelte';
 	import LL from '$i18n/i18n-svelte';
 
 	let { data, children } = $props();
@@ -29,6 +30,7 @@
 <div class="container">
 	<AppLanguageSelector />
 	{@render children()}
+	<ReloadPrompt />
 </div>
 
 <style>
