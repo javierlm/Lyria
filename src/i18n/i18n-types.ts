@@ -20,13 +20,29 @@ type RootTranslation = {
 	appName: string
 	search: {
 		/**
-		 * E​n​t​e​r​ ​Y​o​u​T​u​b​e​ ​U​R​L
+		 * S​e​a​r​c​h​ ​b​y​ ​a​r​t​i​s​t​,​ ​s​o​n​g​,​ ​o​r​ ​Y​o​u​T​u​b​e​ ​U​R​L
 		 */
 		placeholder: string
 		/**
 		 * L​o​a​d​ ​V​i​d​e​o
 		 */
 		loadVideo: string
+		/**
+		 * T​h​i​s​ ​v​i​d​e​o​ ​i​s​ ​n​o​t​ ​i​n​ ​y​o​u​r​ ​h​i​s​t​o​r​y
+		 */
+		notInHistory: string
+		/**
+		 * P​r​e​s​s​ ​E​n​t​e​r​ ​t​o​ ​l​o​a​d​ ​i​t
+		 */
+		pressEnterToLoad: string
+		/**
+		 * N​o​ ​r​e​s​u​l​t​s​ ​f​o​u​n​d
+		 */
+		noResults: string
+		/**
+		 * T​r​y​ ​s​e​a​r​c​h​i​n​g​ ​b​y​ ​a​r​t​i​s​t​,​ ​s​o​n​g​,​ ​o​r​ ​p​a​s​t​e​ ​a​ ​Y​o​u​T​u​b​e​ ​U​R​L
+		 */
+		searchHint: string
 	}
 	lyrics: {
 		/**
@@ -440,13 +456,29 @@ export type TranslationFunctions = {
 	appName: () => LocalizedString
 	search: {
 		/**
-		 * Enter YouTube URL
+		 * Search by artist, song, or YouTube URL
 		 */
 		placeholder: () => LocalizedString
 		/**
 		 * Load Video
 		 */
 		loadVideo: () => LocalizedString
+		/**
+		 * This video is not in your history
+		 */
+		notInHistory: () => LocalizedString
+		/**
+		 * Press Enter to load it
+		 */
+		pressEnterToLoad: () => LocalizedString
+		/**
+		 * No results found
+		 */
+		noResults: () => LocalizedString
+		/**
+		 * Try searching by artist, song, or paste a YouTube URL
+		 */
+		searchHint: () => LocalizedString
 	}
 	lyrics: {
 		/**

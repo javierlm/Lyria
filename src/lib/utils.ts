@@ -225,6 +225,14 @@ export function extractVideoId(url: string): string | null {
 	return match ? match[1] : null;
 }
 
+export function isYouTubeUrl(input: string): boolean {
+	const patterns = [
+		/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+		/^[a-zA-Z0-9_-]{11}$/
+	];
+	return patterns.some((pattern) => pattern.test(input));
+}
+
 export function getPrimaryLanguage(lang: string): string {
 	if (!lang) return '';
 	return lang.split('-')[0].toLowerCase();

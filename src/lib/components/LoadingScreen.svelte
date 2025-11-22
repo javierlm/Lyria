@@ -24,6 +24,41 @@
 	});
 	let showPlayButton = $state(false);
 	let timeoutId: ReturnType<typeof setTimeout> | undefined;
+	let thumbnailUrl = $state('');
+	let showThumbnail = $state(true);
+
+	$effect(() => {
+		if (playerState.videoId) {
+			// Reset state for new video
+			showThumbnail = true;
+			// Try maxresdefault first
+			thumbnailUrl = `https://img.youtube.com/vi/${playerState.videoId}/maxresdefault.jpg`;
+		}
+	});
+
+	function handleImageLoad(event: Event) {
+		const img = event.target as HTMLImageElement;
+		// YouTube placeholder image size
+		if (img.naturalWidth === 120 && img.naturalHeight === 90) {
+			// This is a placeholder, try hqdefault
+			if (thumbnailUrl.includes('maxresdefault')) {
+				thumbnailUrl = `https://img.youtube.com/vi/${playerState.videoId}/hqdefault.jpg`;
+			} else {
+				// Even hqdefault is placeholder, hide thumbnail
+				showThumbnail = false;
+			}
+		}
+	}
+
+	function handleImageError() {
+		// Fallback to hqdefault if maxresdefault fails to load
+		if (playerState.videoId && thumbnailUrl.includes('maxresdefault')) {
+			thumbnailUrl = `https://img.youtube.com/vi/${playerState.videoId}/hqdefault.jpg`;
+		} else {
+			// Hide thumbnail. There's no image, only placeholder
+			showThumbnail = false;
+		}
+	}
 
 	$effect(() => {
 		if (playerState.isLoadingVideo) {
@@ -59,12 +94,19 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="loading-screen" out:fade={{ duration: 300 }} onclick={handleInteraction}>
-	{#if playerState.videoId}
-		<div
-			class="background-image"
-			style="background-image: url('https://img.youtube.com/vi/{playerState.videoId}/maxresdefault.jpg')"
-		></div>
-		<div class="overlay"></div>
+	{#if playerState.videoId && thumbnailUrl}
+		<!-- Hidden image to detect loading errors and placeholder -->
+		<img
+			src={thumbnailUrl}
+			alt=""
+			style="display: none;"
+			onload={handleImageLoad}
+			onerror={handleImageError}
+		/>
+		{#if showThumbnail}
+			<div class="background-image" style="background-image: url('{thumbnailUrl}')"></div>
+			<div class="overlay"></div>
+		{/if}
 	{/if}
 	<div class="content">
 		{#if showPlayButton}

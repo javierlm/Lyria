@@ -5,12 +5,12 @@
 	import IconMagnifyingGlass from 'phosphor-svelte/lib/MagnifyingGlass';
 	import { videoService } from '$lib/data/videoService';
 	import type { RecentVideo } from '$lib/data/IVideoRepository';
-	import { extractVideoId } from '$lib/utils';
+	import { extractVideoId, isYouTubeUrl } from '$lib/utils';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { playerState } from '$lib/stores/playerStore.svelte';
 	import RecentVideoItem from './RecentVideoItem.svelte';
 	import { LL } from '$i18n/i18n-svelte';
+	import { animateHeight } from '$lib/actions/animateHeight';
 
 	export let centered = false;
 
@@ -19,26 +19,93 @@
 	let searchInputRef: HTMLInputElement;
 	let showRecentVideos = false;
 	let recentVideos: (RecentVideo & { isFavorite?: boolean })[] = [];
+	let filteredVideos: (RecentVideo & { isFavorite?: boolean })[] = [];
+	let searchValue = '';
+	let debounceTimer: ReturnType<typeof setTimeout>;
+
+	const DEBOUNCE_DELAY = 300;
 
 	function autofocus(node: HTMLElement) {
 		node.focus();
 	}
 
+	function searchVideos(query: string): (RecentVideo & { isFavorite?: boolean })[] {
+		if (!query.trim() || query.trim().length < 2) {
+			return recentVideos;
+		}
+
+		const lowerQuery = query.toLowerCase().trim();
+
+		const videoId = extractVideoId(query);
+		if (videoId) {
+			return recentVideos.filter((video) => video.videoId === videoId);
+		}
+
+		const searchTerms = lowerQuery.split(/\s+/).filter((term) => term.length > 0);
+
+		if (searchTerms.length === 0) {
+			return recentVideos;
+		}
+
+		return recentVideos.filter((video) => {
+			const combinedText = `${video.artist?.toLowerCase() || ''} ${video.track?.toLowerCase() || ''}`;
+
+			if (!combinedText.includes(searchTerms[0])) {
+				return false;
+			}
+
+			for (let i = 1; i < searchTerms.length; i++) {
+				if (!combinedText.includes(searchTerms[i])) {
+					return false;
+				}
+			}
+
+			return true;
+		});
+	}
+
+	function handleSearchInput(event: Event) {
+		const input = event.target as HTMLInputElement;
+		searchValue = input.value;
+
+		clearTimeout(debounceTimer);
+
+		if (!searchValue.trim()) {
+			filteredVideos = recentVideos;
+			showRecentVideos = recentVideos.length > 0;
+			return;
+		}
+
+		debounceTimer = setTimeout(() => {
+			filteredVideos = searchVideos(searchValue);
+			showRecentVideos = filteredVideos.length > 0;
+		}, DEBOUNCE_DELAY);
+	}
+
 	function loadVideoFromUrl(url: string) {
 		const id = extractVideoId(url);
 		if (id) {
-			const currentPath = $page.url.pathname;
 			const newUrlString = `play?id=${encodeURIComponent(id)}`;
 			// eslint-disable-next-line svelte/no-navigation-without-resolve
 			goto(newUrlString, { noScroll: true });
 			showSearchField = false;
+			searchValue = '';
 		}
 	}
 
 	function handleSubmit(event: Event) {
+		event.preventDefault();
 		const form = event.target as HTMLFormElement;
 		const input = form.elements.namedItem('url') as HTMLInputElement;
-		loadVideoFromUrl(input.value);
+
+		if (filteredVideos.length === 1) {
+			const video = filteredVideos[0];
+			handleRecentVideoClick(video.videoId);
+		} else if (isYouTubeUrl(input.value)) {
+			loadVideoFromUrl(input.value);
+		} else if (filteredVideos.length > 0) {
+			handleRecentVideoClick(filteredVideos[0].videoId);
+		}
 	}
 
 	function toggleSearchField() {
@@ -47,6 +114,8 @@
 			loadRecentVideos();
 		} else {
 			showRecentVideos = false;
+			searchValue = '';
+			clearTimeout(debounceTimer);
 		}
 	}
 
@@ -68,18 +137,29 @@
 		});
 
 		recentVideos = Array.from(videoMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+		filteredVideos = recentVideos;
 
-		showRecentVideos = recentVideos.length > 0;
+		showRecentVideos = recentVideos.length > 0 && !searchValue;
 	}
 
 	function handleRecentVideoClick(videoId: string) {
 		const url = `https://www.youtube.com/watch?v=${videoId}`;
 		loadVideoFromUrl(url);
+		searchValue = '';
 	}
 
 	async function handleDeleteRecentVideo(event: CustomEvent<string>) {
 		const videoId = event.detail;
 		await videoService.deleteRecentVideo(videoId);
+		await loadRecentVideos();
+
+		// Re-aplicar el filtro actual si hay búsqueda activa
+		if (searchValue.trim()) {
+			filteredVideos = searchVideos(searchValue);
+		}
+	}
+
+	function handleFocus() {
 		loadRecentVideos();
 	}
 
@@ -94,9 +174,11 @@
 					showRecentVideos = false;
 					setTimeout(() => {
 						showSearchField = false;
+						searchValue = '';
 					}, 300);
 				} else if (showSearchField) {
 					showSearchField = false;
+					searchValue = '';
 				}
 			}
 		};
@@ -105,6 +187,7 @@
 
 		return () => {
 			document.removeEventListener('click', handleClickOutside);
+			clearTimeout(debounceTimer);
 		};
 	});
 </script>
@@ -130,8 +213,9 @@
 					placeholder={$LL.search.placeholder()}
 					use:autofocus
 					bind:this={searchInputRef}
-					on:focus={loadRecentVideos}
-					on:input={() => (showRecentVideos = false)}
+					bind:value={searchValue}
+					on:focus={handleFocus}
+					on:input={handleSearchInput}
 				/>
 
 				<button type="submit">
@@ -140,13 +224,14 @@
 				</button>
 			</form>
 
-			{#if showRecentVideos && recentVideos.length > 0}
+			{#if showRecentVideos && filteredVideos.length > 0}
 				<div
 					class="recent-videos-dropdown"
 					in:slide={{ duration: 300 }}
 					out:slide={{ duration: 300 }}
+					use:animateHeight
 				>
-					{#each recentVideos as video (video.videoId)}
+					{#each filteredVideos as video (video.videoId)}
 						<RecentVideoItem
 							{video}
 							isFavorite={video.isFavorite}
@@ -154,6 +239,23 @@
 							on:delete={handleDeleteRecentVideo}
 						/>
 					{/each}
+				</div>
+			{:else if searchValue.trim() && filteredVideos.length === 0}
+				<div
+					class="recent-videos-dropdown no-results"
+					in:slide={{ duration: 300 }}
+					out:slide={{ duration: 300 }}
+					use:animateHeight
+				>
+					<div class="no-results-message">
+						{#if isYouTubeUrl(searchValue)}
+							<p>{$LL.search.notInHistory()}</p>
+							<p class="hint">{$LL.search.pressEnterToLoad()}</p>
+						{:else}
+							<p>{$LL.search.noResults()}</p>
+							<p class="hint">{$LL.search.searchHint()}</p>
+						{/if}
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -284,6 +386,28 @@
 		scrollbar-color: var(--primary-color) var(--card-background);
 	}
 
+	.recent-videos-dropdown.no-results {
+		max-height: none;
+		overflow: visible;
+	}
+
+	.no-results-message {
+		padding: 2rem;
+		text-align: center;
+		color: var(--text-secondary);
+	}
+
+	.no-results-message p {
+		margin: 0.5rem 0;
+		font-size: 1rem;
+	}
+
+	.no-results-message .hint {
+		font-size: 0.875rem;
+		opacity: 0.7;
+		margin-top: 0.25rem;
+	}
+
 	.recent-videos-dropdown::-webkit-scrollbar {
 		width: 15px;
 	}
@@ -334,24 +458,16 @@
 			--visible-rows: 8;
 		}
 
-		.recent-video-item {
-			padding: 0.75rem;
-			flex-wrap: nowrap;
-			gap: 0.75rem;
+		.no-results-message {
+			padding: 1.5rem;
 		}
 
-		.video-info {
-			font-size: 0.85rem;
+		.no-results-message p {
+			font-size: 0.9rem;
 		}
 
-		.video-time-ago {
-			font-size: 0.75rem;
-		}
-
-		.recent-video-thumbnail {
-			width: 70px;
-			height: 39.375px;
-			margin-right: 0.5rem;
+		.no-results-message .hint {
+			font-size: 0.8rem;
 		}
 	}
 
@@ -393,17 +509,16 @@
 			--visible-rows: 6;
 		}
 
-		.recent-video-thumbnail {
-			width: 60px;
-			height: 33.75px;
+		.no-results-message {
+			padding: 1rem;
 		}
 
-		.video-info {
+		.no-results-message p {
+			font-size: 0.85rem;
+		}
+
+		.no-results-message .hint {
 			font-size: 0.75rem;
-		}
-
-		.video-time-ago {
-			font-size: 0.7rem;
 		}
 	}
 </style>

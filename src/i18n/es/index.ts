@@ -4,8 +4,12 @@ const es = {
 	appName: 'Lyria',
 	// Search
 	search: {
-		placeholder: 'Introduce la URL de YouTube',
-		loadVideo: 'Cargar Video'
+		placeholder: 'Busca por artista, canción o URL de YouTube',
+		loadVideo: 'Cargar Video',
+		notInHistory: 'Este video no está en tu historial',
+		pressEnterToLoad: 'Presiona Enter para cargarlo',
+		noResults: 'No se encontraron resultados',
+		searchHint: 'Intenta buscar por artista, canción o pega una URL de YouTube'
 	},
 	// Lyrics
 	lyrics: {
