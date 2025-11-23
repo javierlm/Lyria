@@ -7,12 +7,13 @@
 	import LL from '$i18n/i18n-svelte';
 
 	type Props = {
-		video: RecentVideo;
+		video: RecentVideo & { isGhost?: boolean };
 		isFavorite?: boolean;
+		isGhost?: boolean;
 		children?: Snippet;
 	};
 
-	let { video, isFavorite = false, children }: Props = $props();
+	let { video, isFavorite = false, isGhost = false, children }: Props = $props();
 
 	function formatTimeAgo(timestamp: number): string {
 		const now = Date.now();
@@ -63,10 +64,16 @@
 		</div>
 
 		<div class="video-meta">
-			<div class="video-time-ago">
-				<IconClock size="16" weight="bold" />
-				<span>{formatTimeAgo(video.timestamp)}</span>
-			</div>
+			{#if isGhost}
+				<div class="video-new-badge">
+					<span>{$LL.video.unplayed()}</span>
+				</div>
+			{:else}
+				<div class="video-time-ago">
+					<IconClock size="16" weight="bold" />
+					<span>{formatTimeAgo(video.timestamp)}</span>
+				</div>
+			{/if}
 			{#if isFavorite}
 				<div class="video-favorite">
 					<IconHeart size="20" weight="fill" color="var(--primary-color)" />
@@ -153,6 +160,19 @@
 		color: #6b7280;
 		font-size: 0.875rem;
 		flex-shrink: 0;
+	}
+
+	.video-new-badge {
+		display: flex;
+		align-items: center;
+		padding: 0.25rem 0.5rem;
+		background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+		color: white;
+		font-size: 0.75rem;
+		font-weight: 600;
+		border-radius: 0.25rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
 
 	.video-favorite {

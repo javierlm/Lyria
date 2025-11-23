@@ -11,6 +11,9 @@ const en = {
 		noResults: 'No results found',
 		searchHint: 'Try searching by artist, song, or paste a YouTube URL'
 	},
+	video: {
+		unplayed: 'Unplayed'
+	},
 	// Lyrics
 	lyrics: {
 		original: 'Original Lyrics',

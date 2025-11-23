@@ -1,25 +1,28 @@
 /**
  * Svelte action that smoothly animates height changes of an element.
- * Uses MutationObserver to detect DOM changes and CSS transitions for smooth animations.
+ * Call the returned update method to trigger animation.
  */
-export function animateHeight(node: HTMLElement, options: { duration?: number } = {}) {
+export function animateHeight(
+	node: HTMLElement,
+	options: { duration?: number; onUpdate?: (update: () => void) => void } = {}
+) {
 	const duration = options.duration ?? 300;
 	let isTransitioning = false;
 	let currentHeight = 0;
 
 	node.style.transition = `height ${duration}ms ease-in-out`;
 
-	function updateHeight() {
+	function update() {
 		if (isTransitioning) return;
-
-		const originalOverflow = node.style.overflow;
-		node.style.overflow = 'hidden';
-		isTransitioning = true;
 
 		requestAnimationFrame(() => {
 			const newHeight = node.scrollHeight;
 
 			if (newHeight !== currentHeight && currentHeight > 0) {
+				isTransitioning = true;
+				const originalOverflow = node.style.overflow;
+
+				node.style.overflow = 'hidden';
 				node.style.height = `${currentHeight}px`;
 				node.offsetHeight;
 				node.style.height = `${newHeight}px`;
@@ -32,31 +35,24 @@ export function animateHeight(node: HTMLElement, options: { duration?: number } 
 				};
 
 				node.addEventListener('transitionend', transitionEnd);
-			} else {
-				node.style.overflow = originalOverflow;
-				isTransitioning = false;
 			}
 
 			currentHeight = newHeight;
 		});
 	}
 
+	// Initialize current height
 	requestAnimationFrame(() => {
 		currentHeight = node.scrollHeight;
 	});
 
-	const observer = new MutationObserver(() => {
-		updateHeight();
-	});
-
-	observer.observe(node, {
-		childList: true,
-		subtree: true
-	});
+	// Pass update function to parent if callback provided
+	if (options.onUpdate) {
+		options.onUpdate(update);
+	}
 
 	return {
 		destroy() {
-			observer.disconnect();
 			node.style.transition = '';
 			node.style.height = '';
 		}

@@ -12,24 +12,58 @@
 	import { LL } from '$i18n/i18n-svelte';
 	import { animateHeight } from '$lib/actions/animateHeight';
 
-	export let centered = false;
+	let { centered = false } = $props<{ centered?: boolean }>();
 
-	let showSearchField = centered;
-	let searchContainerRef: HTMLDivElement;
-	let searchInputRef: HTMLInputElement;
-	let showRecentVideos = false;
-	let recentVideos: (RecentVideo & { isFavorite?: boolean })[] = [];
-	let filteredVideos: (RecentVideo & { isFavorite?: boolean })[] = [];
-	let searchValue = '';
+	let showSearchField = $state(centered);
+	let searchContainerRef = $state<HTMLDivElement>();
+	let showRecentVideos = $state(false);
+	let recentVideos: (RecentVideo & { isFavorite?: boolean; isGhost?: boolean })[] = $state([]);
+	let filteredVideos: (RecentVideo & { isFavorite?: boolean; isGhost?: boolean })[] = $state([]);
+	let searchValue = $state('');
 	let debounceTimer: ReturnType<typeof setTimeout>;
+	let ghostVideo: (RecentVideo & { isFavorite?: boolean; isGhost?: boolean }) | null = $state(null);
+	let isFetchingGhost = $state(false);
+	let dropdownHeightUpdater: (() => void) | null = null;
 
 	const DEBOUNCE_DELAY = 300;
+
+	// Trigger height animation when filtered videos change
+	$effect(() => {
+		if (dropdownHeightUpdater && filteredVideos.length > 0) {
+			setTimeout(() => {
+				if (dropdownHeightUpdater) {
+					dropdownHeightUpdater();
+				}
+			}, 320);
+		}
+	});
+
+	async function fetchVideoInfo(
+		videoId: string
+	): Promise<{ title: string; author: string } | null> {
+		try {
+			const response = await fetch(
+				`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+			);
+			if (!response.ok) return null;
+			const data = await response.json();
+			return {
+				title: data.title || '',
+				author: data.author_name || ''
+			};
+		} catch (error) {
+			console.error('Failed to fetch video info:', error);
+			return null;
+		}
+	}
 
 	function autofocus(node: HTMLElement) {
 		node.focus();
 	}
 
-	function searchVideos(query: string): (RecentVideo & { isFavorite?: boolean })[] {
+	function searchVideos(
+		query: string
+	): (RecentVideo & { isFavorite?: boolean; isGhost?: boolean })[] {
 		if (!query.trim() || query.trim().length < 2) {
 			return recentVideos;
 		}
@@ -69,6 +103,7 @@
 		searchValue = input.value;
 
 		clearTimeout(debounceTimer);
+		ghostVideo = null;
 
 		if (!searchValue.trim()) {
 			filteredVideos = recentVideos;
@@ -76,9 +111,40 @@
 			return;
 		}
 
-		debounceTimer = setTimeout(() => {
+		debounceTimer = setTimeout(async () => {
 			filteredVideos = searchVideos(searchValue);
-			showRecentVideos = filteredVideos.length > 0;
+
+			// Check if it's a YouTube URL and not in results
+			const videoId = extractVideoId(searchValue);
+			if (videoId && filteredVideos.length === 0 && !isFetchingGhost) {
+				isFetchingGhost = true;
+				const videoInfo = await fetchVideoInfo(videoId);
+				if (videoInfo) {
+					const { title, author } = videoInfo;
+					const parts = title.split(/[-–—|]/);
+					let artist = author;
+					let track = title;
+
+					if (parts.length >= 2) {
+						artist = parts[0].trim();
+						track = parts.slice(1).join('-').trim();
+					}
+
+					ghostVideo = {
+						videoId,
+						artist,
+						track,
+						timestamp: 0,
+						thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+						isFavorite: false,
+						isGhost: true
+					};
+					filteredVideos = [ghostVideo];
+				}
+				isFetchingGhost = false;
+			}
+
+			showRecentVideos = filteredVideos.length > 0 || ghostVideo !== null;
 		}, DEBOUNCE_DELAY);
 	}
 
@@ -115,6 +181,7 @@
 		} else {
 			showRecentVideos = false;
 			searchValue = '';
+			ghostVideo = null;
 			clearTimeout(debounceTimer);
 		}
 	}
@@ -175,10 +242,12 @@
 					setTimeout(() => {
 						showSearchField = false;
 						searchValue = '';
+						ghostVideo = null;
 					}, 300);
 				} else if (showSearchField) {
 					showSearchField = false;
 					searchValue = '';
+					ghostVideo = null;
 				}
 			}
 		};
@@ -212,7 +281,6 @@
 					name="url"
 					placeholder={$LL.search.placeholder()}
 					use:autofocus
-					bind:this={searchInputRef}
 					bind:value={searchValue}
 					on:focus={handleFocus}
 					on:input={handleSearchInput}
@@ -229,7 +297,7 @@
 					class="recent-videos-dropdown"
 					in:slide={{ duration: 300 }}
 					out:slide={{ duration: 300 }}
-					use:animateHeight
+					use:animateHeight={{ onUpdate: (update) => (dropdownHeightUpdater = update) }}
 				>
 					{#each filteredVideos as video (video.videoId)}
 						<RecentVideoItem

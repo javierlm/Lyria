@@ -44,6 +44,12 @@ type RootTranslation = {
 		 */
 		searchHint: string
 	}
+	video: {
+		/**
+		 * U​n​p​l​a​y​e​d
+		 */
+		unplayed: string
+	}
 	lyrics: {
 		/**
 		 * O​r​i​g​i​n​a​l​ ​L​y​r​i​c​s
@@ -479,6 +485,12 @@ export type TranslationFunctions = {
 		 * Try searching by artist, song, or paste a YouTube URL
 		 */
 		searchHint: () => LocalizedString
+	}
+	video: {
+		/**
+		 * Unplayed
+		 */
+		unplayed: () => LocalizedString
 	}
 	lyrics: {
 		/**

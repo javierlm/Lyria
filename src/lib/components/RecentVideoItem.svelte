@@ -6,7 +6,7 @@
 	import { swipe } from '$lib/actions/swipe';
 
 	type Props = {
-		video: RecentVideo;
+		video: RecentVideo & { isGhost?: boolean };
 		isFavorite?: boolean;
 	};
 
@@ -49,7 +49,7 @@
 <div class="swipe-container" use:swipe={{ onSwipe, onSwipeEnd }}>
 	<div class="swipe-content" style="transform: translateX({translateX}px)">
 		<button class="recent-video-item" onclick={handleSelect} tabindex="0">
-			<VideoItem {video} {isFavorite}>
+			<VideoItem {video} {isFavorite} isGhost={video.isGhost}>
 				{#snippet children()}
 					<div class="desktop-delete-action">
 						<button class="delete-button" onclick={handleDelete} aria-label="Delete video">
