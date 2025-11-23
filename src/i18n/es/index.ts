@@ -125,7 +125,12 @@ const es = {
 		'🐢 Cargando a la velocidad de una balada...',
 		'🎹 Afinando las teclas del piano...',
 		'📢 Probando los altavoces: Uno, dos, tres...'
-	]
+	],
+	pwa: {
+		newVersionAvailable: 'Nueva versión disponible',
+		reload: 'Recargar',
+		close: 'Cerrar'
+	}
 } satisfies Translation;
 
 export default es;

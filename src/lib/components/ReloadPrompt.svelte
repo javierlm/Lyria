@@ -2,6 +2,7 @@
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { X, ArrowClockwise, CheckCircle } from 'phosphor-svelte';
 	import { fly } from 'svelte/transition';
+	import LL from '$i18n/i18n-svelte';
 
 	import { onMount } from 'svelte';
 
@@ -18,7 +19,7 @@
 		}
 	});
 
-	let isStandalone = false;
+	let isStandalone = $state(false);
 
 	onMount(() => {
 		// Check if running in standalone mode (installed PWA)
@@ -53,11 +54,13 @@
 	<div class="pwa-toast" role="alert" transition:fly={{ y: 20, duration: 300 }}>
 		<div class="message">
 			<ArrowClockwise size={24} weight="fill" color="var(--secondary-color)" />
-			<span>New version available</span>
+			<span>{$LL.pwa.newVersionAvailable()}</span>
 		</div>
 		<div class="buttons">
-			<button class="reload-btn" onclick={() => updateServiceWorker(true)}> Reload </button>
-			<button class="close-btn" onclick={close} aria-label="Close">
+			<button class="reload-btn" onclick={() => updateServiceWorker(true)}>
+				{$LL.pwa.reload()}
+			</button>
+			<button class="close-btn" onclick={close} aria-label={$LL.pwa.close()}>
 				<X size={20} />
 			</button>
 		</div>

@@ -453,6 +453,20 @@ type RootTranslation = {
 		 */
 		'19': string
 	}
+	pwa: {
+		/**
+		 * N​e​w​ ​v​e​r​s​i​o​n​ ​a​v​a​i​l​a​b​l​e
+		 */
+		newVersionAvailable: string
+		/**
+		 * R​e​l​o​a​d
+		 */
+		reload: string
+		/**
+		 * C​l​o​s​e
+		 */
+		close: string
+	}
 }
 
 export type TranslationFunctions = {
@@ -885,6 +899,20 @@ export type TranslationFunctions = {
 		 * 📢 Testing the speakers: One, two, three...
 		 */
 		'19': () => LocalizedString
+	}
+	pwa: {
+		/**
+		 * New version available
+		 */
+		newVersionAvailable: () => LocalizedString
+		/**
+		 * Reload
+		 */
+		reload: () => LocalizedString
+		/**
+		 * Close
+		 */
+		close: () => LocalizedString
 	}
 }
 

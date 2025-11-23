@@ -125,7 +125,12 @@ const en = {
 		'🐢 Loading at the speed of a ballad...',
 		'🎹 Tuning the piano keys...',
 		'📢 Testing the speakers: One, two, three...'
-	]
+	],
+	pwa: {
+		newVersionAvailable: 'New version available',
+		reload: 'Reload',
+		close: 'Close'
+	}
 } satisfies Translation;
 
 export default en;
