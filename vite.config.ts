@@ -17,7 +17,7 @@ export default defineConfig({
 				description: 'Your music companion',
 				theme_color: '#ef4444',
 				background_color: '#f9fafb',
-				display: 'standalone',
+				display: 'fullscreen',
 				scope: '/',
 				start_url: '/',
 				icons: [

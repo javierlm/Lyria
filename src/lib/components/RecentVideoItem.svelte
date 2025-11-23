@@ -21,6 +21,7 @@
 	const deleteThreshold = -80;
 
 	function onSwipe(event: CustomEvent<{ dx: number }>) {
+		if (video.isGhost) return;
 		translateX += event.detail.dx;
 		// Limit translation
 		translateX = Math.max(deleteThreshold * 1.5, Math.min(0, translateX));
@@ -51,21 +52,25 @@
 		<button class="recent-video-item" onclick={handleSelect} tabindex="0">
 			<VideoItem {video} {isFavorite} isGhost={video.isGhost}>
 				{#snippet children()}
-					<div class="desktop-delete-action">
-						<button class="delete-button" onclick={handleDelete} aria-label="Delete video">
-							<IconX size="20" weight="bold" />
-						</button>
-					</div>
+					{#if !video.isGhost}
+						<div class="desktop-delete-action">
+							<button class="delete-button" onclick={handleDelete} aria-label="Delete video">
+								<IconX size="20" weight="bold" />
+							</button>
+						</div>
+					{/if}
 				{/snippet}
 			</VideoItem>
 		</button>
 	</div>
 
-	<div class="mobile-delete-action">
-		<button class="delete-button" onclick={handleDelete} aria-label="Delete video">
-			<IconX size="20" weight="bold" />
-		</button>
-	</div>
+	{#if !video.isGhost}
+		<div class="mobile-delete-action">
+			<button class="delete-button" onclick={handleDelete} aria-label="Delete video">
+				<IconX size="20" weight="bold" />
+			</button>
+		</div>
+	{/if}
 </div>
 
 <style>

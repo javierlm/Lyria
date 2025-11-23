@@ -204,9 +204,17 @@
 		});
 
 		recentVideos = Array.from(videoMap.values()).sort((a, b) => b.timestamp - a.timestamp);
-		filteredVideos = recentVideos;
 
-		showRecentVideos = recentVideos.length > 0 && !searchValue;
+		if (searchValue.trim()) {
+			filteredVideos = searchVideos(searchValue);
+			if (filteredVideos.length === 0 && ghostVideo) {
+				filteredVideos = [ghostVideo];
+			}
+			showRecentVideos = filteredVideos.length > 0;
+		} else {
+			filteredVideos = recentVideos;
+			showRecentVideos = recentVideos.length > 0;
+		}
 	}
 
 	function handleRecentVideoClick(videoId: string) {

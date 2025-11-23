@@ -421,12 +421,39 @@ export function adjustTiming(offset: number) {
 export function toggleFullscreen(element: HTMLElement | null) {
 	if (!element) return;
 
-	if (!document.fullscreenElement) {
-		element.requestFullscreen().catch((err) => {
-			console.error(`Error attempting to enable fullscreen: ${err.message} (${err.name})`);
-		});
+	const isNativeFullscreen =
+		document.fullscreenElement ||
+		(document as any).webkitFullscreenElement ||
+		(document as any).mozFullScreenElement ||
+		(document as any).msFullscreenElement;
+
+	if (isNativeFullscreen) {
+		if (document.exitFullscreen) {
+			document.exitFullscreen();
+		} else if ((document as any).webkitExitFullscreen) {
+			(document as any).webkitExitFullscreen();
+		} else if ((document as any).mozCancelFullScreen) {
+			(document as any).mozCancelFullScreen();
+		} else if ((document as any).msExitFullscreen) {
+			(document as any).msExitFullscreen();
+		}
+	} else if (playerState.isFullscreen) {
+		playerState.isFullscreen = false;
 	} else {
-		document.exitFullscreen();
+		if (element.requestFullscreen) {
+			element.requestFullscreen().catch((err) => {
+				console.warn(`Native fullscreen failed: ${err.message}, falling back to CSS`);
+				playerState.isFullscreen = true;
+			});
+		} else if ((element as any).webkitRequestFullscreen) {
+			(element as any).webkitRequestFullscreen();
+		} else if ((element as any).mozRequestFullScreen) {
+			(element as any).mozRequestFullScreen();
+		} else if ((element as any).msRequestFullscreen) {
+			(element as any).msRequestFullscreen();
+		} else {
+			playerState.isFullscreen = true;
+		}
 	}
 }
 

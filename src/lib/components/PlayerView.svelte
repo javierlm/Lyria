@@ -78,7 +78,12 @@
 		isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 		const handleFullscreenChange = () => {
-			playerState.isFullscreen = !!document.fullscreenElement;
+			playerState.isFullscreen = !!(
+				document.fullscreenElement ||
+				(document as any).webkitFullscreenElement ||
+				(document as any).mozFullScreenElement ||
+				(document as any).msFullscreenElement
+			);
 		};
 
 		document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -243,9 +248,9 @@
 		top: 0;
 		left: 0;
 		width: 100vw !important;
-		height: 100vh !important;
+		height: 100dvh !important;
 		z-index: 9999;
-		max-height: 100vh;
+		max-height: 100dvh;
 	}
 
 	#player {

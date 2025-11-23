@@ -93,7 +93,7 @@
 		display: flex;
 		align-items: center;
 		width: 100%;
-		padding: 1rem;
+		padding: 0.5rem 1rem;
 		text-align: left;
 		background: none;
 		border: none;
@@ -119,8 +119,8 @@
 	}
 
 	.video-thumbnail {
-		width: 100px;
-		height: 56.25px;
+		width: 128px;
+		height: 72px;
 		object-fit: cover;
 		border-radius: 4px;
 		margin-right: 1rem;
@@ -204,7 +204,7 @@
 
 	@media (max-width: 768px) {
 		.video-item {
-			padding: 0.75rem;
+			padding: 0.5rem 0.75rem;
 			flex-wrap: nowrap;
 			gap: 0.75rem;
 			min-height: 64px;
@@ -219,8 +219,8 @@
 		}
 
 		.video-thumbnail {
-			width: 70px;
-			height: 39.375px;
+			width: 86px;
+			height: 48px;
 			margin-right: 0.5rem;
 		}
 	}
@@ -228,11 +228,12 @@
 	@media (max-width: 480px) {
 		.video-item {
 			min-height: 58px;
+			padding: 0.25rem 0.75rem;
 		}
 
 		.video-thumbnail {
-			width: 60px;
-			height: 33.75px;
+			width: 89px;
+			height: 50px;
 		}
 
 		.video-info {
