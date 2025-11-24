@@ -49,11 +49,13 @@
 	};
 
 	const languages = $derived(
-		Object.keys($LL.lyricsLanguages).map((code) => ({
-			code: code.toUpperCase(),
-			name: $LL.lyricsLanguages[code as keyof typeof $LL.lyricsLanguages](),
-			flagClass: languageFlags[code.toUpperCase()] || 'unknown' // Use a default class if not found
-		}))
+		Object.keys($LL.lyricsLanguages)
+			.map((code) => ({
+				code: code.toUpperCase(),
+				name: $LL.lyricsLanguages[code as keyof typeof $LL.lyricsLanguages](),
+				flagClass: languageFlags[code.toUpperCase()] || 'unknown' // Use a default class if not found
+			}))
+			.sort((a, b) => a.name.localeCompare(b.name))
 	);
 
 	let dropdownOpen = $state(false);

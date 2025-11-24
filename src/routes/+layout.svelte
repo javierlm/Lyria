@@ -1,18 +1,16 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import { setLocale } from '$i18n/i18n-svelte';
-	import { loadLocaleAsync } from '$i18n/i18n-util.async';
 	import AppLanguageSelector from '$lib/components/AppLanguageSelector.svelte';
 	import ReloadPrompt from '$lib/components/ReloadPrompt.svelte';
 	import LL from '$i18n/i18n-svelte';
 
 	let { data, children } = $props();
 
-	// Cargar locale inicial de forma asíncrona
+	setLocale(data.locale);
+
 	$effect(() => {
-		loadLocaleAsync(data.locale).then(() => {
-			setLocale(data.locale);
-		});
+		setLocale(data.locale);
 	});
 </script>
 

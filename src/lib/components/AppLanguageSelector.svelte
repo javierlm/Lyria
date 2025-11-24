@@ -26,17 +26,9 @@
 
 	let dropdownOpen = $state(false);
 
-	let isMobile = $state(false);
-
 	const currentLang = $derived(
 		languages.find((l) => l.code === $locale) || languages.find((l) => l.code === 'en')
 	);
-
-	function checkIsMobile() {
-		if (browser) {
-			isMobile = window.innerWidth <= 768; // Define your mobile breakpoint
-		}
-	}
 
 	function toggleDropdown(event: Event) {
 		event.preventDefault();
@@ -64,15 +56,12 @@
 
 	onMount(() => {
 		if (browser) {
-			checkIsMobile();
-			window.addEventListener('resize', checkIsMobile);
 			document.addEventListener('click', handleClickOutside);
 		}
 	});
 
 	onDestroy(() => {
 		if (browser) {
-			window.removeEventListener('resize', checkIsMobile);
 			document.removeEventListener('click', handleClickOutside);
 		}
 	});
@@ -84,12 +73,13 @@
 	<button class="select-button" onclick={toggleDropdown} ontouchend={toggleDropdown}>
 		<div class="selected-option">
 			{#if currentLang}
-				{#if !isMobile}
+				<div class="desktop-view">
 					<span class="flag-icon {currentLang.flagClass}"></span>
 					<span>{currentLang.name}</span>
-				{:else}
+				</div>
+				<div class="mobile-view">
 					<span>{currentLang.code.toUpperCase()}</span>
-				{/if}
+				</div>
 			{/if}
 		</div>
 		<CaretDown weight="bold" class={dropdownOpen ? 'rotatecaret' : ''} style="margin-left: auto;" />
@@ -135,7 +125,7 @@
 	}
 
 	.select-wrapper {
-		position: absolute; /* Changed from fixed to absolute */
+		position: absolute;
 		top: 1rem;
 		width: 140px;
 		z-index: 1001;
@@ -244,43 +234,57 @@
 		color: #dc2626;
 	}
 
+	.desktop-view {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.mobile-view {
+		display: none;
+	}
+
 	@media (max-width: 768px) {
 		.select-wrapper {
-			width: 60px; /* Adjust width for mobile to fit code */
-			left: 0.5rem; /* Adjust left position */
-			top: 0.5rem; /* Adjust top position to avoid overlap */
+			width: 60px;
+			left: 0.5rem;
+			top: 0.5rem;
 		}
 
 		.select-button {
-			padding: 8px 5px; /* Reduced padding for very compact look */
-			font-size: 0.8rem; /* Suitable font size for code */
-			height: 38px; /* Slightly reduced height */
+			padding: 8px 5px;
+			font-size: 0.8rem;
+			height: 38px;
+		}
+
+		.desktop-view {
+			display: none;
+		}
+
+		.mobile-view {
+			display: block;
 		}
 
 		.selected-option {
-			gap: 0; /* No gap needed if only code is shown */
-			justify-content: center; /* Center the code */
-			flex-grow: 1; /* Allow to take available space for centering */
+			gap: 0;
+			justify-content: center;
+			flex-grow: 1;
 		}
 
-		/* No need to hide flag-icon or span for name here,
-		   as HTML conditional rendering handles it directly. */
-
-		/* Caret can remain as it's not the primary overlap issue */
 		.select-button :global(svg) {
-			width: 16px; /* Smaller caret */
+			width: 16px;
 			height: 16px;
 		}
 
 		.dropdown {
-			width: max-content; /* Allow dropdown to be as wide as its content */
-			min-width: 100%; /* But not narrower than the button */
+			width: max-content;
+			min-width: 100%;
 		}
 
 		.dropdown-option {
-			font-size: 0.7rem; /* Smaller font for dropdown options */
-			padding: 8px 10px; /* Reduced padding for dropdown options */
-			white-space: nowrap; /* Keep text on single line, let dropdown expand */
+			font-size: 0.7rem;
+			padding: 8px 10px;
+			white-space: nowrap;
 		}
 	}
 </style>

@@ -113,7 +113,8 @@ function startSync() {
 
 	syncInterval = setInterval(() => {
 		const player = getPlayer();
-		if (!player) return;
+		if (!player || playerState.isSeeking || player.getPlayerState() === YT.PlayerState.ENDED)
+			return;
 
 		playerState.currentTime = player.getCurrentTime();
 
@@ -203,6 +204,8 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 					playerState.isSeeking = false;
 					if (event.data === YT.PlayerState.PLAYING) {
 						playerState.isLoadingVideo = false;
+					} else if (event.data === YT.PlayerState.ENDED) {
+						playerState.currentTime = playerState.duration;
 					}
 				}
 			}
@@ -348,6 +351,7 @@ export function pause() {
 export function seekTo(time: number) {
 	const player = getPlayer();
 	if (player) {
+		playerState.isSeeking = true;
 		player.seekTo(time, true);
 		playerState.currentTime = time;
 
