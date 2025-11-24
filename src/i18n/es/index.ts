@@ -9,7 +9,9 @@ const es = {
 		notInHistory: 'Este video no está en tu historial',
 		pressEnterToLoad: 'Presiona Enter para cargarlo',
 		noResults: 'No se encontraron resultados',
-		searchHint: 'Intenta buscar por artista, canción o pega una URL de YouTube'
+		searchHint: 'Intenta buscar por artista, canción o pega una URL de YouTube',
+		all: 'Todos',
+		favorites: 'Favoritos'
 	},
 	video: {
 		unplayed: 'Sin reproducir'

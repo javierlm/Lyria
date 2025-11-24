@@ -43,6 +43,14 @@ type RootTranslation = {
 		 * T​r​y​ ​s​e​a​r​c​h​i​n​g​ ​b​y​ ​a​r​t​i​s​t​,​ ​s​o​n​g​,​ ​o​r​ ​p​a​s​t​e​ ​a​ ​Y​o​u​T​u​b​e​ ​U​R​L
 		 */
 		searchHint: string
+		/**
+		 * A​l​l
+		 */
+		all: string
+		/**
+		 * F​a​v​o​r​i​t​e​s
+		 */
+		favorites: string
 	}
 	video: {
 		/**
@@ -499,6 +507,14 @@ export type TranslationFunctions = {
 		 * Try searching by artist, song, or paste a YouTube URL
 		 */
 		searchHint: () => LocalizedString
+		/**
+		 * All
+		 */
+		all: () => LocalizedString
+		/**
+		 * Favorites
+		 */
+		favorites: () => LocalizedString
 	}
 	video: {
 		/**

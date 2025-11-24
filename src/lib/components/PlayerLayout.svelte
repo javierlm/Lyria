@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { playerState } from '$lib/stores/playerStore.svelte';
 	import Logo from '$lib/components/Logo.svelte';
-	import SearchInput from '$lib/components/SearchInput.svelte';
+	import SearchBar from '$lib/components/SearchBar.svelte';
 	import PlayerView from '$lib/components/PlayerView.svelte';
 	import TimingControls from '$lib/components/TimingControls.svelte';
 	import LyricsView from '$lib/components/LyricsView.svelte';
@@ -67,7 +67,7 @@
 	<div class="logo-container-main">
 		<Logo isPlayerView={true} />
 	</div>
-	<SearchInput />
+	<SearchBar />
 
 	<div class="title-container">
 		<h1>{playerState.artist ? `${playerState.artist} - ${playerState.track}` : '\u00A0'}</h1>

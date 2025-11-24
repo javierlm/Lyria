@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Logo from '$lib/components/Logo.svelte';
-	import SearchInput from '$lib/components/SearchInput.svelte';
+	import SearchBar from '$lib/components/SearchBar.svelte';
 </script>
 
 <div class="search-screen">
@@ -10,7 +10,7 @@
 		</div>
 
 		<div class="search-wrapper">
-			<SearchInput centered={true} />
+			<SearchBar centered={true} />
 		</div>
 	</div>
 </div>

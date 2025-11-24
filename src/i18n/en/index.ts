@@ -9,7 +9,9 @@ const en = {
 		notInHistory: 'This video is not in your history',
 		pressEnterToLoad: 'Press Enter to load it',
 		noResults: 'No results found',
-		searchHint: 'Try searching by artist, song, or paste a YouTube URL'
+		searchHint: 'Try searching by artist, song, or paste a YouTube URL',
+		all: 'All',
+		favorites: 'Favorites'
 	},
 	video: {
 		unplayed: 'Unplayed'
