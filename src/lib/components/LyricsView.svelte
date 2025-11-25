@@ -84,10 +84,8 @@
 		<div class="controls-wrapper">
 			<button
 				class="toggle-visibility"
-				onpointerdown={(event) => {
-					if (event.button === 0) {
-						playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
-					}
+				onclick={() => {
+					playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
 				}}
 				aria-label={playerState.showOriginalSubtitle
 					? $LL.lyrics.hideOriginal()
@@ -102,10 +100,8 @@
 			<LanguageSelector />
 			<button
 				class="toggle-visibility"
-				onpointerdown={(event) => {
-					if (event.button === 0) {
-						playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
-					}
+				onclick={() => {
+					playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
 				}}
 				aria-label={playerState.showTranslatedSubtitle
 					? $LL.lyrics.hideTranslated()
@@ -383,7 +379,7 @@
 
 	.timestamp {
 		font-weight: bold;
-		color: black;
+		color: var(--text-color);
 		text-align: center;
 	}
 
@@ -412,19 +408,25 @@
 	}
 
 	.toggle-visibility {
-		background: none;
+		background-color: var(--card-background);
 		border: 1px solid var(--border-color);
 		color: var(--text-color);
 		padding: 10px;
-		border-radius: 8px;
+		border-radius: 50%;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition: background-color 0.2s;
+		transition:
+			background-color 0.3s ease,
+			border-color 0.3s ease,
+			color 0.3s ease,
+			transform 0.2s ease,
+			box-shadow 0.2s ease;
 		width: 42px;
 		height: 42px;
 		box-sizing: border-box;
+		touch-action: manipulation;
 	}
 
 	.lyric-line.deemphasized .content {
@@ -508,24 +510,31 @@
 
 		.timestamp {
 			font-weight: bold;
-			color: black;
+			color: var(--text-color);
 			text-align: center;
 			font-size: 0.8rem;
 		}
 
 		.toggle-visibility {
-			background: none;
+			background-color: var(--card-background);
 			border: 1px solid var(--border-color);
 			color: var(--text-color);
 			padding: 10px;
-			border-radius: 8px;
+			border-radius: 50%;
 			cursor: pointer;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			transition: background-color 0.2s;
+			transition:
+				background-color 0.3s ease,
+				border-color 0.3s ease,
+				color 0.3s ease,
+				transform 0.2s ease,
+				box-shadow 0.2s ease;
 			height: 40px;
+			width: 40px;
 			box-sizing: border-box;
+			touch-action: manipulation;
 		}
 	}
 
@@ -536,8 +545,8 @@
 	}
 
 	.toggle-visibility:hover {
-		background-color: var(--hover-background);
-		box-shadow: 0 0 8px rgba(var(--primary-color-rgb), 0.5); /* Added box-shadow */
+		background-color: var(--shadow-color);
+		transform: scale(1.05);
 	}
 
 	.no-lyrics-message {

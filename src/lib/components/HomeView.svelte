@@ -21,10 +21,11 @@
 		justify-content: center;
 		align-items: flex-start;
 		width: 100%;
-		min-height: 100dvh;
+		height: 100dvh;
 		position: relative;
 		box-sizing: border-box;
 		padding-top: max(10dvh, calc(50dvh - 350px));
+		overflow: hidden;
 		overscroll-behavior-y: none;
 		-webkit-overflow-scrolling: touch;
 	}
@@ -37,7 +38,7 @@
 		width: 100%;
 		max-width: 800px;
 		padding: 0 1rem;
-		box-sizing: border-sizing;
+		box-sizing: border-box;
 	}
 
 	.logo-container {

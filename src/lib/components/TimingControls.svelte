@@ -170,7 +170,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-		color: white;
+		color: var(--on-primary-color);
 		border: none;
 		padding: 10px 15px;
 		border-radius: 5px;

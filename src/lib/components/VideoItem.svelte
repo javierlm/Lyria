@@ -98,16 +98,19 @@
 		background: none;
 		border: none;
 		border-bottom: 1px solid var(--border-color);
+		border-left: 3px solid transparent;
 		font-size: 1rem;
 		color: var(--text-color);
-		transition: background-color 0.2s ease;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease;
 		overflow: hidden;
 		gap: 1rem;
 		min-height: 88px;
 	}
 
 	.video-item.favorite {
-		background-color: rgba(var(--primary-color-rgb), 0.08);
+		background-color: rgba(var(--primary-color-rgb), 0.15);
 	}
 
 	.video-item:last-child {
@@ -115,7 +118,8 @@
 	}
 
 	.video-item:hover {
-		background-color: #f3f4f6;
+		background-color: rgba(var(--primary-color-rgb), 0.03);
+		border-left-color: var(--text-color);
 	}
 
 	.video-thumbnail {
@@ -157,7 +161,8 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		color: #6b7280;
+		color: var(--text-color);
+		opacity: 0.7;
 		font-size: 0.875rem;
 		flex-shrink: 0;
 	}

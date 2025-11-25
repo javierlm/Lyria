@@ -128,6 +128,13 @@ const en = {
 		'🎹 Tuning the piano keys...',
 		'📢 Testing the speakers: One, two, three...'
 	],
+	theme: {
+		toggle: 'Toggle theme',
+		light: 'Light',
+		dark: 'Dark',
+		system: 'System',
+		current: 'Current theme: {0}'
+	},
 	pwa: {
 		newVersionAvailable: 'New version available',
 		reload: 'Reload',

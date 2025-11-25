@@ -1,8 +1,15 @@
 <script lang="ts">
-	import { fade } from 'svelte/transition';
 	import HomeView from '$lib/components/HomeView.svelte';
 </script>
 
-<div in:fade={{ duration: 300 }}>
+<div class="home-page-wrapper">
 	<HomeView />
 </div>
+
+<style>
+	.home-page-wrapper {
+		height: 100dvh;
+		overflow: hidden;
+		width: 100%;
+	}
+</style>

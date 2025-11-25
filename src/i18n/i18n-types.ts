@@ -461,6 +461,29 @@ type RootTranslation = {
 		 */
 		'19': string
 	}
+	theme: {
+		/**
+		 * T​o​g​g​l​e​ ​t​h​e​m​e
+		 */
+		toggle: string
+		/**
+		 * L​i​g​h​t
+		 */
+		light: string
+		/**
+		 * D​a​r​k
+		 */
+		dark: string
+		/**
+		 * S​y​s​t​e​m
+		 */
+		system: string
+		/**
+		 * C​u​r​r​e​n​t​ ​t​h​e​m​e​:​ ​{​0​}
+		 * @param {unknown} 0
+		 */
+		current: RequiredParams<'0'>
+	}
 	pwa: {
 		/**
 		 * N​e​w​ ​v​e​r​s​i​o​n​ ​a​v​a​i​l​a​b​l​e
@@ -915,6 +938,28 @@ export type TranslationFunctions = {
 		 * 📢 Testing the speakers: One, two, three...
 		 */
 		'19': () => LocalizedString
+	}
+	theme: {
+		/**
+		 * Toggle theme
+		 */
+		toggle: () => LocalizedString
+		/**
+		 * Light
+		 */
+		light: () => LocalizedString
+		/**
+		 * Dark
+		 */
+		dark: () => LocalizedString
+		/**
+		 * System
+		 */
+		system: () => LocalizedString
+		/**
+		 * Current theme: {0}
+		 */
+		current: (arg0: unknown) => LocalizedString
 	}
 	pwa: {
 		/**

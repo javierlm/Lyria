@@ -128,6 +128,13 @@ const es = {
 		'🎹 Afinando las teclas del piano...',
 		'📢 Probando los altavoces: Uno, dos, tres...'
 	],
+	theme: {
+		toggle: 'Cambiar tema',
+		light: 'Claro',
+		dark: 'Oscuro',
+		system: 'Sistema',
+		current: 'Tema actual: {0}'
+	},
 	pwa: {
 		newVersionAvailable: 'Nueva versión disponible',
 		reload: 'Recargar',

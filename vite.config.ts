@@ -16,7 +16,7 @@ export default defineConfig({
 				short_name: 'Lyria',
 				description: 'Your music companion',
 				theme_color: '#ef4444',
-				background_color: '#f9fafb',
+				background_color: '#101523',
 				display: 'fullscreen',
 				scope: '/',
 				start_url: '/',

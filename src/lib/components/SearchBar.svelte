@@ -102,10 +102,16 @@
 		align-items: center;
 		cursor: pointer;
 		box-shadow: 0 4px 10px var(--button-shadow-color);
-		color: white;
+		color: var(--on-primary-color);
 		transition: all 0.3s ease;
 		flex-shrink: 0;
 		outline: none;
+	}
+
+	.search-icon-button:hover {
+		transform: scale(1.05);
+		filter: brightness(1.1);
+		box-shadow: 0 6px 15px var(--button-shadow-color);
 	}
 
 	.search-form-wrapper {

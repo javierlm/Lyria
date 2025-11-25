@@ -69,7 +69,7 @@
 	const isPlayPage = $derived($page.route.id?.includes('/play'));
 </script>
 
-<div class="select-wrapper" style="left: 1rem;">
+<div class="select-wrapper">
 	<button class="select-button" onclick={toggleDropdown} ontouchend={toggleDropdown}>
 		<div class="selected-option">
 			{#if currentLang}
@@ -125,8 +125,7 @@
 	}
 
 	.select-wrapper {
-		position: absolute;
-		top: 1rem;
+		position: relative;
 		width: 140px;
 		z-index: 1001;
 	}
@@ -134,7 +133,7 @@
 	.select-button {
 		width: 100%;
 		background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-		color: white;
+		color: var(--on-primary-color);
 		border: none;
 		border-radius: 5px;
 		padding: 10px 15px;
@@ -183,10 +182,10 @@
 		top: calc(100% + 8px);
 		left: 0;
 		right: 0;
-		background: white;
+		background: var(--card-background);
 		border-radius: 16px;
-		box-shadow: 0 20px 60px rgba(220, 38, 38, 0.2);
-		border: 1px solid rgba(220, 38, 38, 0.1);
+		box-shadow: 0 20px 60px var(--darker-shadow-color);
+		border: 1px solid var(--border-color);
 		overflow: hidden;
 		z-index: 10;
 		opacity: 0;
@@ -208,30 +207,34 @@
 		align-items: center;
 		gap: 8px;
 		border: none;
-		background: white;
+		background: var(--card-background);
 		cursor: pointer;
 		transition: all 0.2s ease;
 		font-size: 11px;
 		font-weight: 500;
-		color: #374151;
+		color: var(--text-color);
 		border-left: 3px solid transparent;
 	}
 
 	.dropdown-option:hover {
-		background: #fee2e2;
+		background: rgba(var(--primary-color-rgb), 0.1);
 	}
 
 	.dropdown-option.selected {
-		background: linear-gradient(90deg, #fee2e2 0%, #fecaca 100%);
-		border-left-color: #dc2626;
-		color: #dc2626;
+		background: linear-gradient(
+			90deg,
+			rgba(var(--primary-color-rgb), 0.1) 0%,
+			rgba(var(--primary-color-rgb), 0.2) 100%
+		);
+		border-left-color: var(--primary-color);
+		color: var(--primary-color);
 	}
 
 	.checkmark {
 		width: 16px;
 		height: 16px;
 		margin-left: auto;
-		color: #dc2626;
+		color: var(--primary-color);
 	}
 
 	.desktop-view {
@@ -247,8 +250,6 @@
 	@media (max-width: 768px) {
 		.select-wrapper {
 			width: 60px;
-			left: 0.5rem;
-			top: 0.5rem;
 		}
 
 		.select-button {

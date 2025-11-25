@@ -85,9 +85,9 @@
 		display: inline-block;
 		position: relative;
 		user-select: none;
-		cursor: pointer; /* Add hand pointer on hover */
-		text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.3); /* Added text-shadow */
-		opacity: 0; /* Initially hidden */
+		cursor: pointer;
+		text-shadow: 4px 4px 8px var(--darker-shadow-color);
+		opacity: 0;
 		transition:
 			opacity 0.4s ease-in-out,
 			transform 0.2s ease-in-out,
@@ -96,7 +96,7 @@
 	}
 
 	.lyria-logo.animated {
-		opacity: 1; /* Make the container visible when animated */
+		opacity: 1;
 	}
 
 	.lyria-logo.player-view-hover:hover {
@@ -132,18 +132,6 @@
 
 	.letter.secondary {
 		color: var(--text-color);
-	}
-
-	/* Efecto de brillo sutil */
-	.lyria-logo::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-		transform: translateX(-100%);
 	}
 
 	/* Animación de carga */
@@ -196,18 +184,18 @@
 		background: linear-gradient(90deg, var(--text-color) 5%, var(--primary-color) 50%);
 		width: 100%;
 		animation: underline-appear 0.8s 0.5s cubic-bezier(0.4, 0, 0.2, 1) backwards;
-		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Added box-shadow */
+		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 	}
 
 	.underline-circle {
 		position: absolute;
 		right: 0;
-		bottom: -5px; /* Adjust to sit on the underline */
+		bottom: -5px;
 		width: 15px;
 		height: 15px;
-		background-color: var(--primary-color); /* Red color from the logo */
+		background-color: var(--primary-color);
 		border-radius: 50%;
-		transform: translateX(50%); /* Center the circle on the end of the underline */
-		box-shadow: 0 0 10px var(--shadow-color); /* Subtle glow */
+		transform: translateX(50%);
+		box-shadow: 0 0 10px var(--shadow-color);
 	}
 </style>

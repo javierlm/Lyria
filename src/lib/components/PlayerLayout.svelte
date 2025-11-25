@@ -72,7 +72,7 @@
 	<div class="title-container">
 		<h1>{playerState.artist ? `${playerState.artist} - ${playerState.track}` : '\u00A0'}</h1>
 		{#if playerState.artist && playerState.track}
-			<LikeButton isLiked={isFavorite} onclick={toggleFavorite} />
+			<LikeButton isLiked={isFavorite} onclick={toggleFavorite} size={iconSize} />
 			<button
 				onclick={copyURL}
 				class="action-button copy-button"
@@ -121,8 +121,9 @@
 	}
 
 	.action-button {
-		background-color: #f0f0f0;
-		border: 1px solid #ccc;
+		background-color: var(--card-background);
+		border: 1px solid var(--border-color);
+		color: var(--text-color);
 		cursor: pointer;
 		padding: 0.5rem;
 		border-radius: 50%;
@@ -132,6 +133,10 @@
 	}
 
 	@media (max-width: 768px) and (orientation: portrait) {
+		.logo-container-main {
+			margin-top: 2.5rem;
+		}
+
 		.title-container {
 			font-size: 0.5rem;
 		}
@@ -142,7 +147,7 @@
 	}
 
 	.action-button:hover {
-		background-color: rgba(0, 0, 0, 0.1);
+		background-color: rgba(var(--primary-color-rgb), 0.1);
 	}
 
 	.timing-controls-container {

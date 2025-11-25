@@ -49,7 +49,7 @@
 		bottom: 20px;
 		right: 20px;
 		background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-		color: white;
+		color: var(--on-primary-color);
 		border: none;
 		border-radius: 50%;
 		width: 48px;
@@ -60,13 +60,22 @@
 		justify-content: center;
 		align-items: center;
 		opacity: 0;
-		transition: opacity 0.3s;
+		transition:
+			opacity 0.3s,
+			transform 0.2s ease,
+			filter 0.2s ease;
 		z-index: 1000;
 		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 	}
 
 	.back-to-top.show {
 		opacity: 1;
+	}
+
+	.back-to-top:hover {
+		transform: scale(1.1);
+		filter: brightness(1.1);
+		box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
 	}
 
 	@media (max-width: 480px) {

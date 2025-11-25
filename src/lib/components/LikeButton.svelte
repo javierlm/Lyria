@@ -4,9 +4,10 @@
 	type Props = {
 		isLiked?: boolean;
 		onclick?: () => void;
+		size?: number;
 	};
 
-	let { isLiked = false, onclick }: Props = $props();
+	let { isLiked = false, onclick, size = 24 }: Props = $props();
 	let isAnimating = $state(false);
 
 	const handleClick = () => {
@@ -24,7 +25,7 @@
 	class:liked={isLiked}
 	class:animating={isAnimating}
 	style={isLiked
-		? 'background: linear-gradient(to right, #ef4444, #d43b74); color: white; box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);'
+		? 'background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); color: var(--on-primary-color); box-shadow: 0 10px 15px -3px rgba(var(--primary-color-rgb), 0.3);'
 		: ''}
 >
 	<div
@@ -33,7 +34,7 @@
 		class:ping={isAnimating && isLiked}
 		class:shrink={isAnimating && !isLiked}
 	>
-		<IconHeart size="24" weight={isLiked ? 'fill' : 'regular'} color="currentColor" />
+		<IconHeart {size} weight={isLiked ? 'fill' : 'regular'} color="currentColor" />
 	</div>
 	<span class="button-text" class:text-shadow={isLiked}>Me gusta</span>
 
@@ -57,9 +58,9 @@
 		font-size: 0.75rem;
 		transition: all 0.3s ease;
 		cursor: pointer;
-		border: 2px solid #e5e7eb;
-		background: white;
-		color: #1f2937;
+		border: 1px solid var(--border-color);
+		background: var(--card-background);
+		color: var(--text-color);
 	}
 
 	.like-button:not(.liked):hover {

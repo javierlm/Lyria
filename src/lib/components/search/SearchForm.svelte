@@ -83,6 +83,8 @@
 	}
 
 	input[type='text'] {
+		background-color: var(--background-color);
+		color: var(--text-color);
 		border: 1px solid var(--border-color);
 		padding: 0.75rem 1rem;
 		border-radius: 0.5rem;
@@ -99,7 +101,7 @@
 
 	.submit-button {
 		background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-		color: white;
+		color: var(--on-primary-color);
 		border: none;
 		padding: 0.75rem 1.5rem;
 		border-radius: 0.5rem;
@@ -110,6 +112,12 @@
 		font-weight: 600;
 		transition: all 0.3s ease;
 		flex-shrink: 0;
+	}
+
+	.submit-button:hover {
+		transform: scale(1.02);
+		filter: brightness(1.1);
+		box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
 	}
 
 	@media (max-width: 768px) {
