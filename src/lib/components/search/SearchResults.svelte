@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { slide } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import { animateHeight } from '$lib/actions/animateHeight';
 	import RecentVideoItem from '../RecentVideoItem.svelte';
 	import { searchStore } from '$lib/stores/searchStore.svelte';
@@ -12,10 +12,8 @@
 	$effect(() => {
 		if (dropdownHeightUpdater && searchStore.filteredVideos.length > 0) {
 			setTimeout(() => {
-				if (dropdownHeightUpdater) {
-					dropdownHeightUpdater();
-				}
-			}, 320);
+				dropdownHeightUpdater?.();
+			}, 200);
 		}
 	});
 
@@ -39,13 +37,75 @@
 	function handleDeleteRecentVideo(event: CustomEvent<string>) {
 		searchStore.deleteRecentVideo(event.detail);
 	}
+	let dropdownMaxHeight: string | null = $state(null);
+	let dropdownElement: HTMLDivElement = $state() as HTMLDivElement;
+	let lastCalculatedHeight: number = 0;
+
+	const KEYBOARD_BUFFER = 30;
+	const HEIGHT_CHANGE_THRESHOLD = 5;
+
+	function updateDropdownHeight() {
+		if (!searchStore.isKeyboardOpen || !window.visualViewport || !dropdownElement) {
+			dropdownMaxHeight = null;
+			lastCalculatedHeight = 0;
+			return;
+		}
+
+		const visualViewportHeight = window.visualViewport.height;
+		const dropdownRect = dropdownElement.getBoundingClientRect();
+
+		const availableHeight = visualViewportHeight - dropdownRect.top - KEYBOARD_BUFFER;
+		const finalHeight = Math.max(100, availableHeight);
+
+		if (Math.abs(finalHeight - lastCalculatedHeight) < HEIGHT_CHANGE_THRESHOLD) {
+			return;
+		}
+
+		lastCalculatedHeight = finalHeight;
+		dropdownMaxHeight = `${finalHeight}px`;
+	}
+
+	$effect(() => {
+		let animationFrame: number = 0;
+		let timeoutId: number = 0;
+
+		const loopUpdate = () => {
+			updateDropdownHeight();
+			if (searchStore.isKeyboardOpen) {
+				animationFrame = requestAnimationFrame(loopUpdate);
+			}
+		};
+
+		if (searchStore.isKeyboardOpen) {
+			loopUpdate();
+
+			timeoutId = window.setTimeout(() => {
+				if (animationFrame) cancelAnimationFrame(animationFrame);
+				animationFrame = 0;
+				updateDropdownHeight();
+			}, 500);
+
+			window.visualViewport?.addEventListener('resize', updateDropdownHeight);
+		} else {
+			dropdownMaxHeight = null;
+			if (animationFrame) cancelAnimationFrame(animationFrame);
+			if (timeoutId) clearTimeout(timeoutId);
+		}
+
+		return () => {
+			if (animationFrame) cancelAnimationFrame(animationFrame);
+			if (timeoutId) clearTimeout(timeoutId);
+			window.visualViewport?.removeEventListener('resize', updateDropdownHeight);
+		};
+	});
 </script>
 
 {#if searchStore.showRecentVideos && searchStore.filteredVideos.length > 0}
 	<div
+		bind:this={dropdownElement}
 		class="recent-videos-dropdown"
-		in:slide={{ duration: 300 }}
-		out:slide={{ duration: 300 }}
+		style:max-height={dropdownMaxHeight}
+		transition:fade={{ duration: 150 }}
 		use:animateHeight={{ onUpdate: (update) => (dropdownHeightUpdater = update) }}
 	>
 		{#each searchStore.filteredVideos as video (video.videoId)}
@@ -59,9 +119,10 @@
 	</div>
 {:else if searchStore.searchValue.trim() && searchStore.filteredVideos.length === 0}
 	<div
+		bind:this={dropdownElement}
 		class="recent-videos-dropdown no-results"
-		in:slide={{ duration: 300 }}
-		out:slide={{ duration: 300 }}
+		style:max-height={dropdownMaxHeight}
+		transition:fade={{ duration: 150 }}
 		use:animateHeight
 	>
 		<div class="no-results-message">
@@ -96,6 +157,8 @@
 		transform: translateX(0);
 		scrollbar-width: auto;
 		scrollbar-color: var(--primary-color) var(--card-background);
+		transition: max-height 0.3s ease-out;
+		overscroll-behavior: contain;
 	}
 
 	.recent-videos-dropdown.no-results {

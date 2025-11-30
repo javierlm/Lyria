@@ -91,8 +91,13 @@
 		transition:
 			opacity 0.4s ease-in-out,
 			transform 0.2s ease-in-out,
-			filter 0.2s ease-in-out;
+			filter 0.2s ease-in-out,
+			padding-bottom 0.3s ease-out;
 		padding-bottom: 25px;
+	}
+
+	:global(.keyboard-open) .lyria-logo {
+		padding-bottom: 0;
 	}
 
 	.lyria-logo.animated {

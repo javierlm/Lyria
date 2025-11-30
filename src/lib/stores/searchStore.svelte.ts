@@ -13,6 +13,7 @@ class SearchStore {
 	ghostVideo: VideoItem | null = $state(null);
 	isFetchingGhost = $state(false);
 	showOnlyFavorites = $state(false);
+	isKeyboardOpen = $state(false);
 
 	private debounceTimer: ReturnType<typeof setTimeout> | undefined;
 	private readonly DEBOUNCE_DELAY = 300;

@@ -101,10 +101,11 @@
 		margin: 0 auto;
 		display: flex;
 		flex-direction: column;
-		min-height: 100dvh;
+		min-height: 100%;
 		position: relative;
 		padding-top: env(safe-area-inset-top);
 		padding-bottom: env(safe-area-inset-bottom);
+		box-sizing: border-box;
 	}
 
 	.top-controls {

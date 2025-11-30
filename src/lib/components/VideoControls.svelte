@@ -66,7 +66,12 @@
 </script>
 
 <div class="controls-container">
-	<button class="play-pause-btn" onclick={togglePlayPause} aria-label={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()} title={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}>
+	<button
+		class="play-pause-btn"
+		onclick={togglePlayPause}
+		aria-label={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}
+		title={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}
+	>
 		{#if playerState.isPlaying}
 			<IconPause size="20" weight="bold" />
 		{:else}
@@ -88,7 +93,16 @@
 	<div class="time-display">{formatTime(playerState.duration)}</div>
 
 	<div class="volume-controls">
-		<button class="volume-btn" onclick={toggleMute} aria-label={playerState.isMuted || playerState.volume === 0 ? $LL.controls.unmute() : $LL.controls.mute()} title={playerState.isMuted || playerState.volume === 0 ? $LL.controls.unmute() : $LL.controls.mute()}>
+		<button
+			class="volume-btn"
+			onclick={toggleMute}
+			aria-label={playerState.isMuted || playerState.volume === 0
+				? $LL.controls.unmute()
+				: $LL.controls.mute()}
+			title={playerState.isMuted || playerState.volume === 0
+				? $LL.controls.unmute()
+				: $LL.controls.mute()}
+		>
 			{#if playerState.isMuted || playerState.volume === 0}
 				<SpeakerSlash size="20" weight="bold" />
 			{:else}
@@ -114,7 +128,9 @@
 					playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
 				}
 			}}
-			title={playerState.showOriginalSubtitle ? $LL.lyrics.hideOriginal() : $LL.lyrics.showOriginal()}
+			title={playerState.showOriginalSubtitle
+				? $LL.lyrics.hideOriginal()
+				: $LL.lyrics.showOriginal()}
 		>
 			{#if playerState.showOriginalSubtitle}
 				<Eye size="20" weight="bold" />
@@ -130,7 +146,9 @@
 					playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
 				}
 			}}
-			title={playerState.showTranslatedSubtitle ? $LL.lyrics.hideTranslated() : $LL.lyrics.showTranslated()}
+			title={playerState.showTranslatedSubtitle
+				? $LL.lyrics.hideTranslated()
+				: $LL.lyrics.showTranslated()}
 		>
 			{#if playerState.showTranslatedSubtitle}
 				<Eye size="20" weight="bold" />
@@ -141,7 +159,16 @@
 		</button>
 	</div>
 
-	<button class="fullscreen-btn" onclick={toggleFullscreen} aria-label={playerState.isFullscreen ? $LL.controls.exitFullscreen() : $LL.controls.enterFullscreen()} title={playerState.isFullscreen ? $LL.controls.exitFullscreen() : $LL.controls.enterFullscreen()}>
+	<button
+		class="fullscreen-btn"
+		onclick={toggleFullscreen}
+		aria-label={playerState.isFullscreen
+			? $LL.controls.exitFullscreen()
+			: $LL.controls.enterFullscreen()}
+		title={playerState.isFullscreen
+			? $LL.controls.exitFullscreen()
+			: $LL.controls.enterFullscreen()}
+	>
 		{#if playerState.isFullscreen}
 			<IconArrowsInSimple size="20" weight="bold" />
 		{:else}
@@ -196,13 +223,13 @@
 		margin-left: auto;
 	}
 
-	    .subtitles-btn {
-	        display: flex;
-	        align-items: center;
-	        gap: 0.25rem;
-	        padding: 5px 10px;
-	        border-radius: 5px;
-	    }
+	.subtitles-btn {
+		display: flex;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 5px 10px;
+		border-radius: 5px;
+	}
 	.fullscreen-btn {
 		margin-left: 1rem;
 	}
@@ -335,4 +362,3 @@
 		}
 	}
 </style>
-

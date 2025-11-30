@@ -8,6 +8,7 @@
 	import LikeButton from '$lib/components/LikeButton.svelte';
 	import { Copy, Check } from 'phosphor-svelte';
 	import LL from '$i18n/i18n-svelte';
+	import BackToTop from '$lib/components/BackToTop.svelte';
 
 	import { videoService } from '$lib/data/videoService';
 
@@ -96,6 +97,8 @@
 	</div>
 
 	<LyricsView />
+
+	<BackToTop />
 </div>
 
 <style>
