@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { extractVideoId } from '$lib/utils';
+import { extractVideoId } from '$lib/shared/utils';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = ({ url }) => {

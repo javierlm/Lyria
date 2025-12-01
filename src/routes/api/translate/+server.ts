@@ -1,8 +1,11 @@
-import { LibreTranslateTranslator } from '$lib/LibreTranslateTranslator';
-import { DeepLTranslator } from '$lib/DeepLTranslator';
+import { LibreTranslateTranslator } from '$lib/features/settings/services/LibreTranslateTranslator.server';
+import { DeepLTranslator } from '$lib/features/settings/services/DeepLTranslator.server';
 import type { RequestHandler } from './$types';
 import { TRANSLATION_PROVIDER } from '$env/static/private';
-import type { TranslationProvider, TranslationResponse } from '$lib/TranslationProvider';
+import type {
+	TranslationProvider,
+	TranslationResponse
+} from '$lib/features/settings/domain/TranslationProvider';
 import { json } from '@sveltejs/kit';
 import { FileSystemAndMemoryCacheProvider } from '$lib/cache/FsAndMemCacheProvider';
 import { VercelKvCacheProvider } from '$lib/cache/VercelKvCacheProvider';

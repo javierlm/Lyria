@@ -1,5 +1,5 @@
 <script lang="ts">
-	import HomeView from '$lib/components/HomeView.svelte';
+	import HomeView from '$lib/features/home/components/HomeView.svelte';
 </script>
 
 <div class="home-page-wrapper">

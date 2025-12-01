@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { parseTitle } from '../utils';
+import { parseTitle } from '../shared/utils';
 
 const testCases = [
 	{ input: 'Artist - Track', expected: { artist: 'Artist', track: 'Track' } },

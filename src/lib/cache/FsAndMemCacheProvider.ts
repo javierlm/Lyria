@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { TranslationResponse } from '../TranslationProvider';
+import type { TranslationResponse } from '$lib/features/settings/domain/TranslationProvider';
 import type { CacheProvider, CacheValue } from './CacheProvider';
 
 const CACHE_DIR = path.join(process.cwd(), 'cache');

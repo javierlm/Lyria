@@ -1,9 +1,9 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import { setLocale } from '$i18n/i18n-svelte';
-	import AppLanguageSelector from '$lib/components/AppLanguageSelector.svelte';
-	import ReloadPrompt from '$lib/components/ReloadPrompt.svelte';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import AppLanguageSelector from '$lib/features/settings/components/AppLanguageSelector.svelte';
+	import ReloadPrompt from '$lib/features/ui/components/ReloadPrompt.svelte';
+	import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
 	import LL from '$i18n/i18n-svelte';
 
 	let { data, children } = $props();

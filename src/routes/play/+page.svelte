@@ -2,9 +2,9 @@
 	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { playerState } from '$lib/stores/playerStore.svelte';
-	import { play, pause, seekTo } from '$lib/actions/playerActions';
-	import PlayerLayout from '$lib/components/PlayerLayout.svelte';
+	import { playerState } from '$lib/features/player/stores/playerStore.svelte';
+	import { play, pause, seekTo } from '$lib/features/player/services/playerActions';
+	import PlayerLayout from '$lib/features/player/components/PlayerLayout.svelte';
 
 	let { data } = $props();
 
