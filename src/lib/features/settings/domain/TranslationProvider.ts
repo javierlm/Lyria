@@ -3,6 +3,7 @@ export type TranslationResponse = {
 	alternatives?: string[];
 	detectedSourceLanguage?: string;
 	percentageOfDetectedLanguages?: number;
+	isSameLanguage?: boolean;
 };
 
 export interface TranslationProvider {
@@ -12,4 +13,6 @@ export interface TranslationProvider {
 		text: string[],
 		context?: string
 	): Promise<TranslationResponse>;
+
+	detectLanguage(text: string[]): Promise<string | undefined>;
 }

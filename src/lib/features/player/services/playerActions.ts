@@ -56,8 +56,12 @@ export async function translateLyrics(targetLang: string) {
 
 		const translationResponse: TranslationResponse = await response.json();
 
-		const { translatedText, detectedSourceLanguage, percentageOfDetectedLanguages } =
-			translationResponse;
+		const {
+			translatedText,
+			detectedSourceLanguage,
+			percentageOfDetectedLanguages,
+			isSameLanguage
+		} = translationResponse;
 
 		if (!translatedText || !Array.isArray(translatedText)) {
 			throw new Error('Invalid translatedText received from server.');
@@ -72,11 +76,16 @@ export async function translateLyrics(targetLang: string) {
 			playerState.detectedSourceLanguage = detectedSourceLanguage;
 			playerState.percentageOfDetectedLanguages = percentageOfDetectedLanguages;
 
-			updateTranslatedSubtitleVisibility(
-				targetLang,
-				detectedSourceLanguage,
-				percentageOfDetectedLanguages
-			);
+			// Use backend's isSameLanguage flag if available, otherwise use old logic
+			if (isSameLanguage !== undefined) {
+				playerState.showTranslatedSubtitle = !isSameLanguage;
+			} else {
+				updateTranslatedSubtitleVisibility(
+					targetLang,
+					detectedSourceLanguage,
+					percentageOfDetectedLanguages
+				);
+			}
 		} else {
 			console.warn('Mismatch in line count between original and translated lyrics');
 		}

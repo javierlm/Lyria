@@ -15,6 +15,15 @@ const config = {
 		alias: {
 			'$i18n': 'src/lib/features/settings/domain/i18n'
 		}
+	},
+	vite: {
+		optimizeDeps: {
+			exclude: ['cld3-asm']
+		},
+		ssr: {
+			external: ['cld3-asm'],
+			noExternal: []
+		}
 	}
 };
 

@@ -5,21 +5,38 @@ export type LanguageDetection = {
 	confidence: number;
 };
 
+const CONFIDENCE_THRESHOLD = 0.8;
+
 export class LibreTranslateTranslator implements TranslationProvider {
-	async detectLanguage(text: string): Promise<LanguageDetection[]> {
-		const res = await fetch('http://localhost:5000/detect', {
-			method: 'POST',
-			body: JSON.stringify({ q: text }),
-			headers: { 'Content-Type': 'application/json' }
-		});
+	async detectLanguage(text: string[]): Promise<string | undefined> {
+		try {
+			const combinedText = text.join(' ');
+			const res = await fetch('http://localhost:5000/detect', {
+				method: 'POST',
+				body: JSON.stringify({ q: combinedText }),
+				headers: { 'Content-Type': 'application/json' }
+			});
 
-		if (!res.ok) {
-			throw new Error(
-				`Language detection API failed with status ${res.status}: ${await res.text()}`
-			);
+			if (!res.ok) {
+				throw new Error(
+					`Language detection API failed with status ${res.status}: ${await res.text()}`
+				);
+			}
+
+			const detections: LanguageDetection[] = await res.json();
+
+			if (detections && detections.length > 0) {
+				const topDetection = detections[0];
+				if (topDetection.confidence > CONFIDENCE_THRESHOLD) {
+					return topDetection.language;
+				}
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error('Error detecting language with LibreTranslate:', error);
+			return undefined;
 		}
-
-		return await res.json();
 	}
 
 	async translate(

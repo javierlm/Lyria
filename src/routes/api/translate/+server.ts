@@ -79,7 +79,14 @@ export const POST: RequestHandler = async ({ request }) => {
 			textToTranslate,
 			context
 		);
-		await cacheProvider.set(cacheKey, translatedResponse);
+
+		// Only cache if actual translation occurred (not same language)
+		if (!translatedResponse.isSameLanguage) {
+			// Don't cache request-specific metadata
+			const { isSameLanguage, percentageOfDetectedLanguages, ...cacheableData } =
+				translatedResponse;
+			await cacheProvider.set(cacheKey, cacheableData);
+		}
 
 		const reconstructedTranslatedText = [...translatedResponse.translatedText];
 		emptyLineIndices.forEach((index) => {
@@ -89,7 +96,8 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({
 			translatedText: reconstructedTranslatedText,
 			detectedSourceLanguage: translatedResponse.detectedSourceLanguage,
-			percentageOfDetectedLanguages: translatedResponse.percentageOfDetectedLanguages
+			percentageOfDetectedLanguages: translatedResponse.percentageOfDetectedLanguages,
+			isSameLanguage: translatedResponse.isSameLanguage
 		});
 	} catch (error) {
 		console.error('Translation error:', error);

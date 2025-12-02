@@ -3,6 +3,8 @@ import * as deepl from 'deepl-node';
 import { DEEPL_API_KEY } from '$env/static/private';
 import { getPrimaryLanguage } from '$lib/shared/utils';
 
+const CONFIDENCE_THRESHOLD = 0.8;
+
 if (!DEEPL_API_KEY) {
 	throw new Error('DEEPL_API_KEY is not set in environment variables.');
 }
@@ -52,6 +54,25 @@ export class DeepLTranslator implements TranslationProvider {
 		text: string[],
 		context?: string
 	): Promise<TranslationResponse> {
+		try {
+			const detectedLang = await this.detectLanguage(text);
+			const normalizedTarget = targetLanguage
+				? getPrimaryLanguage(targetLanguage).toLowerCase()
+				: 'en';
+
+			if (detectedLang && detectedLang === normalizedTarget) {
+				console.log('Skipping translation, detected language matches target:', detectedLang);
+				return {
+					translatedText: text,
+					detectedSourceLanguage: detectedLang,
+					percentageOfDetectedLanguages: 100,
+					isSameLanguage: true
+				};
+			}
+		} catch (error) {
+			console.warn('Error in language detection optimization:', error);
+		}
+
 		const mappedSource = mapToDeepLSourceLanguage(sourceLanguage);
 		const mappedTarget = mapToDeepLTargetLanguage(targetLanguage);
 
@@ -120,5 +141,31 @@ export class DeepLTranslator implements TranslationProvider {
 		}
 		console.log('Letra traducida: ', translatedResponse);
 		return translatedResponse;
+	}
+
+	async detectLanguage(text: string[]): Promise<string | undefined> {
+		// Only run on server-side (Node.js environment)
+		if (typeof window !== 'undefined') {
+			console.warn('detectLanguage called in browser context, skipping');
+			return undefined;
+		}
+
+		try {
+			const { loadModule } = await import('cld3-asm');
+			const factory = await loadModule();
+			const identifier = factory.create();
+			const combinedText = text.join(' ');
+			const result = identifier.findLanguage(combinedText);
+
+			identifier.dispose();
+
+			if (result.is_reliable && result.probability > CONFIDENCE_THRESHOLD) {
+				return result.language;
+			}
+			return undefined;
+		} catch (error) {
+			console.error('Error detecting language with cld3-asm:', error);
+			return undefined;
+		}
 	}
 }
