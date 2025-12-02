@@ -108,10 +108,11 @@
 		transition:fade={{ duration: 150 }}
 		use:animateHeight={{ onUpdate: (update) => (dropdownHeightUpdater = update) }}
 	>
-		{#each searchStore.filteredVideos as video (video.videoId)}
+		{#each searchStore.filteredVideos as video, index (video.videoId)}
 			<RecentVideoItem
 				{video}
 				isFavorite={video.isFavorite}
+				priority={index < 5}
 				on:select={(e) => handleRecentVideoClick(e.detail)}
 				on:delete={handleDeleteRecentVideo}
 			/>

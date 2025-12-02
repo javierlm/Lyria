@@ -10,10 +10,11 @@
 		video: RecentVideo & { isGhost?: boolean };
 		isFavorite?: boolean;
 		isGhost?: boolean;
+		priority?: boolean;
 		children?: Snippet;
 	};
 
-	let { video, isFavorite = false, isGhost = false, children }: Props = $props();
+	let { video, isFavorite = false, isGhost = false, priority = false, children }: Props = $props();
 
 	function formatTimeAgo(timestamp: number): string {
 		const now = Date.now();
@@ -55,7 +56,13 @@
 
 <div class="video-item" class:favorite={isFavorite} transition:fly={{ x: 100, duration: 300 }}>
 	{#if video.thumbnailUrl}
-		<img src={video.thumbnailUrl} alt={video.track} class="video-thumbnail" />
+		<img
+			src={video.thumbnailUrl}
+			alt={video.track}
+			class="video-thumbnail"
+			fetchpriority={priority ? 'high' : 'auto'}
+			loading={priority ? 'eager' : 'lazy'}
+		/>
 	{/if}
 	<div class="video-details">
 		<div class="video-info">

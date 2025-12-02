@@ -8,9 +8,10 @@
 	type Props = {
 		video: RecentVideo & { isGhost?: boolean };
 		isFavorite?: boolean;
+		priority?: boolean;
 	};
 
-	let { video, isFavorite = false }: Props = $props();
+	let { video, isFavorite = false, priority = false }: Props = $props();
 
 	const dispatch = createEventDispatcher<{
 		delete: string;
@@ -50,7 +51,7 @@
 <div class="swipe-container" use:swipe={{ onSwipe, onSwipeEnd }}>
 	<div class="swipe-content" style="transform: translateX({translateX}px)">
 		<button class="recent-video-item" onclick={handleSelect} tabindex="0">
-			<VideoItem {video} {isFavorite} isGhost={video.isGhost}>
+			<VideoItem {video} {isFavorite} isGhost={video.isGhost} {priority}>
 				{#snippet children()}
 					{#if !video.isGhost}
 						<div class="desktop-delete-action">
