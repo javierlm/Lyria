@@ -6,7 +6,8 @@
 	import TimingControls from '$lib/features/player/components/TimingControls.svelte';
 	import LyricsView from '$lib/features/player/components/LyricsView.svelte';
 	import LikeButton from '$lib/features/video/components/LikeButton.svelte';
-	import { Copy, Check } from 'phosphor-svelte';
+	import Copy from 'phosphor-svelte/lib/Copy';
+	import Check from 'phosphor-svelte/lib/Check';
 	import LL from '$i18n/i18n-svelte';
 	import BackToTop from '$lib/features/ui/components/BackToTop.svelte';
 

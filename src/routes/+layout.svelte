@@ -5,6 +5,11 @@
 	import ReloadPrompt from '$lib/features/ui/components/ReloadPrompt.svelte';
 	import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
 	import LL from '$i18n/i18n-svelte';
+	import '@fontsource/inter/300.css';
+	import '@fontsource/inter/400.css';
+	import '@fontsource/inter/500.css';
+	import '@fontsource/inter/600.css';
+	import '@fontsource/inter/700.css';
 
 	let { data, children } = $props();
 
@@ -18,12 +23,6 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<title>{$LL.appName()}</title>
-	<link rel="preconnect" href="https://fonts.googleapis.com" />
-	<link rel="preconnect" href="https://fonts.gstatic.com" />
-	<link
-		href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-		rel="stylesheet"
-	/>
 </svelte:head>
 
 <div class="container">

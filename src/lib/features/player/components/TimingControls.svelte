@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 	import { adjustTiming, syncTimingToFirstLine } from '$lib/features/player/services/playerActions';
-	import { MinusCircle, PlusCircle, ArrowsClockwise } from 'phosphor-svelte';
+	import MinusCircle from 'phosphor-svelte/lib/MinusCircle';
+	import PlusCircle from 'phosphor-svelte/lib/PlusCircle';
+	import ArrowsClockwise from 'phosphor-svelte/lib/ArrowsClockwise';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { debounce } from '$lib/shared/utils';

@@ -6,7 +6,8 @@
 	import SpeakerSlash from 'phosphor-svelte/lib/SpeakerSlash';
 	import IconArrowsOutSimple from 'phosphor-svelte/lib/ArrowsOutSimple';
 	import IconArrowsInSimple from 'phosphor-svelte/lib/ArrowsInSimple';
-	import { Eye, EyeSlash } from 'phosphor-svelte';
+	import Eye from 'phosphor-svelte/lib/Eye';
+	import EyeSlash from 'phosphor-svelte/lib/EyeSlash';
 	import LL from '$i18n/i18n-svelte';
 
 	import { playerState } from '$lib/features/player/stores/playerStore.svelte';

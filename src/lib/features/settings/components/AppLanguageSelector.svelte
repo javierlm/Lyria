@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { locale, setLocale } from '$i18n/i18n-svelte';
 	import { locales } from '$i18n/i18n-util';
-	import { CaretDown } from 'phosphor-svelte';
+	import CaretDown from 'phosphor-svelte/lib/CaretDown';
 	import { browser } from '$app/environment';
 	import { page } from '$app/stores';
 	import type { Locales } from '$i18n/i18n-types';

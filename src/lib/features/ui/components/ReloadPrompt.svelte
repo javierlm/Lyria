@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
-	import { X, ArrowClockwise, CheckCircle } from 'phosphor-svelte';
+	import X from 'phosphor-svelte/lib/X';
+	import ArrowClockwise from 'phosphor-svelte/lib/ArrowClockwise';
 	import { fly } from 'svelte/transition';
 	import LL from '$i18n/i18n-svelte';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { CaretUp } from 'phosphor-svelte';
+	import CaretUp from 'phosphor-svelte/lib/CaretUp';
 	import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 
 	let showButton = $state(false);

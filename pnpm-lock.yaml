@@ -36,6 +36,9 @@ importers:
       '@eslint/js':
         specifier: ^9.39.1
         version: 9.39.1
+      '@fontsource/inter':
+        specifier: ^5.2.8
+        version: 5.2.8
       '@sveltejs/adapter-auto':
         specifier: ^7.0.0
         version: 7.0.0(@sveltejs/kit@2.48.4(@sveltejs/vite-plugin-svelte@6.2.1(svelte@5.43.5)(vite@7.2.2(@types/node@24.10.0)(terser@5.44.1)(tsx@4.20.6)))(svelte@5.43.5)(vite@7.2.2(@types/node@24.10.0)(terser@5.44.1)(tsx@4.20.6)))
@@ -66,9 +69,6 @@ importers:
       globals:
         specifier: ^16.5.0
         version: 16.5.0
-      phosphor-icons-svelte:
-        specifier: ^2.1.0
-        version: 2.1.0(svelte@5.43.5)
       phosphor-svelte:
         specifier: ^3.0.1
         version: 3.0.1(svelte@5.43.5)(vite@7.2.2(@types/node@24.10.0)(terser@5.44.1)(tsx@4.20.6))
@@ -805,6 +805,9 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@fontsource/inter@5.2.8':
+    resolution: {integrity: sha512-P6r5WnJoKiNVV+zvW2xM13gNdFhAEpQ9dQJHt3naLvfg+LkF2ldgSLiF4T41lf1SQCM9QmkqPTn4TH568IRagg==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -2262,11 +2265,6 @@ packages:
 
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
-
-  phosphor-icons-svelte@2.1.0:
-    resolution: {integrity: sha512-gTNxjkc3Wth5stZuVrMWrP07Obv5wUxg9zAqe2tujnLIKa+RaVWNgjOzR+Y9RE3l7bV1PN7dGcBAWR+ps7HA+Q==}
-    peerDependencies:
-      svelte: '>= 5'
 
   phosphor-svelte@3.0.1:
     resolution: {integrity: sha512-QuxdzWCBjNZXglk4XpmaKb+JRA6XgKOYWpBY8k82NZwxO5ec7u2iFuueAijKYgj/7hLWHtreAPc2Q5uZFNTRSQ==}
@@ -3779,6 +3777,8 @@ snapshots:
     dependencies:
       '@eslint/core': 0.17.0
       levn: 0.4.1
+
+  '@fontsource/inter@5.2.8': {}
 
   '@humanfs/core@0.19.1': {}
 
@@ -5323,10 +5323,6 @@ snapshots:
       minipass: 7.1.2
 
   pathe@2.0.3: {}
-
-  phosphor-icons-svelte@2.1.0(svelte@5.43.5):
-    dependencies:
-      svelte: 5.43.5
 
   phosphor-svelte@3.0.1(svelte@5.43.5)(vite@7.2.2(@types/node@24.10.0)(terser@5.44.1)(tsx@4.20.6)):
     dependencies:

@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 	import { handleLanguageChange as dispatchLangChange } from '$lib/features/player/services/playerActions';
-	import { CaretDown } from 'phosphor-svelte';
+	import CaretDown from 'phosphor-svelte/lib/CaretDown';
 	import LL from '$i18n/i18n-svelte';
 
 	const languageFlags: { [key: string]: string } = {

@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { LyricsStates, playerState } from '$lib/features/player/stores/playerStore.svelte';
 	import { seekTo } from '$lib/features/player/services/playerActions';
-	import { FileText, Translate, Eye, EyeSlash } from 'phosphor-svelte';
+	import FileText from 'phosphor-svelte/lib/FileText';
+	import Translate from 'phosphor-svelte/lib/Translate';
+	import Eye from 'phosphor-svelte/lib/Eye';
+	import EyeSlash from 'phosphor-svelte/lib/EyeSlash';
 	import LanguageSelector from '$lib/features/settings/components/LanguageSelector.svelte';
 	import { getPrimaryLanguage } from '$lib/shared/utils';
 	import { LL } from '$i18n/i18n-svelte';
