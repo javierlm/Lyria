@@ -10,9 +10,15 @@ import {
 import { parseTitle, removeJunkSuffixes, getPrimaryLanguage } from '$lib/shared/utils';
 import type { TranslationResponse } from '$lib/features/settings/domain/TranslationProvider';
 
-let syncInterval: NodeJS.Timeout;
+let animationFrameId: number | null = null;
+let lastSyncedTime = 0;
+let lastSyncTimestamp = 0;
+let lastPeriodicSync = 0;
+let isPlayerPlaying = false;
+
 const HUMAN_REACTION_TIME_MS = 500;
 const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
+const PERIODIC_SYNC_INTERVAL_MS = 5000;
 
 function loadYouTubeAPI() {
 	return new Promise<void>((resolve) => {
@@ -122,33 +128,123 @@ export function handleLanguageChange(newLanguage: string) {
 	translateLyrics(upperCaseLanguage);
 }
 
-function startSync() {
-	if (syncInterval) clearInterval(syncInterval);
+function syncWithIframe() {
+	const player = getPlayer();
+	if (!player) return;
 
-	syncInterval = setInterval(() => {
-		const player = getPlayer();
-		if (!player || playerState.isSeeking || player.getPlayerState() === YT.PlayerState.ENDED)
-			return;
+	try {
+		lastSyncedTime = player.getCurrentTime();
+		lastSyncTimestamp = performance.now();
+		playerState.currentTime = lastSyncedTime;
+	} catch (error) {
+		console.error('Error syncing with iframe:', error);
+	}
+}
 
-		playerState.currentTime = player.getCurrentTime();
+function updateFrame() {
+	const player = getPlayer();
+	if (!player || playerState.isSeeking) {
+		animationFrameId = null;
+		return;
+	}
 
-		if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
-			const t = playerState.currentTime * 1000;
-			const adjustedTime = t - playerState.timingOffset;
-			const activeIndex = playerState.lines.findLastIndex((l) => adjustedTime >= l.startTimeMs);
+	const now = performance.now();
 
-			if (activeIndex !== playerState.currentLineIndex) {
-				playerState.currentLineIndex = activeIndex;
-				playerState.currentLine = activeIndex !== -1 ? playerState.lines[activeIndex].text : '';
-				playerState.currentTranslatedLine =
-					activeIndex !== -1 ? playerState.translatedLines[activeIndex]?.text || '' : '';
-			}
-		} else {
-			playerState.currentLineIndex = -1;
-			playerState.currentLine = '';
-			playerState.currentTranslatedLine = '';
+	if (isPlayerPlaying) {
+		const elapsedSeconds = (now - lastSyncTimestamp) / 1000;
+		playerState.currentTime = lastSyncedTime + elapsedSeconds;
+
+		if (now - lastPeriodicSync >= PERIODIC_SYNC_INTERVAL_MS) {
+			syncWithIframe();
+			lastPeriodicSync = now;
 		}
-	}, 250);
+	}
+
+	if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
+		const t = playerState.currentTime * 1000;
+		const adjustedTime = t - playerState.timingOffset;
+
+		let needsUpdate = false;
+		let newIndex = playerState.currentLineIndex;
+
+		if (newIndex < playerState.lines.length - 1) {
+			const nextLine = playerState.lines[newIndex + 1];
+			if (adjustedTime >= nextLine.startTimeMs) {
+				needsUpdate = true;
+				for (let i = newIndex + 1; i < playerState.lines.length; i++) {
+					if (adjustedTime >= playerState.lines[i].startTimeMs) {
+						newIndex = i;
+					} else {
+						break;
+					}
+				}
+			}
+		}
+
+		if (!needsUpdate && newIndex >= 0) {
+			const currentLine = playerState.lines[newIndex];
+			if (adjustedTime < currentLine.startTimeMs) {
+				needsUpdate = true;
+				const oldIndex = newIndex;
+				newIndex = -1;
+				for (let i = oldIndex - 1; i >= 0; i--) {
+					if (adjustedTime >= playerState.lines[i].startTimeMs) {
+						newIndex = i;
+						break;
+					}
+				}
+			}
+		}
+
+		if (!needsUpdate && newIndex === -1 && adjustedTime >= 0) {
+			if (playerState.lines.length > 0 && adjustedTime >= playerState.lines[0].startTimeMs) {
+				needsUpdate = true;
+				for (let i = 0; i < playerState.lines.length; i++) {
+					if (adjustedTime >= playerState.lines[i].startTimeMs) {
+						newIndex = i;
+					} else {
+						break;
+					}
+				}
+			}
+		}
+
+		if (needsUpdate && newIndex !== playerState.currentLineIndex) {
+			playerState.currentLineIndex = newIndex;
+			playerState.currentLine = newIndex !== -1 ? playerState.lines[newIndex].text : '';
+			playerState.currentTranslatedLine =
+				newIndex !== -1 ? playerState.translatedLines[newIndex]?.text || '' : '';
+		}
+	} else {
+		playerState.currentLineIndex = -1;
+		playerState.currentLine = '';
+		playerState.currentTranslatedLine = '';
+	}
+
+	if (isPlayerPlaying && !playerState.isSeeking) {
+		animationFrameId = requestAnimationFrame(updateFrame);
+	} else {
+		animationFrameId = null;
+	}
+}
+
+function startSync() {
+	if (animationFrameId !== null) {
+		cancelAnimationFrame(animationFrameId);
+		animationFrameId = null;
+	}
+	syncWithIframe();
+	lastPeriodicSync = performance.now();
+	isPlayerPlaying = true;
+	animationFrameId = requestAnimationFrame(updateFrame);
+}
+
+function stopSync() {
+	isPlayerPlaying = false;
+	if (animationFrameId !== null) {
+		cancelAnimationFrame(animationFrameId);
+		animationFrameId = null;
+	}
 }
 
 function destroyExistingPlayer() {
@@ -207,18 +303,29 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 		events: {
 			onReady: (event) => handlePlayerReady(event, videoId),
 			onStateChange: (event) => {
+				const prevIsPlaying = playerState.isPlaying;
 				playerState.isPlaying = event.data === YT.PlayerState.PLAYING;
+
 				if (event.data === YT.PlayerState.BUFFERING) {
 					playerState.isSeeking = true;
+					stopSync();
 				} else if (
 					event.data === YT.PlayerState.PLAYING ||
 					event.data === YT.PlayerState.PAUSED ||
 					event.data === YT.PlayerState.ENDED
 				) {
 					playerState.isSeeking = false;
+
 					if (event.data === YT.PlayerState.PLAYING) {
 						playerState.isLoadingVideo = false;
+						if (!prevIsPlaying) {
+							startSync();
+						}
+					} else if (event.data === YT.PlayerState.PAUSED) {
+						stopSync();
+						syncWithIframe();
 					} else if (event.data === YT.PlayerState.ENDED) {
+						stopSync();
 						playerState.currentTime = playerState.duration;
 					}
 				}
@@ -367,6 +474,9 @@ export function seekTo(time: number) {
 	if (player) {
 		playerState.isSeeking = true;
 		player.seekTo(time, true);
+
+		lastSyncedTime = time;
+		lastSyncTimestamp = performance.now();
 		playerState.currentTime = time;
 
 		if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
