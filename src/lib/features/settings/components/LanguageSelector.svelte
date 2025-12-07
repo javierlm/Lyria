@@ -3,6 +3,8 @@
 	import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 	import { handleLanguageChange as dispatchLangChange } from '$lib/features/player/services/playerActions';
 	import CaretDown from 'phosphor-svelte/lib/CaretDown';
+	import CloudSlash from 'phosphor-svelte/lib/CloudSlash';
+	import { translationStore } from '$lib/features/settings/stores/translationStore.svelte';
 	import LL from '$i18n/i18n-svelte';
 
 	const languageFlags: { [key: string]: string } = {
@@ -68,6 +70,41 @@
 			languages[0]
 	);
 
+	let languageStatus: Record<string, 'readily' | 'after-download' | 'no'> = $state({});
+
+	$effect(() => {
+		const sourceLang = playerState.detectedSourceLanguage || 'en';
+		const isSupported = translationStore.isChromeAISupported && translationStore.useChromeAI;
+
+		if (!isSupported) {
+			languageStatus = {};
+			return;
+		}
+
+		// Check all languages in parallel and update state
+		(async () => {
+			const newStatus: Record<string, 'readily' | 'after-download' | 'no'> = {};
+
+			const results = await Promise.all(
+				languages.map(async (lang) => {
+					const status = await translationStore.checkLanguagePairAvailability(
+						sourceLang,
+						lang.code
+					);
+					return { code: lang.code, status };
+				})
+			);
+
+			for (const { code, status } of results) {
+				if (status !== 'no') {
+					newStatus[code] = status;
+				}
+			}
+
+			languageStatus = newStatus;
+		})();
+	});
+
 	// Function to handle language selection
 	function selectLanguage(code: string) {
 		dispatchLangChange(code.toLowerCase()); // Dispatch the action to update the store, convert back to lowercase if store expects it
@@ -130,6 +167,18 @@
 		<div class="selected-option">
 			<span class="flag-icon {currentLang.flagClass}"></span>
 			<span>{currentLang.name}</span>
+			{#if translationStore.isChromeAISupported && translationStore.useChromeAI && languageStatus[currentLang.code]}
+				<div
+					class="local-badge"
+					class:ready={languageStatus[currentLang.code] === 'readily'}
+					class:download={languageStatus[currentLang.code] === 'after-download'}
+					title={languageStatus[currentLang.code] === 'readily'
+						? $LL.chromeAI.localTranslationTooltip()
+						: $LL.chromeAI.downloadableTooltip()}
+				>
+					<CloudSlash size={12} weight="bold" />
+				</div>
+			{/if}
 		</div>
 		<CaretDown weight="bold" class={dropdownOpen ? 'rotatecaret' : ''} style="margin-left: auto;" />
 	</button>
@@ -142,7 +191,21 @@
 				onclick={() => selectLanguage(lang.code)}
 			>
 				<span class="flag-icon {lang.flagClass}"></span>
-				<span>{lang.name}</span>
+				<div class="lang-text-wrapper">
+					<span>{lang.name}</span>
+					{#if translationStore.isChromeAISupported && translationStore.useChromeAI && languageStatus[lang.code]}
+						<div
+							class="local-badge"
+							class:ready={languageStatus[lang.code] === 'readily'}
+							class:download={languageStatus[lang.code] === 'after-download'}
+							title={languageStatus[lang.code] === 'readily'
+								? $LL.chromeAI.localTranslationTooltip()
+								: $LL.chromeAI.downloadableTooltip()}
+						>
+							<CloudSlash size={12} weight="bold" />
+						</div>
+					{/if}
+				</div>
 				{#if lang.code === selectedLanguage}
 					<svg class="checkmark" fill="currentColor" viewBox="0 0 20 20">
 						<path
@@ -162,6 +225,41 @@
 		margin: 0;
 		padding: 0;
 		box-sizing: border-box;
+	}
+
+	.lang-text-wrapper {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.local-badge {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 4px;
+		border-radius: 4px;
+		line-height: 1;
+	}
+
+	.selected-option .local-badge {
+		background: transparent;
+		padding: 0;
+	}
+
+	.selected-option .local-badge.ready,
+	.selected-option .local-badge.download {
+		color: #fff;
+	}
+
+	.dropdown-option .local-badge.ready {
+		background: rgba(34, 197, 94, 0.9);
+		color: #fff;
+	}
+
+	.dropdown-option .local-badge.download {
+		background: rgba(59, 130, 246, 0.9);
+		color: #fff;
 	}
 
 	:global(body.dark-mode) {

@@ -135,6 +135,17 @@ const es = {
 		system: 'Sistema',
 		current: 'Tema actual: {0}'
 	},
+	chromeAI: {
+		useBrowserAI: 'Traducción local',
+		beta: 'Beta',
+		downloading: 'Descargando...',
+		modelReady: 'Listo',
+		modelError: 'Error',
+		localTranslationTooltip: 'Traducido localmente (sin conexión)',
+		downloadableTooltip: 'Disponible para traducción local (requiere descarga)',
+		disclaimer:
+			'Algunos idiomas podrían no estar disponibles. Se usará traducción en la nube como alternativa. Las traducciones locales podrían ser menos precisas.'
+	},
 	pwa: {
 		newVersionAvailable: 'Nueva versión disponible',
 		reload: 'Recargar',

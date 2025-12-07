@@ -484,6 +484,40 @@ type RootTranslation = {
 		 */
 		current: RequiredParams<'0'>
 	}
+	chromeAI: {
+		/**
+		 * L​o​c​a​l​ ​t​r​a​n​s​l​a​t​i​o​n
+		 */
+		useBrowserAI: string
+		/**
+		 * B​e​t​a
+		 */
+		beta: string
+		/**
+		 * D​o​w​n​l​o​a​d​i​n​g​.​.​.
+		 */
+		downloading: string
+		/**
+		 * R​e​a​d​y
+		 */
+		modelReady: string
+		/**
+		 * E​r​r​o​r
+		 */
+		modelError: string
+		/**
+		 * T​r​a​n​s​l​a​t​e​d​ ​l​o​c​a​l​l​y​ ​(​o​f​f​l​i​n​e​)
+		 */
+		localTranslationTooltip: string
+		/**
+		 * A​v​a​i​l​a​b​l​e​ ​f​o​r​ ​l​o​c​a​l​ ​t​r​a​n​s​l​a​t​i​o​n​ ​(​r​e​q​u​i​r​e​s​ ​d​o​w​n​l​o​a​d​)
+		 */
+		downloadableTooltip: string
+		/**
+		 * S​o​m​e​ ​l​a​n​g​u​a​g​e​s​ ​m​a​y​ ​n​o​t​ ​b​e​ ​a​v​a​i​l​a​b​l​e​.​ ​C​l​o​u​d​ ​t​r​a​n​s​l​a​t​i​o​n​ ​w​i​l​l​ ​b​e​ ​u​s​e​d​ ​a​s​ ​f​a​l​l​b​a​c​k​.​ ​L​o​c​a​l​ ​t​r​a​n​s​l​a​t​i​o​n​s​ ​m​a​y​ ​b​e​ ​l​e​s​s​ ​a​c​c​u​r​a​t​e​.
+		 */
+		disclaimer: string
+	}
 	pwa: {
 		/**
 		 * N​e​w​ ​v​e​r​s​i​o​n​ ​a​v​a​i​l​a​b​l​e
@@ -960,6 +994,40 @@ export type TranslationFunctions = {
 		 * Current theme: {0}
 		 */
 		current: (arg0: unknown) => LocalizedString
+	}
+	chromeAI: {
+		/**
+		 * Local translation
+		 */
+		useBrowserAI: () => LocalizedString
+		/**
+		 * Beta
+		 */
+		beta: () => LocalizedString
+		/**
+		 * Downloading...
+		 */
+		downloading: () => LocalizedString
+		/**
+		 * Ready
+		 */
+		modelReady: () => LocalizedString
+		/**
+		 * Error
+		 */
+		modelError: () => LocalizedString
+		/**
+		 * Translated locally (offline)
+		 */
+		localTranslationTooltip: () => LocalizedString
+		/**
+		 * Available for local translation (requires download)
+		 */
+		downloadableTooltip: () => LocalizedString
+		/**
+		 * Some languages may not be available. Cloud translation will be used as fallback. Local translations may be less accurate.
+		 */
+		disclaimer: () => LocalizedString
 	}
 	pwa: {
 		/**

@@ -8,7 +8,7 @@ import {
 	LyricsStates
 } from '$lib/features/player/stores/playerStore.svelte';
 import { parseTitle, removeJunkSuffixes, getPrimaryLanguage } from '$lib/shared/utils';
-import type { TranslationResponse } from '$lib/features/settings/domain/TranslationProvider';
+import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
 
 let animationFrameId: number | null = null;
 let lastSyncedTime = 0;
@@ -39,28 +39,21 @@ export async function translateLyrics(targetLang: string) {
 	const lyricsText = playerState.lines.map((line) => line.text);
 	const timestamps = playerState.lines.map((line) => line.startTimeMs);
 	try {
-		const response = await fetch('/api/translate', {
-			method: 'POST',
-			body: JSON.stringify({
-				sourceLanguage: 'auto',
-				targetLanguage: targetLang,
-				text: lyricsText,
+		const translationResponse = await frontendTranslationService.translate(
+			lyricsText,
+			targetLang,
+			'auto',
+			{
 				id: playerState.id,
 				artist: playerState.artist,
 				track: playerState.track
-			}),
-			headers: {
-				'Content-Type': 'application/json'
 			}
-		});
+		);
 
-		if (!response.ok) {
-			throw new Error(
-				`Server translation failed with status ${response.status}: ${await response.text()}`
-			);
+		if (!translationResponse) {
+			console.error('Translation process returned null.');
+			return;
 		}
-
-		const translationResponse: TranslationResponse = await response.json();
 
 		const {
 			translatedText,
@@ -426,6 +419,17 @@ function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
 	playerState.lines = result.lyrics;
 	playerState.id = result.id || 0;
 	playerState.userLang = getLanguage();
+
+	// Attempt to detect language immediately if found
+	if (result.found && result.lyrics.length > 0) {
+		frontendTranslationService
+			.detectSourceLanguage(result.lyrics.map((l) => l.text))
+			.then((lang) => {
+				if (lang) {
+					playerState.detectedSourceLanguage = lang;
+				}
+			});
+	}
 }
 
 function initializePlayerProperties(player: YT.Player) {

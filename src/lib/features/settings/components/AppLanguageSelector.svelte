@@ -7,6 +7,8 @@
 	import { page } from '$app/stores';
 	import type { Locales } from '$i18n/i18n-types';
 	import { loadLocaleAsync } from '$i18n/i18n-util.async';
+	import ChromeAISettings from './ChromeAISettings.svelte';
+	import { translationStore } from '../stores/translationStore.svelte';
 
 	const languageFlags: { [key: string]: string } = {
 		en: 'gb',
@@ -85,7 +87,11 @@
 		<CaretDown weight="bold" class={dropdownOpen ? 'rotatecaret' : ''} style="margin-left: auto;" />
 	</button>
 
-	<div class="dropdown" class:open={dropdownOpen}>
+	<div
+		class="dropdown"
+		class:open={dropdownOpen}
+		style:min-width={translationStore.isChromeAISupported ? '240px' : 'auto'}
+	>
 		{#each languages as lang (lang.code)}
 			<button
 				class="dropdown-option"
@@ -106,6 +112,13 @@
 				{/if}
 			</button>
 		{/each}
+
+		{#if translationStore.isChromeAISupported}
+			<div class="settings-separator"></div>
+			<div class="ai-settings-wrapper">
+				<ChromeAISettings />
+			</div>
+		{/if}
 	</div>
 </div>
 
@@ -181,7 +194,6 @@
 		position: absolute;
 		top: calc(100% + 8px);
 		left: 0;
-		right: 0;
 		background: var(--card-background);
 		border-radius: 16px;
 		box-shadow: 0 20px 60px var(--darker-shadow-color);
@@ -287,5 +299,14 @@
 			padding: 8px 10px;
 			white-space: nowrap;
 		}
+	}
+	.settings-separator {
+		height: 1px;
+		background: var(--border-color);
+		margin: 4px 0;
+	}
+
+	.ai-settings-wrapper {
+		padding: 4px;
 	}
 </style>

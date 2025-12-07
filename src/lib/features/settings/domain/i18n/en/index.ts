@@ -135,6 +135,17 @@ const en = {
 		system: 'System',
 		current: 'Current theme: {0}'
 	},
+	chromeAI: {
+		useBrowserAI: 'Local translation',
+		beta: 'Beta',
+		downloading: 'Downloading...',
+		modelReady: 'Ready',
+		modelError: 'Error',
+		localTranslationTooltip: 'Translated locally (offline)',
+		downloadableTooltip: 'Available for local translation (requires download)',
+		disclaimer:
+			'Some languages may not be available. Cloud translation will be used as fallback. Local translations may be less accurate.'
+	},
 	pwa: {
 		newVersionAvailable: 'New version available',
 		reload: 'Reload',

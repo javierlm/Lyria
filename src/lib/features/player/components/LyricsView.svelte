@@ -5,9 +5,11 @@
 	import Translate from 'phosphor-svelte/lib/Translate';
 	import Eye from 'phosphor-svelte/lib/Eye';
 	import EyeSlash from 'phosphor-svelte/lib/EyeSlash';
+	import CloudSlash from 'phosphor-svelte/lib/CloudSlash';
 	import LanguageSelector from '$lib/features/settings/components/LanguageSelector.svelte';
 	import { getPrimaryLanguage } from '$lib/shared/utils';
 	import { LL } from '$i18n/i18n-svelte';
+	import { translationStore } from '$lib/features/settings/stores/translationStore.svelte';
 
 	let hoveredIndex: number | null = $state(null);
 	let lyricsContainerRef: HTMLDivElement | null = $state(null);
@@ -129,6 +131,11 @@
 			<h2 class="translated-header">
 				<Translate size={iconSize} weight="bold" />
 				<span class="header-text">{$LL.lyrics.translated()}</span>
+				{#if translationStore.wasLastTranslationLocal && playerState.translatedLines.length > 0}
+					<span class="local-indicator" title={$LL.chromeAI.localTranslationTooltip()}>
+						<CloudSlash size={16} weight="bold" />
+					</span>
+				{/if}
 			</h2>
 		</div>
 	</div>
@@ -288,6 +295,14 @@
 		align-items: center;
 		gap: 0.5rem;
 		position: relative;
+	}
+
+	.local-indicator {
+		display: inline-flex;
+		align-items: center;
+		margin-left: 0.35rem;
+		color: #4cc9f0;
+		cursor: help;
 	}
 
 	.lyric-row {
