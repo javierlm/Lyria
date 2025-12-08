@@ -28,6 +28,8 @@
 			</label>
 		</div>
 
+		<p class="disclaimer">{$LL.chromeAI.disclaimer()}</p>
+
 		{#if translationStore.useChromeAI}
 			<div class="status-container">
 				{#if translationStore.modelStatus === 'downloading' && translationStore.downloadProgress}
@@ -66,7 +68,6 @@
 					</div>
 				{/if}
 			</div>
-			<p class="disclaimer">{$LL.chromeAI.disclaimer()}</p>
 		{/if}
 	</div>
 {/if}

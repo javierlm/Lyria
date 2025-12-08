@@ -56,7 +56,7 @@
 				const handleResize = () => {
 					const keyboardHeight = window.innerHeight - visualViewport.height;
 					const wasOpen = isKeyboardOpen;
-					isKeyboardOpen = keyboardHeight > 150;
+					isKeyboardOpen = keyboardHeight > 10;
 					searchStore.isKeyboardOpen = isKeyboardOpen;
 
 					if (isKeyboardOpen !== wasOpen) {
@@ -130,7 +130,7 @@
 					const currentHeight = window.innerHeight;
 					const heightDiff = lastInnerHeight - currentHeight;
 					const wasOpen = isKeyboardOpen;
-					isKeyboardOpen = heightDiff > 150;
+					isKeyboardOpen = heightDiff > 10;
 					searchStore.isKeyboardOpen = isKeyboardOpen;
 					lastInnerHeight = currentHeight;
 
@@ -236,6 +236,7 @@
 <style>
 	.search-screen {
 		display: flex;
+		flex-direction: column;
 		justify-content: center;
 		align-items: center;
 		width: 100%;
@@ -265,9 +266,6 @@
 		transform: scale(0.9);
 		z-index: 1;
 		margin-bottom: 5%;
-		transition:
-			transform 0.3s ease-out,
-			margin-bottom 0.3s ease-out;
 	}
 
 	.search-screen.keyboard-open .logo-container {
@@ -281,7 +279,6 @@
 		flex-direction: column;
 		align-items: center;
 		z-index: 2;
-		transition: margin-top 0.3s ease-out;
 	}
 
 	.search-screen.keyboard-open .search-wrapper {
@@ -291,25 +288,18 @@
 	@media (max-width: 768px) {
 		.search-screen {
 			padding-bottom: 75%;
-			transition:
-				padding-bottom 0.3s ease-out,
-				padding-top 0.3s ease-out,
-				height 0.3s ease-out;
 		}
 
 		.search-screen.keyboard-open {
 			height: auto;
 			min-height: 0;
 			padding-bottom: 1rem;
-			padding-top: 0.5rem;
-			justify-content: flex-start;
 		}
 
 		.center-block {
 			max-width: 95%;
 			gap: 1rem;
 			padding: 0 0.5rem;
-			transition: gap 0.3s ease-out;
 		}
 
 		.search-screen.keyboard-open .center-block {
@@ -318,9 +308,6 @@
 
 		.logo-container {
 			transform: scale(0.6);
-			transition:
-				transform 0.3s ease-out,
-				margin-bottom 0.3s ease-out;
 		}
 
 		.search-screen.keyboard-open .logo-container {

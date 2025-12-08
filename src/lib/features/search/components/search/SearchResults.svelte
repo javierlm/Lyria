@@ -1,21 +1,10 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
-	import { animateHeight } from '$lib/features/ui/actions/animateHeight';
 	import RecentVideoItem from '$lib/features/video/components/RecentVideoItem.svelte';
 	import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
 	import { LL } from '$i18n/i18n-svelte';
 	import { isYouTubeUrl, extractVideoId } from '$lib/shared/utils';
 	import { goto } from '$app/navigation';
-
-	let dropdownHeightUpdater: (() => void) | null = null;
-
-	$effect(() => {
-		if (dropdownHeightUpdater && searchStore.filteredVideos.length > 0) {
-			setTimeout(() => {
-				dropdownHeightUpdater?.();
-			}, 200);
-		}
-	});
 
 	function loadVideoFromUrl(url: string) {
 		const id = extractVideoId(url);
@@ -66,35 +55,14 @@
 	}
 
 	$effect(() => {
-		let animationFrame: number = 0;
-		let timeoutId: number = 0;
-
-		const loopUpdate = () => {
-			updateDropdownHeight();
-			if (searchStore.isKeyboardOpen) {
-				animationFrame = requestAnimationFrame(loopUpdate);
-			}
-		};
-
 		if (searchStore.isKeyboardOpen) {
-			loopUpdate();
-
-			timeoutId = window.setTimeout(() => {
-				if (animationFrame) cancelAnimationFrame(animationFrame);
-				animationFrame = 0;
-				updateDropdownHeight();
-			}, 500);
-
+			updateDropdownHeight();
 			window.visualViewport?.addEventListener('resize', updateDropdownHeight);
 		} else {
 			dropdownMaxHeight = null;
-			if (animationFrame) cancelAnimationFrame(animationFrame);
-			if (timeoutId) clearTimeout(timeoutId);
 		}
 
 		return () => {
-			if (animationFrame) cancelAnimationFrame(animationFrame);
-			if (timeoutId) clearTimeout(timeoutId);
 			window.visualViewport?.removeEventListener('resize', updateDropdownHeight);
 		};
 	});
@@ -106,7 +74,6 @@
 		class="recent-videos-dropdown"
 		style:max-height={dropdownMaxHeight}
 		transition:fade={{ duration: 150 }}
-		use:animateHeight={{ onUpdate: (update) => (dropdownHeightUpdater = update) }}
 	>
 		{#each searchStore.filteredVideos as video, index (video.videoId)}
 			<RecentVideoItem
@@ -124,7 +91,6 @@
 		class="recent-videos-dropdown no-results"
 		style:max-height={dropdownMaxHeight}
 		transition:fade={{ duration: 150 }}
-		use:animateHeight
 	>
 		<div class="no-results-message">
 			{#if searchStore.showOnlyFavorites}
@@ -158,7 +124,6 @@
 		transform: translateX(0);
 		scrollbar-width: auto;
 		scrollbar-color: var(--primary-color) var(--card-background);
-		transition: max-height 0.3s ease-out;
 		overscroll-behavior: contain;
 	}
 
