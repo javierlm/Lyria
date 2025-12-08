@@ -10,7 +10,12 @@
 	let { centered = false } = $props<{ centered?: boolean }>();
 
 	function autofocus(node: HTMLElement) {
-		node.focus();
+		const isMobile = window.matchMedia('(max-width: 768px)').matches;
+		const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+		if (!isMobile && !isTouchDevice) {
+			node.focus();
+		}
 	}
 
 	function handleFocus() {

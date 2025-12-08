@@ -49,6 +49,12 @@
 		dropdownOpen = false;
 	}
 
+	function handleInteractionStart() {
+		if (document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
+		}
+	}
+
 	function handleClickOutside(event: MouseEvent | TouchEvent) {
 		const target = event.target as HTMLElement;
 		if (dropdownOpen && !target.closest('.select-wrapper')) {
@@ -72,7 +78,7 @@
 </script>
 
 <div class="select-wrapper">
-	<button class="select-button" onclick={toggleDropdown} ontouchend={toggleDropdown}>
+	<button class="select-button" onclick={toggleDropdown} onpointerdown={handleInteractionStart}>
 		<div class="selected-option">
 			{#if currentLang}
 				<div class="desktop-view">
@@ -97,7 +103,7 @@
 				class="dropdown-option"
 				class:selected={lang.code === $locale}
 				onclick={(e) => selectLanguage(e, lang.code)}
-				ontouchend={(e) => selectLanguage(e, lang.code)}
+				onpointerdown={handleInteractionStart}
 			>
 				<span class="flag-icon {lang.flagClass}"></span>
 				<span>{lang.name}</span>
