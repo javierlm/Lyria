@@ -434,7 +434,7 @@ function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
 
 function initializePlayerProperties(player: YT.Player) {
 	playerState.duration = player.getDuration();
-	playerState.volume = player.getVolume();
+	player.setVolume(playerState.volume);
 	playerState.isMuted = player.isMuted();
 }
 
@@ -503,6 +503,9 @@ export function setVolume(volume: number) {
 	if (player) {
 		player.setVolume(volume);
 		playerState.volume = volume;
+		if (typeof window !== 'undefined') {
+			localStorage.setItem('lyria_volume', volume.toString());
+		}
 	}
 }
 
