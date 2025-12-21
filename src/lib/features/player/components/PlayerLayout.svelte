@@ -8,6 +8,7 @@
 	import LikeButton from '$lib/features/video/components/LikeButton.svelte';
 	import Copy from 'phosphor-svelte/lib/Copy';
 	import Check from 'phosphor-svelte/lib/Check';
+	import ListBullets from 'phosphor-svelte/lib/ListBullets';
 	import LL from '$i18n/i18n-svelte';
 	import BackToTop from '$lib/features/ui/components/BackToTop.svelte';
 
@@ -85,6 +86,15 @@
 				{:else}
 					<Copy size={iconSize} />
 				{/if}
+			</button>
+			<button
+				onclick={() => {
+					playerState.isLyricSelectorOpen = true;
+				}}
+				class="action-button list-button"
+				aria-label="Select Lyrics"
+			>
+				<ListBullets size={iconSize} />
 			</button>
 		{/if}
 	</div>

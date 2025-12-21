@@ -33,6 +33,7 @@ export interface LyricsResult {
 	id?: number;
 	artistName?: string;
 	trackName?: string;
+	candidates?: LRCLibResponse[];
 }
 
 // Jaro-Winkler implementation
@@ -457,11 +458,65 @@ export async function getSyncedLyrics(
 		const finalMatch = findBestMatch(data, sanitizedTrack, sanitizedArtist, duration);
 
 		if (finalMatch) {
-			return parseLyrics(finalMatch);
+			const result = parseLyrics(finalMatch);
+			result.candidates = data;
+			return result;
 		}
+
+		return { lyrics: [], found: false, synced: false, candidates: data };
 	} catch (error) {
 		console.error('❌ Error fetching or processing lyrics:', error);
 	}
 
 	return { lyrics: [], found: false, synced: false };
+}
+
+export async function searchCandidates(
+	track: string,
+	artist: string,
+	duration: number
+): Promise<LRCLibResponse[]> {
+	const japaneseCharRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/gu;
+	const punctuationRegex = /\p{P}/gu;
+
+	const normalizedTrack = normalizeForSearch(track);
+	const normalizedArtist = normalizeForSearch(artist);
+
+	const sanitizedTrack = normalizedTrack
+		.replace(japaneseCharRegex, '')
+		.replace(punctuationRegex, '')
+		.trim();
+	const sanitizedArtist = normalizedArtist
+		.replace(japaneseCharRegex, '')
+		.replace(punctuationRegex, '')
+		.trim();
+
+	const query = sanitizedArtist ? `${sanitizedArtist} ${sanitizedTrack}` : sanitizedTrack;
+	const url = `${BASE_URL_SEARCH}?q=${encodeURIComponent(query)}&duration=${duration}`;
+
+	try {
+		const res = await fetch(url);
+		if (!res.ok) return [];
+
+		const data: LRCLibResponse[] = await res.json();
+		return data;
+	} catch (error) {
+		console.error('Error searching candidates:', error);
+		return [];
+	}
+}
+
+export async function getLyricById(id: number): Promise<LyricsResult> {
+	const url = `https://lrclib.net/api/get/${id}`;
+
+	try {
+		const res = await fetch(url);
+		if (!res.ok) throw new Error('Failed to fetch lyric by ID');
+
+		const data: LRCLibResponse = await res.json();
+		return parseLyrics(data);
+	} catch (error) {
+		console.error('Error fetching lyric by ID:', error);
+		return { lyrics: [], found: false, synced: false };
+	}
 }

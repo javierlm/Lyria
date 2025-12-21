@@ -27,6 +27,15 @@ const es = {
 		hideTranslated: 'Ocultar subtítulos traducidos',
 		showTranslated: 'Mostrar subtítulos traducidos'
 	},
+	lyricSelector: {
+		title: 'Seleccionar Letra',
+		automatic: 'Selección Automática',
+		automaticDescription: 'Deja que la app elija',
+		noLyrics: 'No se encontraron letras',
+		synced: 'Sincronizada',
+		plain: 'Sin sincronizar',
+		close: 'Cerrar'
+	},
 	// Video Controls
 	controls: {
 		original: 'Original',

@@ -101,6 +101,42 @@ class IndexedDBVideoRepository implements IVideoRepository {
 		});
 	}
 
+	async setVideoLyricId(videoUrl: string, lyricId: number | null): Promise<void> {
+		const db = await this.openDB();
+		const transaction = db.transaction([VIDEO_DELAYS_STORE], 'readwrite');
+		const store = transaction.objectStore(VIDEO_DELAYS_STORE);
+		const key = `lyricId:${videoUrl}`;
+
+		if (lyricId === null) {
+			store.delete(key);
+		} else {
+			store.put(lyricId, key);
+		}
+
+		return new Promise((resolve, reject) => {
+			transaction.oncomplete = () => resolve();
+			transaction.onerror = (event) =>
+				reject('Error setting video lyric ID: ' + (event.target as IDBTransaction).error);
+		});
+	}
+
+	async getVideoLyricId(videoUrl: string): Promise<number | null> {
+		const db = await this.openDB();
+		const transaction = db.transaction([VIDEO_DELAYS_STORE], 'readonly');
+		const store = transaction.objectStore(VIDEO_DELAYS_STORE);
+		const key = `lyricId:${videoUrl}`;
+
+		return new Promise((resolve, reject) => {
+			const request = store.get(key);
+			request.onsuccess = (event) => {
+				const result = (event.target as IDBRequest).result;
+				resolve(result !== undefined ? result : null);
+			};
+			request.onerror = (event) =>
+				reject('Error getting video lyric ID: ' + (event.target as IDBRequest).error);
+		});
+	}
+
 	async addRecentVideo(video: RecentVideo): Promise<void> {
 		const db = await this.openDB();
 		const transaction = db.transaction([RECENT_VIDEOS_STORE], 'readwrite');

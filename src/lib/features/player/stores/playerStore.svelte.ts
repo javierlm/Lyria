@@ -1,4 +1,4 @@
-import type { SyncedLine } from '$lib/features/player/services/lrclib';
+import type { SyncedLine, LRCLibResponse } from '$lib/features/player/services/lrclib';
 import { getLanguage } from '$lib/features/settings/domain/language';
 
 export const LyricsStates = {
@@ -41,7 +41,10 @@ export const playerState = $state({
 	showTranslatedSubtitle: true,
 	detectedSourceLanguage: undefined as string | undefined,
 	percentageOfDetectedLanguages: undefined as number | undefined,
-	isLoadingVideo: false
+	isLoadingVideo: false,
+	manualLyricId: null as number | null,
+	candidates: [] as LRCLibResponse[],
+	isLyricSelectorOpen: false
 });
 
 let playerInstance: YT.Player | null = null;

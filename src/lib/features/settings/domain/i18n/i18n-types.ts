@@ -92,6 +92,36 @@ type RootTranslation = {
 		 */
 		showTranslated: string
 	}
+	lyricSelector: {
+		/**
+		 * S​e​l​e​c​t​ ​L​y​r​i​c​s
+		 */
+		title: string
+		/**
+		 * A​u​t​o​m​a​t​i​c​ ​S​e​l​e​c​t​i​o​n
+		 */
+		automatic: string
+		/**
+		 * L​e​t​ ​t​h​e​ ​a​p​p​ ​c​h​o​o​s​e
+		 */
+		automaticDescription: string
+		/**
+		 * N​o​ ​l​y​r​i​c​s​ ​f​o​u​n​d
+		 */
+		noLyrics: string
+		/**
+		 * S​y​n​c​e​d
+		 */
+		synced: string
+		/**
+		 * P​l​a​i​n
+		 */
+		plain: string
+		/**
+		 * C​l​o​s​e
+		 */
+		close: string
+	}
 	controls: {
 		/**
 		 * O​r​i​g​i​n​a​l
@@ -612,6 +642,36 @@ export type TranslationFunctions = {
 		 * Show translated subtitles
 		 */
 		showTranslated: () => LocalizedString
+	}
+	lyricSelector: {
+		/**
+		 * Select Lyrics
+		 */
+		title: () => LocalizedString
+		/**
+		 * Automatic Selection
+		 */
+		automatic: () => LocalizedString
+		/**
+		 * Let the app choose
+		 */
+		automaticDescription: () => LocalizedString
+		/**
+		 * No lyrics found
+		 */
+		noLyrics: () => LocalizedString
+		/**
+		 * Synced
+		 */
+		synced: () => LocalizedString
+		/**
+		 * Plain
+		 */
+		plain: () => LocalizedString
+		/**
+		 * Close
+		 */
+		close: () => LocalizedString
 	}
 	controls: {
 		/**

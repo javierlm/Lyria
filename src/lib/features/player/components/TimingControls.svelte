@@ -4,8 +4,6 @@
 	import MinusCircle from 'phosphor-svelte/lib/MinusCircle';
 	import PlusCircle from 'phosphor-svelte/lib/PlusCircle';
 	import ArrowsClockwise from 'phosphor-svelte/lib/ArrowsClockwise';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { debounce } from '$lib/shared/utils';
 	import LL from '$i18n/i18n-svelte';
 
@@ -19,14 +17,13 @@
 		const raw = args[0];
 		const offset = typeof raw === 'number' ? raw : Number(raw);
 		if (isNaN(offset)) return;
-		const newUrl = new URL($page.url);
+		const newUrl = new URL(window.location.href);
 		if (offset === 0) {
 			newUrl.searchParams.delete('offset');
 		} else {
 			newUrl.searchParams.set('offset', offset.toString());
 		}
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(newUrl.toString(), { replaceState: true, noScroll: true });
+		window.history.replaceState({}, '', newUrl);
 	}, 300);
 
 	$effect(() => {

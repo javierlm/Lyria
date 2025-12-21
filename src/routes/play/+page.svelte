@@ -5,20 +5,33 @@
 	import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 	import { play, pause, seekTo } from '$lib/features/player/services/playerActions';
 	import PlayerLayout from '$lib/features/player/components/PlayerLayout.svelte';
+	import LyricSelector from '$lib/features/player/components/LyricSelector.svelte';
 
 	let { data } = $props();
 
 	playerState.videoId = data.videoId;
 	playerState.timingOffset = data.offset;
+	if (data.lyricId) {
+		playerState.manualLyricId = data.lyricId;
+	}
 
 	$effect(() => {
 		const idFromUrl = $page.url.searchParams.get('id');
 		const offsetParam = $page.url.searchParams.get('offset');
 		const newOffset = offsetParam ? parseInt(offsetParam, 10) : 0;
+		const lyricIdParam = $page.url.searchParams.get('lyricId');
 
 		if (idFromUrl !== playerState.videoId) {
 			playerState.videoId = idFromUrl;
 			playerState.timingOffset = isNaN(newOffset) ? 0 : newOffset;
+			playerState.manualLyricId = lyricIdParam ? parseInt(lyricIdParam, 10) : null;
+		} else {
+			if (lyricIdParam) {
+				const currentLyricId = parseInt(lyricIdParam, 10);
+				if (currentLyricId !== playerState.manualLyricId) {
+					playerState.manualLyricId = currentLyricId;
+				}
+			}
 		}
 	});
 
@@ -109,4 +122,5 @@
 	<div in:fade={{ duration: 300 }}>
 		<PlayerLayout />
 	</div>
+	<LyricSelector />
 {/if}

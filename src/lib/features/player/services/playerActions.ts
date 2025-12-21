@@ -1,4 +1,10 @@
-import { getSyncedLyrics, type LyricsResult } from '$lib/features/player/services/lrclib';
+import {
+	getSyncedLyrics,
+	type LyricsResult,
+	getLyricById,
+	searchCandidates,
+	type LRCLibResponse
+} from '$lib/features/player/services/lrclib';
 import { videoService } from '$lib/features/video/services/videoService';
 import { getLanguage, setLanguage } from '$lib/features/settings/domain/language';
 import {
@@ -266,6 +272,9 @@ function resetPlayerState() {
 	playerState.detectedSourceLanguage = undefined;
 	playerState.percentageOfDetectedLanguages = undefined;
 	playerState.showTranslatedSubtitle = true;
+	playerState.manualLyricId = null;
+	playerState.candidates = [];
+	playerState.isLyricSelectorOpen = false;
 }
 
 export async function loadVideo(videoId: string, elementId: string, initialOffset?: number) {
@@ -333,12 +342,37 @@ async function loadAndApplyVideoDelay(videoId: string) {
 	if (storedDelay !== undefined) {
 		playerState.timingOffset = storedDelay;
 	}
+
+	// Load stored lyric ID
+	if (!playerState.manualLyricId) {
+		const storedLyricId = await videoService.getVideoLyricId(currentVideoUrl);
+		if (storedLyricId !== null) {
+			playerState.manualLyricId = storedLyricId;
+			const url = new URL(window.location.href);
+			url.searchParams.set('lyricId', storedLyricId.toString());
+			window.history.replaceState({}, '', url);
+		}
+	}
 }
 
 async function fetchAndProcessLyrics(player: YT.Player) {
 	playerState.lyricsState = LyricsStates.Loading;
 	const videoData = player.getVideoData();
 	const duration = player.getDuration();
+
+	if (playerState.manualLyricId) {
+		console.log('Fetching manual lyric ID:', playerState.manualLyricId);
+		try {
+			const result = await getLyricById(playerState.manualLyricId);
+			updatePlayerState(result, videoData);
+			if (result.found) {
+				await translateLyrics(getLanguage());
+			}
+			return;
+		} catch (e) {
+			console.error('Failed to load manual lyric, falling back to auto search', e);
+		}
+	}
 
 	const result = await searchLyricsWithStrategies(videoData, duration);
 	updatePlayerState(result, videoData);
@@ -353,13 +387,24 @@ async function searchLyricsWithStrategies(
 	duration: number
 ): Promise<LyricsResult> {
 	const strategies = [tryCleanedTitle, tryParsedTitle, tryInvertedParameters];
+	let collectedCandidates: LRCLibResponse[] = [];
 
 	for (const strategy of strategies) {
 		const result = await strategy(videoData, duration);
-		if (result.found) return result;
+
+		if (result.candidates) {
+			const existingIds = new Set(collectedCandidates.map((c) => c.id));
+			const newCandidates = result.candidates.filter((c) => !existingIds.has(c.id));
+			collectedCandidates = [...collectedCandidates, ...newCandidates];
+		}
+
+		if (result.found) {
+			result.candidates = collectedCandidates;
+			return result;
+		}
 	}
 
-	return { found: false, synced: false, lyrics: [] };
+	return { found: false, synced: false, lyrics: [], candidates: collectedCandidates };
 }
 
 async function tryCleanedTitle(videoData: YT.VideoData, duration: number): Promise<LyricsResult> {
@@ -419,6 +464,9 @@ function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
 	playerState.lines = result.lyrics;
 	playerState.id = result.id || 0;
 	playerState.userLang = getLanguage();
+	if (result.candidates) {
+		playerState.candidates = result.candidates;
+	}
 
 	// Attempt to detect language immediately if found
 	if (result.found && result.lyrics.length > 0) {
@@ -604,4 +652,84 @@ export function syncTimingToFirstLine() {
 		const roundedTimingOffset = Math.round(newTimingOffset);
 		adjustTiming(roundedTimingOffset);
 	}
+}
+
+export async function selectLyric(id: number) {
+	playerState.manualLyricId = id;
+	// Update URL
+	const url = new URL(window.location.href);
+	url.searchParams.set('lyricId', id.toString());
+	window.history.replaceState({}, '', url);
+
+	// Persist the lyric ID selection
+	if (playerState.videoId) {
+		const videoUrl = `https://www.youtube.com/watch?v=${playerState.videoId}`;
+		videoService.setVideoLyricId(videoUrl, id);
+	}
+
+	// Load new lyric
+	playerState.lyricsState = LyricsStates.Loading;
+	playerState.lines = [];
+	playerState.translatedLines = [];
+	playerState.isTranslatedTextReady = false;
+
+	try {
+		const result = await getLyricById(id);
+		if (playerState.candidates.length > 0 && !result.candidates) {
+			result.candidates = playerState.candidates;
+		}
+
+		const player = getPlayer();
+		const videoData = player?.getVideoData() || { title: '', author: '', video_id: '' };
+		updatePlayerState(result, videoData);
+
+		if (result.found) {
+			await translateLyrics(getLanguage());
+		}
+	} catch (error) {
+		console.error('Error selecting lyric:', error);
+		playerState.lyricsState = LyricsStates.NotFound;
+	}
+}
+
+export async function clearManualLyric() {
+	playerState.manualLyricId = null;
+	// Update URL
+	const url = new URL(window.location.href);
+	url.searchParams.delete('lyricId');
+	window.history.replaceState({}, '', url);
+
+	// Clear the persisted lyric ID selection
+	if (playerState.videoId) {
+		const videoUrl = `https://www.youtube.com/watch?v=${playerState.videoId}`;
+		videoService.setVideoLyricId(videoUrl, null);
+	}
+
+	// Reload auto lyrics
+	const player = getPlayer();
+	if (player) {
+		await fetchAndProcessLyrics(player);
+	}
+}
+
+export async function ensureCandidatesLoaded() {
+	if (playerState.candidates.length > 0) return;
+
+	const player = getPlayer();
+	if (!player) return;
+
+	const videoData = player.getVideoData();
+	const duration = player.getDuration();
+
+	const cleanTitle = removeJunkSuffixes(videoData.title);
+	let candidates = await searchCandidates(cleanTitle, '', duration);
+
+	if (candidates.length === 0) {
+		const parsedTitle = parseTitle(videoData.title);
+		const artist = parsedTitle.artist || videoData.author;
+		const track = parsedTitle.track;
+		candidates = await searchCandidates(track, artist, duration);
+	}
+
+	playerState.candidates = candidates;
 }

@@ -13,6 +13,8 @@ export interface FavoriteVideo extends RecentVideo {
 export interface IVideoRepository {
 	setVideoDelay(videoUrl: string, delay: number): Promise<void>;
 	getVideoDelay(videoUrl: string): Promise<number | undefined>;
+	setVideoLyricId(videoUrl: string, lyricId: number | null): Promise<void>;
+	getVideoLyricId(videoUrl: string): Promise<number | null>;
 	addRecentVideo(video: RecentVideo): Promise<void>;
 	getRecentVideos(): Promise<RecentVideo[]>;
 	deleteRecentVideo(videoId: string): Promise<void>;
