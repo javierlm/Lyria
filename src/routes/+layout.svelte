@@ -114,7 +114,7 @@
 		padding: 1rem;
 		gap: 0.5rem;
 		position: absolute;
-		top: 0;
+		top: env(safe-area-inset-top, 0px);
 		left: 0;
 		z-index: 50;
 	}
