@@ -13,7 +13,12 @@ import {
 	playerState,
 	LyricsStates
 } from '$lib/features/player/stores/playerStore.svelte';
-import { parseTitle, removeJunkSuffixes, getPrimaryLanguage } from '$lib/shared/utils';
+import {
+	parseTitle,
+	removeJunkSuffixes,
+	getPrimaryLanguage,
+	isLyricVideoTitle
+} from '$lib/shared/utils';
 import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
 
 let animationFrameId: number | null = null;
@@ -275,6 +280,7 @@ function resetPlayerState() {
 	playerState.manualLyricId = null;
 	playerState.candidates = [];
 	playerState.isLyricSelectorOpen = false;
+	playerState.isLyricVideo = false;
 }
 
 export async function loadVideo(videoId: string, elementId: string, initialOffset?: number) {
@@ -448,6 +454,13 @@ async function tryInvertedParameters(
 }
 
 function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
+	// Detect lyric video and set initial visibility
+	const isLyricVideo = isLyricVideoTitle(videoData.title);
+	playerState.isLyricVideo = isLyricVideo;
+	if (isLyricVideo) {
+		playerState.showOriginalSubtitle = false;
+	}
+
 	// Update artist and track
 	if (result.found && result.artistName && result.trackName) {
 		playerState.artist = result.artistName;

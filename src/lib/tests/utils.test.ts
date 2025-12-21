@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { parseTitle } from '../shared/utils';
+import { parseTitle, isLyricVideoTitle } from '../shared/utils';
 
 const testCases = [
 	{ input: 'Artist - Track', expected: { artist: 'Artist', track: 'Track' } },
@@ -46,5 +46,26 @@ const testCases = [
 for (const { input, expected } of testCases) {
 	test(`should parse "${input}" correctly`, () => {
 		expect(parseTitle(input)).toEqual(expected);
+	});
+}
+
+// Lyric video detection tests
+const lyricVideoTestCases = [
+	{ input: 'Artist - Song (Official Lyric Video)', expected: true },
+	{ input: 'Artist - Song (Lyrics)', expected: true },
+	{ input: 'Artist - Song [LYRICS]', expected: true },
+	{ input: 'Artist - Song with lyrics on screen', expected: true },
+	{ input: 'Artist - Song (Letra Oficial)', expected: true },
+	{ input: 'Artist - Song (Letras)', expected: true },
+	{ input: 'Artist - Song (Official Video)', expected: false },
+	{ input: 'Artist - Song (Music Video)', expected: false },
+	{ input: 'Artist - Song', expected: false },
+	{ input: 'Artist - Song (Live)', expected: false },
+	{ input: 'Artist - Lyrical Masterpiece', expected: false }
+];
+
+for (const { input, expected } of lyricVideoTestCases) {
+	test(`isLyricVideoTitle: "${input}" should return ${expected}`, () => {
+		expect(isLyricVideoTitle(input)).toBe(expected);
 	});
 }

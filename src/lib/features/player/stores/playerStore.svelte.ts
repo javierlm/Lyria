@@ -44,7 +44,8 @@ export const playerState = $state({
 	isLoadingVideo: false,
 	manualLyricId: null as number | null,
 	candidates: [] as LRCLibResponse[],
-	isLyricSelectorOpen: false
+	isLyricSelectorOpen: false,
+	isLyricVideo: false
 });
 
 let playerInstance: YT.Player | null = null;

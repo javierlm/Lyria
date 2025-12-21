@@ -238,6 +238,11 @@ export function getPrimaryLanguage(lang: string): string {
 	return lang.split('-')[0].toLowerCase();
 }
 
+export function isLyricVideoTitle(title: string): boolean {
+	const lowerTitle = title.toLowerCase();
+	return /\b(lyrics?|letras?)\b/.test(lowerTitle);
+}
+
 export function debounce<T extends (...args: unknown[]) => void>(
 	func: T,
 	delay: number
