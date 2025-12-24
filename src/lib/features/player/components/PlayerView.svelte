@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { slide } from 'svelte/transition';
+	import { slide, fade } from 'svelte/transition';
+	import { goto } from '$app/navigation';
 	import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 	import {
 		loadVideo,
@@ -10,6 +11,7 @@
 	} from '$lib/features/player/services/playerActions';
 	import VideoControls from '$lib/features/player/components/VideoControls.svelte';
 	import { stopPropagation } from 'svelte/legacy';
+	import LL from '$i18n/i18n-svelte';
 
 	import LoadingScreen from '$lib/features/ui/components/LoadingScreen.svelte';
 
@@ -207,8 +209,31 @@
 		<VideoControls on:toggleFullscreen={handleToggleFullscreen} />
 	</div>
 
-	{#if playerState.isLoadingVideo}
+	{#if playerState.isLoadingVideo && !playerState.videoError}
 		<LoadingScreen />
+	{/if}
+
+	{#if playerState.videoError}
+		<div class="error-overlay" in:fade={{ duration: 300 }}>
+			<div class="error-content">
+				<div class="error-icon">⚠️</div>
+				<h2 class="error-title">{$LL.videoError.title()}</h2>
+				<p class="error-message">
+					{#if playerState.videoError.message === 'invalidId'}
+						{$LL.videoError.invalidId()}
+					{:else if playerState.videoError.message === 'notFound'}
+						{$LL.videoError.notFound()}
+					{:else if playerState.videoError.message === 'notPlayable'}
+						{$LL.videoError.notPlayable()}
+					{:else}
+						{$LL.videoError.genericError()}
+					{/if}
+				</p>
+				<button class="error-button" onclick={() => goto('/')}>
+					{$LL.videoError.goBack()}
+				</button>
+			</div>
+		</div>
 	{/if}
 </div>
 
@@ -314,5 +339,66 @@
 		.translated-subtitle {
 			font-size: 0.7rem;
 		}
+	}
+
+	.error-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background: rgba(0, 0, 0, 0.9);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 100;
+	}
+
+	.error-content {
+		text-align: center;
+		color: white;
+		padding: 2rem;
+		max-width: 400px;
+	}
+
+	.error-icon {
+		font-size: 4rem;
+		margin-bottom: 1rem;
+	}
+
+	.error-title {
+		font-size: 1.5rem;
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+	}
+
+	.error-message {
+		font-size: 1rem;
+		color: #aaa;
+		margin-bottom: 1.5rem;
+	}
+
+	.error-button {
+		padding: 0.75rem 2rem;
+		font-size: 1rem;
+		font-weight: 500;
+		color: var(--on-primary-color);
+		background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+		border: none;
+		border-radius: 8px;
+		cursor: pointer;
+		transition:
+			transform 0.2s,
+			box-shadow 0.2s;
+	}
+
+	.error-button:hover {
+		transform: translateY(-2px);
+		background: linear-gradient(135deg, var(--primary-color-hover), var(--secondary-color));
+		box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
+	}
+
+	.error-button:active {
+		transform: translateY(0);
 	}
 </style>

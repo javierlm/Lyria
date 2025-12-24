@@ -16,6 +16,14 @@ const es = {
 	video: {
 		unplayed: 'Sin reproducir'
 	},
+	videoError: {
+		title: 'Vídeo no disponible',
+		invalidId: 'Este ID de vídeo no es válido.',
+		notFound: 'Este vídeo no se encontró o ha sido eliminado.',
+		notPlayable: 'Este vídeo no se puede reproducir aquí.',
+		genericError: 'Ocurrió un error al cargar el vídeo.',
+		goBack: 'Volver'
+	},
 	// Lyrics
 	lyrics: {
 		original: 'Letra Original',

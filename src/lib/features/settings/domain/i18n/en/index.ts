@@ -16,6 +16,14 @@ const en = {
 	video: {
 		unplayed: 'Unplayed'
 	},
+	videoError: {
+		title: 'Video Unavailable',
+		invalidId: 'This video ID is invalid.',
+		notFound: 'This video was not found or has been removed.',
+		notPlayable: 'This video cannot be played here.',
+		genericError: 'An error occurred while loading the video.',
+		goBack: 'Go Back'
+	},
 	// Lyrics
 	lyrics: {
 		original: 'Original Lyrics',

@@ -238,6 +238,10 @@ export function getPrimaryLanguage(lang: string): string {
 	return lang.split('-')[0].toLowerCase();
 }
 
+export function isValidYouTubeId(id: string): boolean {
+	return /^[a-zA-Z0-9_-]{11}$/.test(id);
+}
+
 export function isLyricVideoTitle(title: string): boolean {
 	const lowerTitle = title.toLowerCase();
 	return /\b(lyrics?|letras?)\b/.test(lowerTitle);

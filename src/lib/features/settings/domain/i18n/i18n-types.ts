@@ -58,6 +58,32 @@ type RootTranslation = {
 		 */
 		unplayed: string
 	}
+	videoError: {
+		/**
+		 * V​i​d​e​o​ ​U​n​a​v​a​i​l​a​b​l​e
+		 */
+		title: string
+		/**
+		 * T​h​i​s​ ​v​i​d​e​o​ ​I​D​ ​i​s​ ​i​n​v​a​l​i​d​.
+		 */
+		invalidId: string
+		/**
+		 * T​h​i​s​ ​v​i​d​e​o​ ​w​a​s​ ​n​o​t​ ​f​o​u​n​d​ ​o​r​ ​h​a​s​ ​b​e​e​n​ ​r​e​m​o​v​e​d​.
+		 */
+		notFound: string
+		/**
+		 * T​h​i​s​ ​v​i​d​e​o​ ​c​a​n​n​o​t​ ​b​e​ ​p​l​a​y​e​d​ ​h​e​r​e​.
+		 */
+		notPlayable: string
+		/**
+		 * A​n​ ​e​r​r​o​r​ ​o​c​c​u​r​r​e​d​ ​w​h​i​l​e​ ​l​o​a​d​i​n​g​ ​t​h​e​ ​v​i​d​e​o​.
+		 */
+		genericError: string
+		/**
+		 * G​o​ ​B​a​c​k
+		 */
+		goBack: string
+	}
 	lyrics: {
 		/**
 		 * O​r​i​g​i​n​a​l​ ​L​y​r​i​c​s
@@ -608,6 +634,32 @@ export type TranslationFunctions = {
 		 * Unplayed
 		 */
 		unplayed: () => LocalizedString
+	}
+	videoError: {
+		/**
+		 * Video Unavailable
+		 */
+		title: () => LocalizedString
+		/**
+		 * This video ID is invalid.
+		 */
+		invalidId: () => LocalizedString
+		/**
+		 * This video was not found or has been removed.
+		 */
+		notFound: () => LocalizedString
+		/**
+		 * This video cannot be played here.
+		 */
+		notPlayable: () => LocalizedString
+		/**
+		 * An error occurred while loading the video.
+		 */
+		genericError: () => LocalizedString
+		/**
+		 * Go Back
+		 */
+		goBack: () => LocalizedString
 	}
 	lyrics: {
 		/**

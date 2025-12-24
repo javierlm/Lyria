@@ -17,9 +17,11 @@ import {
 	parseTitle,
 	removeJunkSuffixes,
 	getPrimaryLanguage,
-	isLyricVideoTitle
+	isLyricVideoTitle,
+	isValidYouTubeId
 } from '$lib/shared/utils';
 import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
+import { replaceState } from '$app/navigation';
 
 let animationFrameId: number | null = null;
 let lastSyncedTime = 0;
@@ -30,6 +32,9 @@ let isPlayerPlaying = false;
 const HUMAN_REACTION_TIME_MS = 500;
 const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
 const PERIODIC_SYNC_INTERVAL_MS = 5000;
+const VIDEO_LOAD_TIMEOUT_MS = 15000;
+
+let videoLoadTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
 function loadYouTubeAPI() {
 	return new Promise<void>((resolve) => {
@@ -251,6 +256,56 @@ function stopSync() {
 	}
 }
 
+function handlePlayerError(event: YT.OnErrorEvent) {
+	const errorCode = event.data;
+	let message: string;
+
+	// YouTube IFrame API error codes:
+	// 2 - Invalid video ID parameter
+	// 5 - HTML5 player error
+	// 100 - Video not found or removed
+	// 101/150 - Video not playable (embedding disabled by owner)
+	switch (errorCode) {
+		case 2:
+			message = 'invalidId';
+			break;
+		case 100:
+			message = 'notFound';
+			break;
+		case 101:
+		case 150:
+			message = 'notPlayable';
+			break;
+		case 5:
+		default:
+			message = 'genericError';
+			break;
+	}
+
+	playerState.videoError = { code: errorCode, message };
+	playerState.isLoadingVideo = false;
+	clearVideoLoadTimeout();
+	console.error(`YouTube Player Error: Code ${errorCode} - ${message}`);
+}
+
+function clearVideoLoadTimeout() {
+	if (videoLoadTimeoutId) {
+		clearTimeout(videoLoadTimeoutId);
+		videoLoadTimeoutId = null;
+	}
+}
+
+function startVideoLoadTimeout() {
+	clearVideoLoadTimeout();
+	videoLoadTimeoutId = setTimeout(() => {
+		if (playerState.isLoadingVideo && !playerState.videoError) {
+			playerState.videoError = { code: -1, message: 'genericError' };
+			playerState.isLoadingVideo = false;
+			console.error('Video load timeout: Video failed to load within the expected time.');
+		}
+	}, VIDEO_LOAD_TIMEOUT_MS);
+}
+
 function destroyExistingPlayer() {
 	const oldPlayer = getPlayer();
 	if (oldPlayer) {
@@ -281,16 +336,25 @@ function resetPlayerState() {
 	playerState.candidates = [];
 	playerState.isLyricSelectorOpen = false;
 	playerState.isLyricVideo = false;
+	playerState.videoError = null;
 }
 
 export async function loadVideo(videoId: string, elementId: string, initialOffset?: number) {
 	destroyExistingPlayer();
 	resetPlayerState();
+	clearVideoLoadTimeout();
 
 	playerState.videoId = videoId;
 	playerState.isLoadingVideo = true;
 	if (initialOffset) {
 		playerState.timingOffset = initialOffset;
+	}
+
+	if (!videoId || !isValidYouTubeId(videoId)) {
+		playerState.videoError = { code: 2, message: 'invalidId' };
+		playerState.isLoadingVideo = false;
+		console.error(`Invalid YouTube video ID format: "${videoId}"`);
+		return;
 	}
 
 	await loadYouTubeAPI();
@@ -310,6 +374,7 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 		},
 		events: {
 			onReady: (event) => handlePlayerReady(event, videoId),
+			onError: (event) => handlePlayerError(event),
 			onStateChange: (event) => {
 				const prevIsPlaying = playerState.isPlaying;
 				playerState.isPlaying = event.data === YT.PlayerState.PLAYING;
@@ -326,6 +391,7 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 
 					if (event.data === YT.PlayerState.PLAYING) {
 						playerState.isLoadingVideo = false;
+						clearVideoLoadTimeout();
 						if (!prevIsPlaying) {
 							startSync();
 						}
@@ -340,6 +406,9 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 			}
 		}
 	});
+
+	// Start timeout to handle cases where YouTube doesn't fire onError
+	startVideoLoadTimeout();
 }
 
 async function loadAndApplyVideoDelay(videoId: string) {
@@ -356,7 +425,7 @@ async function loadAndApplyVideoDelay(videoId: string) {
 			playerState.manualLyricId = storedLyricId;
 			const url = new URL(window.location.href);
 			url.searchParams.set('lyricId', storedLyricId.toString());
-			window.history.replaceState({}, '', url);
+			replaceState(url, {});
 		}
 	}
 }
@@ -672,7 +741,7 @@ export async function selectLyric(id: number) {
 	// Update URL
 	const url = new URL(window.location.href);
 	url.searchParams.set('lyricId', id.toString());
-	window.history.replaceState({}, '', url);
+	replaceState(url, {});
 
 	// Persist the lyric ID selection
 	if (playerState.videoId) {
@@ -710,7 +779,7 @@ export async function clearManualLyric() {
 	// Update URL
 	const url = new URL(window.location.href);
 	url.searchParams.delete('lyricId');
-	window.history.replaceState({}, '', url);
+	replaceState(url, {});
 
 	// Clear the persisted lyric ID selection
 	if (playerState.videoId) {
