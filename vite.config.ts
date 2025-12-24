@@ -7,6 +7,14 @@ export default defineConfig({
 		host: '0.0.0.0',
 		port: 5173
 	},
+	optimizeDeps: {
+		include: ['phosphor-svelte', '@fontsource/inter', 'typesafe-i18n', 'workbox-window'],
+		exclude: ['cld3-asm']
+	},
+	ssr: {
+		external: ['cld3-asm'],
+		noExternal: []
+	},
 	plugins: [
 		SvelteKitPWA({
 			registerType: 'prompt',
@@ -44,7 +52,7 @@ export default defineConfig({
 				navigateFallback: null
 			},
 			devOptions: {
-				enabled: true,
+				enabled: false,
 				suppressWarnings: true,
 				navigateFallback: '/',
 				type: 'module'

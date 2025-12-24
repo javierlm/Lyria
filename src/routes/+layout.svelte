@@ -5,7 +5,6 @@
 	import ReloadPrompt from '$lib/features/ui/components/ReloadPrompt.svelte';
 	import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
 	import LL from '$i18n/i18n-svelte';
-	import '@fontsource/inter/300.css';
 	import '@fontsource/inter/400.css';
 	import '@fontsource/inter/500.css';
 	import '@fontsource/inter/600.css';

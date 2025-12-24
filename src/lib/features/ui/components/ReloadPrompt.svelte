@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import X from 'phosphor-svelte/lib/X';
 	import ArrowClockwise from 'phosphor-svelte/lib/ArrowClockwise';
 	import { fly } from 'svelte/transition';
@@ -11,18 +10,35 @@
 	// It uses the virtual module from vite-plugin-pwa to check for service worker updates.
 	// When a new version is deployed (detected by hash changes), $needRefresh becomes true.
 
-	const { offlineReady, needRefresh, updateServiceWorker } = useRegisterSW({
-		onRegistered(swr: any) {
-			console.log('SW registered: ', swr);
-		},
-		onRegisterError(error: any) {
-			console.log('SW registration error', error);
-		}
-	});
+	// Conditionally import and use registerSW only if PWA is enabled
+	let offlineReady = $state({ subscribe: () => () => {}, set: () => {} } as any);
+	let needRefresh = $state({ subscribe: () => () => {}, set: () => {} } as any);
+	let updateServiceWorker = $state((_reloadPage?: boolean) => {});
 
 	let isStandalone = $state(false);
 
 	onMount(() => {
+		// Async PWA registration (only in production)
+		if (import.meta.env.DEV === false) {
+			import('virtual:pwa-register/svelte')
+				.then(({ useRegisterSW }) => {
+					const swRegistration = useRegisterSW({
+						onRegistered(swr: any) {
+							console.log('SW registered: ', swr);
+						},
+						onRegisterError(error: any) {
+							console.log('SW registration error', error);
+						}
+					});
+					offlineReady = swRegistration.offlineReady;
+					needRefresh = swRegistration.needRefresh;
+					updateServiceWorker = swRegistration.updateServiceWorker;
+				})
+				.catch(() => {
+					console.log('PWA not available');
+				});
+		}
+
 		// Check if running in standalone mode (installed PWA)
 		// We check for 'standalone', 'fullscreen', and 'minimal-ui' to cover various PWA modes
 		const checkStandalone = () => {
