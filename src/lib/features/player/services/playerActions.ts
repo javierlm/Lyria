@@ -585,6 +585,9 @@ async function handlePlayerReady(event: YT.PlayerEvent, videoId: string) {
 	const player = event.target;
 	setPlayer(player);
 
+	// Clear the timeout since the player loaded successfully
+	clearVideoLoadTimeout();
+
 	await fetchAndProcessLyrics(player);
 
 	initializePlayerProperties(player);
