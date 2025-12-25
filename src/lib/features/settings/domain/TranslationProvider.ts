@@ -1,18 +1,18 @@
 export type TranslationResponse = {
-	translatedText: string[];
-	alternatives?: string[];
-	detectedSourceLanguage?: string;
-	percentageOfDetectedLanguages?: number;
-	isSameLanguage?: boolean;
+  translatedText: string[];
+  alternatives?: string[];
+  detectedSourceLanguage?: string;
+  percentageOfDetectedLanguages?: number;
+  isSameLanguage?: boolean;
 };
 
 export interface TranslationProvider {
-	translate(
-		sourceLanguage: string,
-		targetLanguage: string | undefined,
-		text: string[],
-		context?: string
-	): Promise<TranslationResponse>;
+  translate(
+    sourceLanguage: string,
+    targetLanguage: string | undefined,
+    text: string[],
+    context?: string
+  ): Promise<TranslationResponse>;
 
-	detectLanguage(text: string[]): Promise<string | undefined>;
+  detectLanguage(text: string[]): Promise<string | undefined>;
 }
