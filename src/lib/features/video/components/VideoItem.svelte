@@ -44,7 +44,7 @@
 			return $LL.time.weeksAgo(weeks);
 		}
 
-		const months = Math.floor(days / 30);
+		const months = Math.max(1, Math.floor(days / 30));
 		if (months < 12) {
 			return $LL.time.monthsAgo(months);
 		}
