@@ -368,6 +368,14 @@
     height: 100%;
   }
 
+  .lyric-line.original {
+    grid-column: 1;
+  }
+
+  .lyric-line.translated {
+    grid-column: 3;
+  }
+
   .lyric-line > * {
     display: inline;
   }
@@ -399,6 +407,7 @@
     font-weight: bold;
     color: var(--text-color);
     text-align: center;
+    grid-column: 2;
   }
 
   .controls-wrapper {
