@@ -46,6 +46,7 @@
     "@upstash/redis": "^1.35.6",
     "cld3-asm": "^4.0.0",
     "deepl-node": "^1.21.0",
+    "emoji-regex": "^10.6.0",
     "events": "^3.3.0",
     "typesafe-i18n": "^5.26.2",
     "workbox-window": "^7.4.0"
