@@ -73,8 +73,18 @@
   <SearchBar />
 
   <div class="title-container">
-    <h1>{playerState.artist ? `${playerState.artist} - ${playerState.track}` : '\u00A0'}</h1>
+    <h1>
     {#if playerState.artist && playerState.track}
+        {playerState.artist} - {playerState.track}
+      {:else if playerState.track}
+        {playerState.track}
+      {:else if playerState.artist}
+        {playerState.artist}
+      {:else}
+        &nbsp;
+      {/if}
+    </h1>
+    {#if playerState.artist || playerState.track}
       <LikeButton isLiked={isFavorite} onclick={toggleFavorite} size={iconSize} />
       <button
         onclick={copyURL}

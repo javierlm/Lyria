@@ -121,7 +121,7 @@ const removeJunkSuffixesStep: PipelineStep = (state) => ({
 
 // Tries to find first separator and divide the title between artist and song
 const splitArtistAndTrack: PipelineStep = (state) => {
-  const separators = [' - ', ' – ', ' | ', ' x '];
+  const separators = [' - ', ' – ', ' — ', ' | ', ' x ', ' : ', ' ; ', ' –', '- '];
 
   for (const sep of separators) {
     const idx = state.title.indexOf(sep);
@@ -134,6 +134,7 @@ const splitArtistAndTrack: PipelineStep = (state) => {
     }
   }
 
+  // Fallback if no separator found: use title as track
   return { ...state, track: state.title.trim() };
 };
 
@@ -193,11 +194,14 @@ const removePunctuation: PipelineStep = (state) => {
 };
 
 const removeEmojis: PipelineStep = (state) => {
+  const regex = emojiRegex();
+  // Also remove Variation Selector-16 (VS16) which often follows emojis
+  const vs16Regex = /\uFE0F/g;
   return {
     ...state,
-    title: state.title.replace(emojiRegex(), ''),
-    artist: state.artist.replace(emojiRegex(), ''),
-    track: state.track.replace(emojiRegex(), '')
+    title: state.title.replace(regex, '').replace(vs16Regex, ''),
+    artist: state.artist.replace(regex, '').replace(vs16Regex, ''),
+    track: state.track.replace(regex, '').replace(vs16Regex, '')
   };
 };
 
