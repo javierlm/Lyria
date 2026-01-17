@@ -1,10 +1,13 @@
 <script lang="ts">
   import favicon from '$lib/assets/favicon.svg';
+  import { injectAnalytics } from '@vercel/analytics/sveltekit';
+  import { dev } from '$app/environment';
   import { setLocale } from '$i18n/i18n-svelte';
   import AppLanguageSelector from '$lib/features/settings/components/AppLanguageSelector.svelte';
   import ReloadPrompt from '$lib/features/ui/components/ReloadPrompt.svelte';
   import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
   import LL from '$i18n/i18n-svelte';
+  import { onMount } from 'svelte';
   import '@fontsource/inter/400.css';
   import '@fontsource/inter/500.css';
   import '@fontsource/inter/600.css';
@@ -16,6 +19,10 @@
 
   $effect(() => {
     setLocale(data.locale);
+  });
+
+  onMount(() => {
+    injectAnalytics({ mode: dev ? 'development' : 'production' });
   });
 </script>
 
