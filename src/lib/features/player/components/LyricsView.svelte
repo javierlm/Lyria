@@ -7,6 +7,7 @@
   import EyeSlash from 'phosphor-svelte/lib/EyeSlash';
   import CloudSlash from 'phosphor-svelte/lib/CloudSlash';
   import LanguageSelector from '$lib/features/settings/components/LanguageSelector.svelte';
+  import ScrollToActiveLine from '$lib/features/ui/components/ScrollToActiveLine.svelte';
   import { getPrimaryLanguage } from '$lib/shared/utils';
   import { LL } from '$i18n/i18n-svelte';
   import { translationStore } from '$lib/features/settings/stores/translationStore.svelte';
@@ -212,6 +213,8 @@
       {/each}
     {/if}
   </div>
+
+  <ScrollToActiveLine {lyricRowRefs} />
 </div>
 
 <style>

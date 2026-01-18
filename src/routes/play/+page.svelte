@@ -9,12 +9,6 @@
 
   let { data } = $props();
 
-  playerState.videoId = data.videoId;
-  playerState.timingOffset = data.offset;
-  if (data.lyricId) {
-    playerState.manualLyricId = data.lyricId;
-  }
-
   $effect(() => {
     const idFromUrl = $page.url.searchParams.get('id');
     const offsetParam = $page.url.searchParams.get('offset');
