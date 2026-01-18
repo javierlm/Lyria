@@ -42,7 +42,9 @@ const es = {
     noLyrics: 'No se encontraron letras',
     synced: 'Sincronizada',
     plain: 'Sin sincronizar',
-    close: 'Cerrar'
+    close: 'Cerrar',
+    searchPlaceholder: 'Buscar letras...',
+    searching: 'Buscando...'
   },
   // Video Controls
   controls: {

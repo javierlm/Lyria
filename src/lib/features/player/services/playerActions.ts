@@ -35,6 +35,8 @@ const PERIODIC_SYNC_INTERVAL_MS = 5000;
 const VIDEO_LOAD_TIMEOUT_MS = 15000;
 
 let videoLoadTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let currentSearchId = 0;
+let currentVideoLoadId = 0;
 
 function loadYouTubeAPI() {
   return new Promise<void>((resolve) => {
@@ -333,10 +335,12 @@ function resetPlayerState() {
   playerState.percentageOfDetectedLanguages = undefined;
   playerState.showTranslatedSubtitle = true;
   playerState.manualLyricId = null;
+  playerState.searchQuery = '';
   playerState.candidates = [];
   playerState.isLyricSelectorOpen = false;
   playerState.isLyricVideo = false;
   playerState.videoError = null;
+  playerState.parsedTitle = null;
 }
 
 export async function loadVideo(videoId: string, elementId: string, initialOffset?: number) {
@@ -344,6 +348,7 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
   resetPlayerState();
   clearVideoLoadTimeout();
 
+  const loadId = ++currentVideoLoadId;
   playerState.videoId = videoId;
   playerState.isLoadingVideo = true;
   if (initialOffset) {
@@ -358,7 +363,10 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
   }
 
   await loadYouTubeAPI();
+  if (loadId !== currentVideoLoadId) return;
+
   await loadAndApplyVideoDelay(videoId);
+  if (loadId !== currentVideoLoadId) return;
 
   new YT.Player(elementId, {
     videoId,
@@ -373,7 +381,7 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
       origin: window.location.origin
     },
     events: {
-      onReady: (event) => handlePlayerReady(event, videoId),
+      onReady: (event) => handlePlayerReady(event, videoId, loadId),
       onError: (event) => handlePlayerError(event),
       onStateChange: (event) => {
         const prevIsPlaying = playerState.isPlaying;
@@ -430,15 +438,18 @@ async function loadAndApplyVideoDelay(videoId: string) {
   }
 }
 
-async function fetchAndProcessLyrics(player: YT.Player) {
+async function fetchAndProcessLyrics(player: YT.Player, loadId?: number) {
   playerState.lyricsState = LyricsStates.Loading;
   const videoData = player.getVideoData();
   const duration = player.getDuration();
+
+  if (loadId !== undefined && loadId !== currentVideoLoadId) return;
 
   if (playerState.manualLyricId) {
     console.log('Fetching manual lyric ID:', playerState.manualLyricId);
     try {
       const result = await getLyricById(playerState.manualLyricId);
+      if (loadId !== undefined && loadId !== currentVideoLoadId) return;
       updatePlayerState(result, videoData);
       if (result.found) {
         await translateLyrics(getLanguage());
@@ -450,6 +461,7 @@ async function fetchAndProcessLyrics(player: YT.Player) {
   }
 
   const result = await searchLyricsWithStrategies(videoData, duration);
+  if (loadId !== undefined && loadId !== currentVideoLoadId) return;
   updatePlayerState(result, videoData);
 
   if (result.found) {
@@ -465,6 +477,10 @@ async function searchLyricsWithStrategies(
   let collectedCandidates: LRCLibResponse[] = [];
 
   for (const strategy of strategies) {
+    // Cache parsed title if not already present
+    if (!playerState.parsedTitle) {
+      playerState.parsedTitle = parseTitle(videoData.title);
+    }
     const result = await strategy(videoData, duration);
 
     if (result.candidates) {
@@ -492,7 +508,7 @@ async function tryCleanedTitle(videoData: YT.VideoData, duration: number): Promi
 async function tryParsedTitle(videoData: YT.VideoData, duration: number): Promise<LyricsResult> {
   console.log('Cleaned raw title search failed. Proceeding with full parsing logic.');
 
-  const parsedTitle = parseTitle(videoData.title);
+  const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
   const artist = parsedTitle.artist || videoData.author;
   const track = parsedTitle.track;
 
@@ -507,7 +523,7 @@ async function tryInvertedParameters(
   videoData: YT.VideoData,
   duration: number
 ): Promise<LyricsResult> {
-  const parsedTitle = parseTitle(videoData.title);
+  const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
   const artist = parsedTitle.artist || videoData.author;
   const track = parsedTitle.track;
 
@@ -535,7 +551,8 @@ function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
     playerState.artist = result.artistName;
     playerState.track = result.trackName;
   } else {
-    const parsedTitle = parseTitle(videoData.title);
+    // If we have cached parsed title, use it, otherwise parse it (should rely on cache mostly)
+    const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
     playerState.artist = parsedTitle.artist || videoData.author;
     playerState.track = parsedTitle.track;
   }
@@ -581,14 +598,23 @@ async function addCurrentVideoToRecents(videoId: string) {
   }
 }
 
-async function handlePlayerReady(event: YT.PlayerEvent, videoId: string) {
+async function handlePlayerReady(event: YT.PlayerEvent, videoId: string, loadId: number) {
+  if (loadId !== currentVideoLoadId) return;
+
   const player = event.target;
   setPlayer(player);
 
   // Clear the timeout since the player loaded successfully
   clearVideoLoadTimeout();
 
-  await fetchAndProcessLyrics(player);
+  // Prevent YouTube iframe from receiving keyboard focus
+  const iframe = player.getIframe();
+  if (iframe) {
+    iframe.setAttribute('tabindex', '-1');
+  }
+
+  await fetchAndProcessLyrics(player, loadId);
+  if (loadId !== currentVideoLoadId) return;
 
   initializePlayerProperties(player);
 
@@ -799,7 +825,10 @@ export async function clearManualLyric() {
 
 export async function ensureCandidatesLoaded() {
   if (playerState.candidates.length > 0) return;
+  await loadDefaultCandidates(++currentSearchId);
+}
 
+async function loadDefaultCandidates(searchId: number) {
   const player = getPlayer();
   if (!player) return;
 
@@ -807,14 +836,44 @@ export async function ensureCandidatesLoaded() {
   const duration = player.getDuration();
 
   const cleanTitle = removeJunkSuffixes(videoData.title);
+
+  // Set initial search query if empty
+  if (!playerState.searchQuery) {
+    const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
+    const artist = parsedTitle.artist || videoData.author;
+    const track = parsedTitle.track;
+    playerState.searchQuery = artist ? `${artist} ${track}` : track;
+  }
+
   let candidates = await searchCandidates(cleanTitle, '', duration);
+  if (searchId !== currentSearchId) return;
 
   if (candidates.length === 0) {
-    const parsedTitle = parseTitle(videoData.title);
+    const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
     const artist = parsedTitle.artist || videoData.author;
     const track = parsedTitle.track;
     candidates = await searchCandidates(track, artist, duration);
+    if (searchId !== currentSearchId) return;
   }
+
+  playerState.candidates = candidates;
+}
+
+export async function performSearch(query: string) {
+  const searchId = ++currentSearchId;
+
+  if (!query.trim()) {
+    await loadDefaultCandidates(searchId);
+    return;
+  }
+
+  const player = getPlayer();
+  if (!player) return;
+
+  const duration = player.getDuration();
+  const candidates = await searchCandidates(query, '', duration);
+
+  if (searchId !== currentSearchId) return;
 
   playerState.candidates = candidates;
 }

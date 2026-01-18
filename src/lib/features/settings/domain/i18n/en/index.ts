@@ -42,7 +42,9 @@ const en = {
     noLyrics: 'No lyrics found',
     synced: 'Synced',
     plain: 'Plain',
-    close: 'Close'
+    close: 'Close',
+    searchPlaceholder: 'Search for lyrics...',
+    searching: 'Searching...'
   },
   // Video Controls
   controls: {

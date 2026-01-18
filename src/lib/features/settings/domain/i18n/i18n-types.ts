@@ -149,6 +149,14 @@ type RootTranslation = {
      * C​l​o​s​e
      */
     close: string;
+    /**
+     * S​e​a​r​c​h​ ​f​o​r​ ​l​y​r​i​c​s​.​.​.
+     */
+    searchPlaceholder: string;
+    /**
+     * S​e​a​r​c​h​i​n​g​.​.​.
+     */
+    searching: string;
   };
   controls: {
     /**
@@ -726,6 +734,14 @@ export type TranslationFunctions = {
      * Close
      */
     close: () => LocalizedString;
+    /**
+     * Search for lyrics...
+     */
+    searchPlaceholder: () => LocalizedString;
+    /**
+     * Searching...
+     */
+    searching: () => LocalizedString;
   };
   controls: {
     /**

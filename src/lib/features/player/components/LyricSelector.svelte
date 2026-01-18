@@ -7,18 +7,69 @@
     pause,
     play
   } from '$lib/features/player/services/playerActions';
+  import { getPlayer } from '$lib/features/player/stores/playerStore.svelte';
   import { fade, fly } from 'svelte/transition';
   import MusicNotes from 'phosphor-svelte/lib/MusicNotes';
   import Check from 'phosphor-svelte/lib/Check';
   import X from 'phosphor-svelte/lib/X';
   import { portal } from '$lib/features/ui/actions/portal';
   import LL from '$i18n/i18n-svelte';
+  import { performSearch } from '$lib/features/player/services/playerActions';
+  import MagnifyingGlass from 'phosphor-svelte/lib/MagnifyingGlass';
+  import Sparkle from 'phosphor-svelte/lib/Sparkle';
 
   let loading = $state(false);
   let selecting = $state<number | null>(null);
+  let searchTimeout: ReturnType<typeof setTimeout>;
+  let searchId = 0;
+  let initialLoadDone = false;
+
+  $effect(() => {
+    const query = playerState.searchQuery;
+    if (playerState.isLyricSelectorOpen) {
+      if (!initialLoadDone) {
+        initialLoadDone = true;
+        return;
+      }
+
+      const currentId = ++searchId;
+      loading = true;
+
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(async () => {
+        await performSearch(query);
+        if (currentId === searchId) {
+          loading = false;
+        }
+      }, 500);
+    } else {
+      initialLoadDone = false;
+      searchId = 0;
+    }
+  });
+
+  function clearSearch() {
+    playerState.searchQuery = '';
+  }
 
   $effect(() => {
     if (playerState.isLyricSelectorOpen) {
+      // Set initial search query synchronously if empty
+      if (!playerState.searchQuery) {
+        if (playerState.parsedTitle) {
+          const { artist, track } = playerState.parsedTitle;
+          playerState.searchQuery = artist ? `${artist} ${track}` : track;
+        } else {
+          const player = getPlayer();
+          if (player) {
+            const videoData = player.getVideoData();
+            // Fallback if not yet parsed (though it should be)
+            const artist = videoData.author;
+            const track = videoData.title; // Simple fallback to avoid importing parseTitle
+            playerState.searchQuery = artist ? `${artist} ${track}` : track;
+          }
+        }
+      }
       pause();
       loadCandidates();
       document.body.style.overflow = 'hidden';
@@ -28,9 +79,12 @@
   });
 
   async function loadCandidates() {
+    const sid = searchId;
     loading = true;
     await ensureCandidatesLoaded();
-    loading = false;
+    if (sid === searchId) {
+      loading = false;
+    }
   }
 
   function close() {
@@ -80,6 +134,10 @@
       close();
     }
   }
+
+  function isAutoSelected(candidateId: number): boolean {
+    return playerState.manualLyricId === null && playerState.id === candidateId;
+  }
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -90,8 +148,10 @@
     class="modal-overlay"
     transition:fade={{ duration: 200 }}
     onclick={close}
+    onkeydown={handleKeydown}
     role="dialog"
     aria-modal="true"
+    tabindex="0"
   >
     <div
       class="modal-container"
@@ -106,6 +166,23 @@
         <button onclick={close} class="close-button" aria-label={$LL.lyricSelector.close()}>
           <X size={24} />
         </button>
+      </div>
+
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <MagnifyingGlass size={18} class="search-icon" />
+          <input
+            type="text"
+            bind:value={playerState.searchQuery}
+            placeholder={$LL.lyricSelector.searchPlaceholder()}
+            class="search-input"
+          />
+          {#if playerState.searchQuery}
+            <button onclick={clearSearch} class="clear-search-button" aria-label="Clear search">
+              <X size={16} weight="bold" />
+            </button>
+          {/if}
+        </div>
       </div>
 
       <div class="modal-content">
@@ -158,11 +235,18 @@
                     </span>
                   </div>
                 </div>
-                {#if selecting === candidate.id}
-                  <div class="spinner-small"></div>
-                {:else if playerState.manualLyricId === candidate.id}
-                  <Check size={20} class="check-icon" />
-                {/if}
+                <div class="option-icons">
+                  {#if isAutoSelected(candidate.id)}
+                    <div class="auto-selected-badge" title="Auto-selected">
+                      <Sparkle size={14} weight="fill" />
+                    </div>
+                  {/if}
+                  {#if selecting === candidate.id}
+                    <div class="spinner-small"></div>
+                  {:else if playerState.manualLyricId === candidate.id}
+                    <Check size={20} class="check-icon" />
+                  {/if}
+                </div>
               </button>
             {/each}
           </div>
@@ -240,6 +324,71 @@
     flex: 1;
     overflow-y: auto;
     background-color: var(--card-background);
+  }
+
+  .search-container {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--card-background);
+  }
+
+  .search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background-color: rgba(var(--primary-color-rgb), 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0 0.75rem;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .search-input-wrapper:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(var(--primary-color-rgb), 0.2);
+    background-color: var(--card-background);
+  }
+
+  .search-icon {
+    color: var(--text-color);
+    opacity: 0.5;
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 0.625rem 0.5rem;
+    color: var(--text-color);
+    font-size: 0.9375rem;
+    outline: none;
+    width: 100%;
+  }
+
+  .search-input::placeholder {
+    color: var(--text-color);
+    opacity: 0.4;
+  }
+
+  .clear-search-button {
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    cursor: pointer;
+    color: var(--text-color);
+    opacity: 0.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+    margin-right: -0.25rem;
+  }
+
+  .clear-search-button:hover {
+    opacity: 1;
   }
 
   .loading-container {
@@ -360,6 +509,33 @@
     color: var(--primary-color);
     flex-shrink: 0;
     margin-left: 0.5rem;
+  }
+
+  .option-icons {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-left: 0.5rem;
+  }
+
+  .auto-selected-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fbbf24;
+    opacity: 0.8;
+    flex-shrink: 0;
+    animation: subtle-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes subtle-pulse {
+    0%,
+    100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   .spinner-small {
