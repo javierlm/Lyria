@@ -3,7 +3,7 @@ import { extractVideoId } from '$lib/shared/utils';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = ({ url }) => {
-  const urlParam = url.searchParams.get('url');
+  const urlParam = url.searchParams.get('url') ?? url.searchParams.get('text');
   const idParam = url.searchParams.get('id');
   const offsetParam = url.searchParams.get('offset');
 

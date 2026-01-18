@@ -15,8 +15,6 @@
 
   let { data, children } = $props();
 
-  setLocale(data.locale);
-
   $effect(() => {
     setLocale(data.locale);
   });
