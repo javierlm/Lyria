@@ -23,6 +23,14 @@
   const iconSize = $derived(windowWidth > 768 ? 30 : 20);
   const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
 
+  let isHorizontalMode = $derived(
+    playerState.lyricsState === 'found' &&
+      !playerState.lyricsAreSynced &&
+      !playerState.isLoadingVideo &&
+      playerState.duration > 0 &&
+      windowWidth >= 1400
+  );
+
   const adjustedTimes = $derived(
     playerState.lines.map((line) => Math.max(0, line.startTimeMs + playerState.timingOffset))
   );
@@ -85,7 +93,12 @@
 
 <svelte:window bind:innerWidth={windowWidth} />
 
-<div class="lyrics-container" bind:this={lyricsContainerRef}>
+<div
+  class="lyrics-container"
+  class:horizontal-mode={isHorizontalMode}
+  class:confirmed={isHorizontalMode}
+  bind:this={lyricsContainerRef}
+>
   {#if playerState.translatedLines.length > 0}
     <div class="controls-wrapper">
       <button
@@ -224,13 +237,23 @@
 
   .lyrics-container {
     margin: 2rem auto;
-    max-width: 1200px;
+    max-width: clamp(800px, calc(46.875vw), 1200px);
     padding: 2rem;
     background-color: var(--card-background);
     border-radius: 12px;
     box-shadow: 0 10px 30px var(--shadow-color);
     position: relative;
     overflow: hidden;
+  }
+
+  @media (min-width: 2561px) {
+    .lyrics-container {
+      max-width: clamp(1200px, calc(52.083vw), 2000px);
+    }
+  }
+
+  .lyrics-container.horizontal-mode {
+    max-width: 100%;
   }
 
   .active-line-background {
@@ -256,7 +279,7 @@
     display: grid;
     grid-template-columns: 1fr var(--middle-col-width) 1fr;
     gap: 0.5rem;
-    padding-bottom: 1rem;
+    padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border-color);
     align-items: start;
   }
@@ -287,7 +310,7 @@
     grid-template-columns: 1fr var(--middle-col-width) 1fr;
     gap: 0.5rem;
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
     width: 100%;
     padding: 0;
   }
@@ -411,16 +434,6 @@
     color: var(--text-color);
     text-align: center;
     grid-column: 2;
-  }
-
-  .controls-wrapper {
-    display: grid;
-    grid-template-columns: 1fr var(--middle-col-width) 1fr;
-    gap: 0.5rem;
-    align-items: center;
-    margin-bottom: 1rem;
-    width: 100%;
-    padding: 0;
   }
 
   .controls-wrapper > button:first-child {
@@ -574,6 +587,64 @@
     }
   }
 
+  @media (min-width: 1400px) and (max-width: 2560px) {
+    .lyrics-container.horizontal-mode .lyric-line .content {
+      font-size: 1.05rem;
+      line-height: 1.5;
+      padding: 0.85rem 0;
+    }
+
+    .lyrics-container.horizontal-mode .lyrics-header h2 {
+      font-size: 1.2rem;
+    }
+
+    .lyrics-container.horizontal-mode .timestamp {
+      font-size: 1.05rem;
+    }
+
+    .lyrics-container.horizontal-mode .lyric-row {
+      min-height: 3.3rem;
+    }
+  }
+
+  @media (min-width: 2561px) {
+    .lyric-line .content {
+      font-size: 1.2rem;
+      line-height: 1.5;
+      padding: 0.9rem 0;
+    }
+
+    .lyrics-header h2 {
+      font-size: 1.4rem;
+    }
+
+    .timestamp {
+      font-size: 1.2rem;
+    }
+
+    .lyric-row {
+      min-height: 3.5rem;
+    }
+
+    .lyrics-container.horizontal-mode .lyric-line .content {
+      font-size: 1.3rem;
+      line-height: 1.5;
+      padding: 1rem 0;
+    }
+
+    .lyrics-container.horizontal-mode .lyrics-header h2 {
+      font-size: 1.5rem;
+    }
+
+    .lyrics-container.horizontal-mode .timestamp {
+      font-size: 1.3rem;
+    }
+
+    .lyrics-container.horizontal-mode .lyric-row {
+      min-height: 3.8rem;
+    }
+  }
+
   .toggle-visibility:hover {
     background-color: var(--shadow-color);
     transform: scale(1.05);
@@ -593,5 +664,69 @@
 
   .no-lyrics-message p {
     margin: 0;
+  }
+
+  .lyrics-container {
+    margin: 1.5rem auto 0 auto;
+    max-width: 1200px;
+    padding: 2rem;
+    background-color: var(--card-background);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px var(--shadow-color);
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @media (min-width: 2561px) {
+    .lyrics-container {
+      max-width: 2000px;
+    }
+  }
+
+  .lyrics-container.horizontal-mode.confirmed {
+    margin: 0;
+    padding: 0.75rem 0.5rem;
+    height: auto;
+    max-height: clamp(600px, 65vh, 750px);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .lyrics-container.horizontal-mode .lyrics-header {
+    flex-shrink: 0;
+    padding-bottom: 0.75rem;
+  }
+
+  .lyrics-container.horizontal-mode .lyrics-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--card-background);
+    min-height: 0;
+    max-height: calc(clamp(600px, 65vh, 750px) - 100px);
+    padding-right: 0.5rem;
+  }
+
+  .lyrics-container.horizontal-mode .lyrics-content::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .lyrics-container.horizontal-mode .lyrics-content::-webkit-scrollbar-track {
+    background: var(--card-background);
+  }
+
+  .lyrics-container.horizontal-mode .lyrics-content::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+  }
+
+  .lyrics-container.horizontal-mode .lyrics-content::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color-hover, color-mix(in srgb, var(--primary-color) 80%, black));
   }
 </style>

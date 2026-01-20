@@ -20,6 +20,14 @@
   let copied = $state(false);
   let isFavorite = $state(false);
 
+  const showHorizontalLayout = $derived(
+    playerState.lyricsState === 'found' &&
+      !playerState.lyricsAreSynced &&
+      !playerState.isLoadingVideo &&
+      playerState.duration > 0 &&
+      windowWidth >= 1400
+  );
+
   $effect(() => {
     if (playerState.videoId) {
       checkFavoriteStatus(playerState.videoId);
@@ -46,7 +54,6 @@
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      // Rollback
       isFavorite = wasFavorite;
     }
   }
@@ -66,7 +73,7 @@
 </script>
 
 <svelte:window bind:innerWidth={windowWidth} />
-<div class="main-content-wrapper">
+<div class="main-content-wrapper" class:horizontal-mode={showHorizontalLayout}>
   <div class="logo-container-main">
     <Logo isPlayerView={true} />
   </div>
@@ -74,7 +81,7 @@
 
   <div class="title-container">
     <h1>
-    {#if playerState.artist && playerState.track}
+      {#if playerState.artist && playerState.track}
         {playerState.artist} - {playerState.track}
       {:else if playerState.track}
         {playerState.track}
@@ -111,13 +118,16 @@
 
   <div id="scroll-sentinel" style="height: 1px;"></div>
 
-  <PlayerView />
+  <div class="player-content" class:horizontal={showHorizontalLayout}>
+    <div class="video-wrapper">
+      <PlayerView />
+      <div class="timing-controls-container">
+        <TimingControls />
+      </div>
+    </div>
 
-  <div class="timing-controls-container">
-    <TimingControls />
+    <LyricsView />
   </div>
-
-  <LyricsView />
 
   <BackToTop />
 </div>
@@ -131,9 +141,26 @@
   }
 
   .main-content-wrapper {
-    max-width: 1200px;
+    max-width: clamp(1200px, 90vw, 1600px);
     margin: 0 auto;
     padding: 0 1rem;
+    overflow-x: hidden;
+  }
+
+  .main-content-wrapper.horizontal-mode {
+    max-width: clamp(1500px, 98vw, 2000px);
+    padding: 0 0.5rem;
+  }
+
+  @media (min-width: 2561px) {
+    .main-content-wrapper {
+      max-width: clamp(1600px, 90vw, 2000px);
+    }
+
+    .main-content-wrapper.horizontal-mode {
+      max-width: clamp(2000px, 98vw, 2800px);
+      padding: 0 0.5rem;
+    }
   }
 
   .title-container {
@@ -142,6 +169,86 @@
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 1rem;
+  }
+
+  .player-content {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .video-wrapper,
+  :global(.lyrics-container) {
+    width: 100%;
+    max-width: clamp(800px, calc(46.875vw), 1200px);
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+
+  @media (min-width: 2561px) {
+    .video-wrapper,
+    :global(.lyrics-container) {
+      max-width: clamp(1200px, calc(52.083vw), 2000px);
+    }
+  }
+
+  .video-wrapper {
+    margin-bottom: 1.5rem;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  :global(.lyrics-container) {
+    margin-top: 1.5rem;
+  }
+
+  .timing-controls-container {
+    display: flex;
+    justify-content: center;
+    margin: 0 auto 1rem auto;
+    width: 100%;
+    max-width: clamp(800px, calc(46.875vw), 1200px);
+    box-sizing: border-box;
+  }
+
+  .player-content.horizontal .timing-controls-container {
+    max-width: 100%;
+  }
+
+  @media (min-width: 2561px) {
+    .timing-controls-container {
+      max-width: clamp(1200px, calc(52.083vw), 2000px);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .player-content.horizontal {
+      display: grid;
+      grid-template-columns: minmax(900px, 2fr) minmax(400px, 1.2fr);
+      grid-template-rows: 1fr;
+      gap: 1rem;
+      align-items: stretch;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0;
+      box-sizing: border-box;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .player-content.horizontal > :global(.video-wrapper) {
+      width: 100%;
+      max-width: none;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    @media (min-width: 2561px) {
+      .player-content.horizontal {
+        grid-template-columns: minmax(1400px, 2fr) minmax(600px, 1.2fr);
+        grid-template-rows: 1fr;
+        gap: 1.5rem;
+      }
+    }
   }
 
   .action-button {
@@ -172,11 +279,5 @@
 
   .action-button:hover {
     background-color: rgba(var(--primary-color-rgb), 0.1);
-  }
-
-  .timing-controls-container {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1rem;
   }
 </style>

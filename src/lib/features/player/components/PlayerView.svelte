@@ -241,15 +241,21 @@
   .player-container {
     position: relative;
     width: 100%;
-    max-width: 100%;
-    height: auto;
     aspect-ratio: 16 / 9;
-    max-height: 85vh;
     background: black;
     transition: all 0.3s ease-in-out;
     overflow: hidden;
-    margin: 0 auto;
-    display: block;
+  }
+
+  #player {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 0;
+    pointer-events: none;
   }
 
   .video-controls-wrapper {
@@ -279,18 +285,6 @@
     width: 100vw !important;
     height: 100dvh !important;
     z-index: 9999;
-    max-height: 100dvh;
-  }
-
-  #player {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    z-index: 0;
-    pointer-events: none;
   }
 
   .subtitles {
