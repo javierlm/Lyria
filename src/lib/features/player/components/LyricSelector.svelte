@@ -8,6 +8,7 @@
     play
   } from '$lib/features/player/services/playerActions';
   import { getPlayer } from '$lib/features/player/stores/playerStore.svelte';
+  import { untrack } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import MusicNotes from 'phosphor-svelte/lib/MusicNotes';
   import Check from 'phosphor-svelte/lib/Check';
@@ -32,10 +33,17 @@
         return;
       }
 
+      clearTimeout(searchTimeout);
+
+      if (!query.trim()) {
+        loading = false;
+        performSearch('');
+        return;
+      }
+
       const currentId = ++searchId;
       loading = true;
 
-      clearTimeout(searchTimeout);
       searchTimeout = setTimeout(async () => {
         await performSearch(query);
         if (currentId === searchId) {
@@ -52,28 +60,36 @@
     playerState.searchQuery = '';
   }
 
+  let hasInitialized = false;
   $effect(() => {
     if (playerState.isLyricSelectorOpen) {
-      // Set initial search query synchronously if empty
-      if (!playerState.searchQuery) {
-        if (playerState.parsedTitle) {
-          const { artist, track } = playerState.parsedTitle;
-          playerState.searchQuery = artist ? `${artist} ${track}` : track;
-        } else {
-          const player = getPlayer();
-          if (player) {
-            const videoData = player.getVideoData();
-            // Fallback if not yet parsed (though it should be)
-            const artist = videoData.author;
-            const track = videoData.title; // Simple fallback to avoid importing parseTitle
-            playerState.searchQuery = artist ? `${artist} ${track}` : track;
+      untrack(() => {
+        if (!hasInitialized) {
+          hasInitialized = true;
+          // Set initial search query synchronously if empty
+          if (!playerState.searchQuery) {
+            if (playerState.parsedTitle) {
+              const { artist, track } = playerState.parsedTitle;
+              playerState.searchQuery = artist ? `${artist} ${track}` : track;
+            } else {
+              const player = getPlayer();
+              if (player) {
+                const videoData = player.getVideoData();
+                // Fallback if not yet parsed (though it should be)
+                const artist = videoData.author;
+                const track = videoData.title; // Simple fallback to avoid importing parseTitle
+                playerState.searchQuery = artist ? `${artist} ${track}` : track;
+              }
+            }
           }
         }
-      }
-      pause();
-      loadCandidates();
-      document.body.style.overflow = 'hidden';
+        pause();
+        loadCandidates();
+        document.body.style.overflow = 'hidden';
+      });
     } else {
+      hasInitialized = false;
+      playerState.searchQuery = '';
       document.body.style.overflow = '';
     }
   });
@@ -190,6 +206,8 @@
           <div class="loading-container">
             <div class="spinner"></div>
           </div>
+        {:else if !playerState.searchQuery.trim()}
+          <div class="empty-state">{$LL.lyricSelector.searchHint()}</div>
         {:else if playerState.candidates.length === 0}
           <div class="empty-state">{$LL.lyricSelector.noLyrics()}</div>
         {:else}

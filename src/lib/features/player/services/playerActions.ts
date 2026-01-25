@@ -837,14 +837,6 @@ async function loadDefaultCandidates(searchId: number) {
 
   const cleanTitle = removeJunkSuffixes(videoData.title);
 
-  // Set initial search query if empty
-  if (!playerState.searchQuery) {
-    const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
-    const artist = parsedTitle.artist || videoData.author;
-    const track = parsedTitle.track;
-    playerState.searchQuery = artist ? `${artist} ${track}` : track;
-  }
-
   let candidates = await searchCandidates(cleanTitle, '', duration);
   if (searchId !== currentSearchId) return;
 
@@ -863,7 +855,7 @@ export async function performSearch(query: string) {
   const searchId = ++currentSearchId;
 
   if (!query.trim()) {
-    await loadDefaultCandidates(searchId);
+    playerState.candidates = [];
     return;
   }
 
