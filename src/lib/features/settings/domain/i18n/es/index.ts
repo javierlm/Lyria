@@ -4,12 +4,12 @@ const es = {
   appName: 'Lyria',
   // Search
   search: {
-    placeholder: 'Busca por artista, canción o URL de YouTube',
+    placeholder: 'Busca por artista o canción en tus recientes, o pega una URL de YouTube',
     loadVideo: 'Cargar Video',
     notInHistory: 'Este video no está en tu historial',
     pressEnterToLoad: 'Presiona Enter para cargarlo',
     noResults: 'No se encontraron resultados',
-    searchHint: 'Intenta buscar por artista, canción o pega una URL de YouTube',
+    searchHint: 'Intenta buscar por artista o canción, o pega una URL de YouTube',
     all: 'Todos',
     favorites: 'Favoritos'
   },
@@ -44,7 +44,8 @@ const es = {
     plain: 'Sin sincronizar',
     close: 'Cerrar',
     searchPlaceholder: 'Buscar letras...',
-    searching: 'Buscando...'
+    searching: 'Buscando...',
+    searchHint: 'Escribe el nombre de la canción o el artista para buscar'
   },
   // Video Controls
   controls: {
@@ -169,6 +170,12 @@ const es = {
     newVersionAvailable: 'Nueva versión disponible',
     reload: 'Recargar',
     close: 'Cerrar'
+  },
+  demoMode: {
+    title: 'Modo Demo',
+    toggle: 'Activar modo demo',
+    badge: 'Demo',
+    description: 'Prueba la app con videos de demo precargados'
   }
 } satisfies Translation;
 

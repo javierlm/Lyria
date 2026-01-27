@@ -8,6 +8,7 @@
   import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
   import LL from '$i18n/i18n-svelte';
   import { onMount } from 'svelte';
+  import { demoStore } from '$lib/features/settings/stores/demoStore.svelte';
   import '@fontsource/inter/400.css';
   import '@fontsource/inter/500.css';
   import '@fontsource/inter/600.css';
@@ -33,6 +34,9 @@
   <div class="top-controls">
     <AppLanguageSelector />
     <ThemeToggle />
+    {#if demoStore.isDemoMode}
+      <span class="demo-badge">DEMO</span>
+    {/if}
   </div>
   {@render children()}
   <ReloadPrompt />
@@ -121,5 +125,16 @@
     top: env(safe-area-inset-top, 0px);
     left: 0;
     z-index: 50;
+  }
+
+  .demo-badge {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    opacity: 0.6;
+    color: var(--text-color);
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(var(--primary-color-rgb), 0.05);
   }
 </style>

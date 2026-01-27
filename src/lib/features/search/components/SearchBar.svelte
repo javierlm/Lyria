@@ -3,6 +3,7 @@
   import IconMagnifyingGlass from 'phosphor-svelte/lib/MagnifyingGlass';
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
+  import { demoStore } from '$lib/features/settings/stores/demoStore.svelte';
   import SearchForm from './search/SearchForm.svelte';
   import SearchResults from './search/SearchResults.svelte';
   import SearchFilters from './search/SearchFilters.svelte';
@@ -10,33 +11,58 @@
   let { centered = false } = $props<{ centered?: boolean }>();
 
   let searchContainerRef: HTMLDivElement;
+  let videosLoaded = $state(false);
 
   onMount(() => {
-    if (centered) {
-      searchStore.setCentered(true);
-      searchStore.loadRecentVideos();
-    }
+    let cleanup: (() => void) | undefined;
 
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!centered && searchContainerRef && !searchContainerRef.contains(event.target as Node)) {
-        if (searchStore.showRecentVideos) {
-          searchStore.showRecentVideos = false;
-          setTimeout(() => {
+    function init() {
+      if (centered) {
+        searchStore.setCentered(true);
+      }
+
+      const handleClickOutside = (event: MouseEvent) => {
+        if (!centered && searchContainerRef && !searchContainerRef.contains(event.target as Node)) {
+          if (searchStore.showRecentVideos) {
+            searchStore.showRecentVideos = false;
+            setTimeout(() => {
+              searchStore.reset();
+              searchStore.showSearchField = false;
+            }, 300);
+          } else if (searchStore.showSearchField) {
             searchStore.reset();
             searchStore.showSearchField = false;
-          }, 300);
-        } else if (searchStore.showSearchField) {
-          searchStore.reset();
-          searchStore.showSearchField = false;
+          }
         }
-      }
-    };
+      };
 
-    document.addEventListener('click', handleClickOutside);
+      document.addEventListener('click', handleClickOutside);
+      cleanup = () => document.removeEventListener('click', handleClickOutside);
+    }
+
+    init();
 
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      if (cleanup) cleanup();
     };
+  });
+
+  $effect(() => {
+    if (centered && !videosLoaded) {
+      const isDemo = demoStore.isDemoMode;
+      const isInit = demoStore.isInitialized;
+
+      if (!isDemo || isInit) {
+        console.log('[SearchBar] Loading videos now', { isDemo, isInit });
+        const timer = setTimeout(() => {
+          searchStore.loadRecentVideos();
+          videosLoaded = true;
+        }, 50);
+        return () => clearTimeout(timer);
+      } else {
+        console.log('[SearchBar] Waiting for demo initialization...', { isDemo, isInit });
+      }
+    }
   });
 </script>
 

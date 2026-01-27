@@ -4,12 +4,12 @@ const en = {
   appName: 'Lyria',
   // Search
   search: {
-    placeholder: 'Search by artist, song, or YouTube URL',
+    placeholder: 'Search by artist or song in your recents, or paste a YouTube URL',
     loadVideo: 'Load Video',
     notInHistory: 'This video is not in your history',
     pressEnterToLoad: 'Press Enter to load it',
     noResults: 'No results found',
-    searchHint: 'Try searching by artist, song, or paste a YouTube URL',
+    searchHint: 'Try searching by artist or song, or paste a YouTube URL',
     all: 'All',
     favorites: 'Favorites'
   },
@@ -44,7 +44,8 @@ const en = {
     plain: 'Plain',
     close: 'Close',
     searchPlaceholder: 'Search for lyrics...',
-    searching: 'Searching...'
+    searching: 'Searching...',
+    searchHint: 'Type a song or artist name to search'
   },
   // Video Controls
   controls: {
@@ -169,6 +170,12 @@ const en = {
     newVersionAvailable: 'New version available',
     reload: 'Reload',
     close: 'Close'
+  },
+  demoMode: {
+    title: 'Demo Mode',
+    toggle: 'Toggle demo mode',
+    badge: 'Demo',
+    description: 'Try the app with pre-loaded demo videos'
   }
 } satisfies Translation;
 

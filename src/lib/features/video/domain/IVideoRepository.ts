@@ -23,4 +23,5 @@ export interface IVideoRepository {
   removeFavoriteVideo(videoId: string): Promise<void>;
   getFavoriteVideos(): Promise<FavoriteVideo[]>;
   isFavorite(videoId: string): Promise<boolean>;
+  close(): void;
 }

@@ -27,5 +27,9 @@ export const load: PageLoad = ({ url }) => {
       throw redirect(302, `/play?${searchParams.toString()}`);
     }
   }
-  return {};
+
+  const demoParam = url.searchParams.get('demo');
+  const shouldActivateDemo = demoParam === 'true' || demoParam === '1';
+
+  return { activateDemo: shouldActivateDemo };
 };

@@ -8,6 +8,8 @@
   import type { Locales } from '$i18n/i18n-types';
   import { loadLocaleAsync } from '$i18n/i18n-util.async';
   import ChromeAISettings from './ChromeAISettings.svelte';
+  import DemoModeSettings from './DemoModeSettings.svelte';
+  import { demoStore } from '../stores/demoStore.svelte';
   import { translationStore } from '../stores/translationStore.svelte';
 
   const languageFlags: { [key: string]: string } = {
@@ -123,6 +125,12 @@
       <div class="settings-separator"></div>
       <div class="ai-settings-wrapper">
         <ChromeAISettings />
+      </div>
+    {/if}
+    {#if demoStore.isDemoMode}
+      <div class="settings-separator"></div>
+      <div class="demo-settings-wrapper">
+        <DemoModeSettings />
       </div>
     {/if}
   </div>
@@ -313,6 +321,10 @@
   }
 
   .ai-settings-wrapper {
+    padding: 4px;
+  }
+
+  .demo-settings-wrapper {
     padding: 4px;
   }
 </style>

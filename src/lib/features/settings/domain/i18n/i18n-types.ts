@@ -22,7 +22,7 @@ type RootTranslation = {
   appName: string;
   search: {
     /**
-     * S​e​a​r​c​h​ ​b​y​ ​a​r​t​i​s​t​,​ ​s​o​n​g​,​ ​o​r​ ​Y​o​u​T​u​b​e​ ​U​R​L
+     * S​e​a​r​c​h​ ​b​y​ ​a​r​t​i​s​t​ ​o​r​ ​s​o​n​g​ ​i​n​ ​y​o​u​r​ ​r​e​c​e​n​t​s​,​ ​o​r​ ​p​a​s​t​e​ ​a​ ​Y​o​u​T​u​b​e​ ​U​R​L
      */
     placeholder: string;
     /**
@@ -42,7 +42,7 @@ type RootTranslation = {
      */
     noResults: string;
     /**
-     * T​r​y​ ​s​e​a​r​c​h​i​n​g​ ​b​y​ ​a​r​t​i​s​t​,​ ​s​o​n​g​,​ ​o​r​ ​p​a​s​t​e​ ​a​ ​Y​o​u​T​u​b​e​ ​U​R​L
+     * T​r​y​ ​s​e​a​r​c​h​i​n​g​ ​b​y​ ​a​r​t​i​s​t​ ​o​r​ ​s​o​n​g​,​ ​o​r​ ​p​a​s​t​e​ ​a​ ​Y​o​u​T​u​b​e​ ​U​R​L
      */
     searchHint: string;
     /**
@@ -157,6 +157,10 @@ type RootTranslation = {
      * S​e​a​r​c​h​i​n​g​.​.​.
      */
     searching: string;
+    /**
+     * T​y​p​e​ ​a​ ​s​o​n​g​ ​o​r​ ​a​r​t​i​s​t​ ​n​a​m​e​ ​t​o​ ​s​e​a​r​c​h
+     */
+    searchHint: string;
   };
   controls: {
     /**
@@ -598,6 +602,24 @@ type RootTranslation = {
      */
     close: string;
   };
+  demoMode: {
+    /**
+     * D​e​m​o​ ​M​o​d​e
+     */
+    title: string;
+    /**
+     * T​o​g​g​l​e​ ​d​e​m​o​ ​m​o​d​e
+     */
+    toggle: string;
+    /**
+     * D​e​m​o
+     */
+    badge: string;
+    /**
+     * T​r​y​ ​t​h​e​ ​a​p​p​ ​w​i​t​h​ ​p​r​e​-​l​o​a​d​e​d​ ​d​e​m​o​ ​v​i​d​e​o​s
+     */
+    description: string;
+  };
 };
 
 export type TranslationFunctions = {
@@ -607,7 +629,7 @@ export type TranslationFunctions = {
   appName: () => LocalizedString;
   search: {
     /**
-     * Search by artist, song, or YouTube URL
+     * Search by artist or song in your recents, or paste a YouTube URL
      */
     placeholder: () => LocalizedString;
     /**
@@ -627,7 +649,7 @@ export type TranslationFunctions = {
      */
     noResults: () => LocalizedString;
     /**
-     * Try searching by artist, song, or paste a YouTube URL
+     * Try searching by artist or song, or paste a YouTube URL
      */
     searchHint: () => LocalizedString;
     /**
@@ -742,6 +764,10 @@ export type TranslationFunctions = {
      * Searching...
      */
     searching: () => LocalizedString;
+    /**
+     * Type a song or artist name to search
+     */
+    searchHint: () => LocalizedString;
   };
   controls: {
     /**
@@ -1172,6 +1198,24 @@ export type TranslationFunctions = {
      * Close
      */
     close: () => LocalizedString;
+  };
+  demoMode: {
+    /**
+     * Demo Mode
+     */
+    title: () => LocalizedString;
+    /**
+     * Toggle demo mode
+     */
+    toggle: () => LocalizedString;
+    /**
+     * Demo
+     */
+    badge: () => LocalizedString;
+    /**
+     * Try the app with pre-loaded demo videos
+     */
+    description: () => LocalizedString;
   };
 };
 
