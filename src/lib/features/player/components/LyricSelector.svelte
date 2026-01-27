@@ -89,7 +89,6 @@
       });
     } else {
       hasInitialized = false;
-      playerState.searchQuery = '';
       document.body.style.overflow = '';
     }
   });

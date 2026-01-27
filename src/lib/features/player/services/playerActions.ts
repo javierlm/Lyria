@@ -452,6 +452,22 @@ async function fetchAndProcessLyrics(player: YT.Player, loadId?: number) {
       if (loadId !== undefined && loadId !== currentVideoLoadId) return;
       updatePlayerState(result, videoData);
       if (result.found) {
+        if (result.artistName && result.trackName) {
+          playerState.searchQuery = `${result.artistName} - ${result.trackName}`;
+
+          // Populate candidates in background
+          searchCandidates(playerState.searchQuery, '', duration).then((candidates) => {
+            if (loadId !== undefined && loadId !== currentVideoLoadId) return;
+
+            // Ensure the selected lyric is in the list
+            if (result.id && !candidates.some((c) => c.id === result.id)) {
+              if (result.candidates?.[0]) {
+                candidates.unshift(result.candidates[0]);
+              }
+            }
+            playerState.candidates = candidates;
+          });
+        }
         await translateLyrics(getLanguage());
       }
       return;
@@ -481,7 +497,7 @@ async function searchLyricsWithStrategies(
     if (!playerState.parsedTitle) {
       playerState.parsedTitle = parseTitle(videoData.title);
     }
-    const result = await strategy(videoData, duration);
+    const { result, query } = await strategy(videoData, duration);
 
     if (result.candidates) {
       const existingIds = new Set(collectedCandidates.map((c) => c.id));
@@ -491,6 +507,7 @@ async function searchLyricsWithStrategies(
 
     if (result.found) {
       result.candidates = collectedCandidates;
+      playerState.searchQuery = query;
       return result;
     }
   }
@@ -498,14 +515,21 @@ async function searchLyricsWithStrategies(
   return { found: false, synced: false, lyrics: [], candidates: collectedCandidates };
 }
 
-async function tryCleanedTitle(videoData: YT.VideoData, duration: number): Promise<LyricsResult> {
+async function tryCleanedTitle(
+  videoData: YT.VideoData,
+  duration: number
+): Promise<{ result: LyricsResult; query: string }> {
   const cleanedTitle = removeJunkSuffixes(videoData.title);
   console.log(`Attempting lyric search with cleaned raw title: "${cleanedTitle}"`);
 
-  return await getSyncedLyrics(cleanedTitle, '', duration);
+  const result = await getSyncedLyrics(cleanedTitle, '', duration);
+  return { result, query: cleanedTitle };
 }
 
-async function tryParsedTitle(videoData: YT.VideoData, duration: number): Promise<LyricsResult> {
+async function tryParsedTitle(
+  videoData: YT.VideoData,
+  duration: number
+): Promise<{ result: LyricsResult; query: string }> {
   console.log('Cleaned raw title search failed. Proceeding with full parsing logic.');
 
   const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
@@ -516,13 +540,14 @@ async function tryParsedTitle(videoData: YT.VideoData, duration: number): Promis
     console.log(`Parsed artist was empty, using YouTube channel name: "${artist}"`);
   }
 
-  return await getSyncedLyrics(track, artist, duration);
+  const result = await getSyncedLyrics(track, artist, duration);
+  return { result, query: `${artist} ${track}` };
 }
 
 async function tryInvertedParameters(
   videoData: YT.VideoData,
   duration: number
-): Promise<LyricsResult> {
+): Promise<{ result: LyricsResult; query: string }> {
   const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
   const artist = parsedTitle.artist || videoData.author;
   const track = parsedTitle.track;
@@ -535,7 +560,7 @@ async function tryInvertedParameters(
     console.log('Successfully found lyrics with inverted parameters.');
   }
 
-  return result;
+  return { result, query: `${track} ${artist}` };
 }
 
 function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
@@ -786,7 +811,7 @@ export async function selectLyric(id: number) {
 
   try {
     const result = await getLyricById(id);
-    if (playerState.candidates.length > 0 && !result.candidates) {
+    if (playerState.candidates.length > 0) {
       result.candidates = playerState.candidates;
     }
 
@@ -795,6 +820,9 @@ export async function selectLyric(id: number) {
     updatePlayerState(result, videoData);
 
     if (result.found) {
+      if (result.artistName && result.trackName) {
+        playerState.searchQuery = `${result.artistName} - ${result.trackName}`;
+      }
       await translateLyrics(getLanguage());
     }
   } catch (error) {

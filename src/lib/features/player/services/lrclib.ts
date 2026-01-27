@@ -514,7 +514,9 @@ export async function getLyricById(id: number): Promise<LyricsResult> {
     if (!res.ok) throw new Error('Failed to fetch lyric by ID');
 
     const data: LRCLibResponse = await res.json();
-    return parseLyrics(data);
+    const result = parseLyrics(data);
+    result.candidates = [data];
+    return result;
   } catch (error) {
     console.error('Error fetching lyric by ID:', error);
     return { lyrics: [], found: false, synced: false };

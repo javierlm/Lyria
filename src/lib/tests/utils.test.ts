@@ -40,6 +40,10 @@ const testCases = [
   {
     input: 'Artist ft. Other Compound-Surname - Song Name (Official Video)',
     expected: { artist: 'Artist Other Compound Surname', track: 'Song Name' }
+  },
+  {
+    input: 'Adele - Rolling in the Deep (Official Video)',
+    expected: { artist: 'Adele', track: 'Rolling in the Deep' }
   }
 ];
 

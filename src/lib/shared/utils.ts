@@ -62,7 +62,7 @@ const junkSuffixes = [
   'official original mix'
 ];
 
-const junkRegex = new RegExp(`\\s*[-–—|]?\\s*(?:${junkSuffixes.join('|')})\\s*$`, 'gi');
+const junkRegex = new RegExp(`\\s*[-–—|]?\\s*\\b(?:${junkSuffixes.join('|')})\\s*$`, 'gi');
 
 type ParseState = {
   title: string;
