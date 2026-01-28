@@ -620,6 +620,12 @@ type RootTranslation = {
      */
     description: string;
   };
+  meta: {
+    /**
+     * W​a​t​c​h​ ​o​n​ ​L​y​r​i​a
+     */
+    description: string;
+  };
 };
 
 export type TranslationFunctions = {
@@ -1214,6 +1220,12 @@ export type TranslationFunctions = {
     badge: () => LocalizedString;
     /**
      * Try the app with pre-loaded demo videos
+     */
+    description: () => LocalizedString;
+  };
+  meta: {
+    /**
+     * Watch on Lyria
      */
     description: () => LocalizedString;
   };

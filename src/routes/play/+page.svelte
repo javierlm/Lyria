@@ -112,6 +112,26 @@
   });
 </script>
 
+<svelte:head>
+  {#if data.videoId}
+    {#if data.artist && data.track}
+      <meta property="og:title" content="{data.artist} - {data.track}" />
+    {:else if data.videoTitle}
+      <meta property="og:title" content={data.videoTitle} />
+    {:else}
+      <meta property="og:title" content="Lyria" />
+    {/if}
+    <meta property="og:description" content={data.description} />
+    <meta property="og:type" content="video.other" />
+    <meta name="theme-color" content="#b91c1c" />
+    {#if data.thumbnailUrl}
+      <meta property="og:image" content={data.thumbnailUrl} />
+      <meta name="twitter:image" content={data.thumbnailUrl} />
+    {/if}
+    <meta name="twitter:card" content="summary_large_image" />
+  {/if}
+</svelte:head>
+
 {#if playerState.videoId}
   <div in:fade={{ duration: 300 }}>
     <PlayerLayout />

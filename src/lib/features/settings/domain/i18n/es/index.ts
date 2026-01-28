@@ -176,6 +176,9 @@ const es = {
     toggle: 'Activar modo demo',
     badge: 'Demo',
     description: 'Prueba la app con videos de demo precargados'
+  },
+  meta: {
+    description: 'Ver en Lyria'
   }
 } satisfies Translation;
 

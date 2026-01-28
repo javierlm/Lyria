@@ -176,6 +176,9 @@ const en = {
     toggle: 'Toggle demo mode',
     badge: 'Demo',
     description: 'Try the app with pre-loaded demo videos'
+  },
+  meta: {
+    description: 'Watch on Lyria'
   }
 } satisfies Translation;
 
