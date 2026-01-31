@@ -131,11 +131,12 @@
   <div class="subtitles-controls">
     <button
       class="subtitles-btn"
-      onpointerdown={(event) => {
-        if (event.button === 0) {
+      onclick={() => {
+        if (playerState.lyricsAreSynced) {
           playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
         }
       }}
+      disabled={!playerState.lyricsAreSynced}
       title={playerState.showOriginalSubtitle
         ? $LL.lyrics.hideOriginal()
         : $LL.lyrics.showOriginal()}
@@ -149,11 +150,12 @@
     </button>
     <button
       class="subtitles-btn"
-      onpointerdown={(event) => {
-        if (event.button === 0) {
+      onclick={() => {
+        if (playerState.lyricsAreSynced) {
           playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
         }
       }}
+      disabled={!playerState.lyricsAreSynced}
       title={playerState.showTranslatedSubtitle
         ? $LL.lyrics.hideTranslated()
         : $LL.lyrics.showTranslated()}
@@ -219,9 +221,15 @@
   .play-pause-btn:hover,
   .volume-btn:hover,
   .fullscreen-btn:hover,
-  .subtitles-btn:hover {
+  .subtitles-btn:hover:not(:disabled) {
     background-color: rgba(var(--primary-color-rgb), 0.3);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+
+  .subtitles-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+    pointer-events: none;
   }
 
   .subtitles-controls {
@@ -262,6 +270,7 @@
     transition: opacity 0.2s;
     margin: 0 10px;
     border-radius: 4px;
+    cursor: pointer;
   }
 
   .seek-bar:hover {
@@ -313,6 +322,7 @@
     transition: opacity 0.2s;
     margin-left: 10px;
     border-radius: 4px;
+    cursor: pointer;
   }
 
   .volume-bar:hover {

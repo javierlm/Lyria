@@ -186,7 +186,9 @@
   }
 
   .sync-button:disabled {
-    background-color: #fcdada;
+    background: #9ca3af;
+    color: #ffffff;
+    opacity: 0.7;
     cursor: not-allowed;
   }
 

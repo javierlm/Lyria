@@ -19,6 +19,7 @@
   let activeLineOffset = $state(0);
   let activeLineHeight = $state(0);
   let windowWidth = $state(0);
+  let videoHeight = $state(0);
 
   const iconSize = $derived(windowWidth > 768 ? 30 : 20);
   const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
@@ -30,6 +31,28 @@
       playerState.duration > 0 &&
       windowWidth >= 1400
   );
+
+  // Medir la altura del reproductor (iframe) para sincronizar alturas
+  $effect(() => {
+    if (!isHorizontalMode || !lyricsContainerRef) return;
+
+    const parent = lyricsContainerRef.parentElement;
+    if (!parent) return;
+
+    // Buscar el contenedor del reproductor (PlayerView) que tiene el iframe
+    const playerContainer = parent.querySelector('.video-wrapper .player-container');
+    if (!playerContainer) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        videoHeight = entry.contentRect.height;
+      }
+    });
+
+    observer.observe(playerContainer);
+
+    return () => observer.disconnect();
+  });
 
   const adjustedTimes = $derived(
     playerState.lines.map((line) => Math.max(0, line.startTimeMs + playerState.timingOffset))
@@ -98,6 +121,9 @@
   class:horizontal-mode={isHorizontalMode}
   class:confirmed={isHorizontalMode}
   bind:this={lyricsContainerRef}
+  style={isHorizontalMode && lyricsContainerRef
+    ? `max-height: ${videoHeight > 0 ? videoHeight : Math.min(window.innerHeight * 0.55, (lyricsContainerRef.clientWidth * 9) / 16)}px;`
+    : undefined}
 >
   {#if playerState.translatedLines.length > 0}
     <div class="controls-wrapper">
@@ -106,6 +132,7 @@
         onclick={() => {
           playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
         }}
+        disabled={!playerState.lyricsAreSynced}
         aria-label={playerState.showOriginalSubtitle
           ? $LL.lyrics.hideOriginal()
           : $LL.lyrics.showOriginal()}
@@ -122,6 +149,7 @@
         onclick={() => {
           playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
         }}
+        disabled={!playerState.lyricsAreSynced}
         aria-label={playerState.showTranslatedSubtitle
           ? $LL.lyrics.hideTranslated()
           : $LL.lyrics.showTranslated()}
@@ -236,7 +264,7 @@
   }
 
   .lyrics-container {
-    margin: 2rem auto;
+    margin: 0 auto 2rem;
     max-width: clamp(800px, calc(46.875vw), 1200px);
     padding: 2rem;
     background-color: var(--card-background);
@@ -244,6 +272,9 @@
     box-shadow: 0 10px 30px var(--shadow-color);
     position: relative;
     overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   @media (min-width: 2561px) {
@@ -645,9 +676,15 @@
     }
   }
 
-  .toggle-visibility:hover {
+  .toggle-visibility:hover:not(:disabled) {
     background-color: var(--shadow-color);
     transform: scale(1.05);
+  }
+
+  .toggle-visibility:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+    pointer-events: none;
   }
 
   .no-lyrics-message {
@@ -666,34 +703,17 @@
     margin: 0;
   }
 
-  .lyrics-container {
-    margin: 1.5rem auto 0 auto;
-    max-width: 1200px;
-    padding: 2rem;
-    background-color: var(--card-background);
-    border-radius: 12px;
-    box-shadow: 0 10px 30px var(--shadow-color);
-    position: relative;
-    overflow: hidden;
-    width: 100%;
-    box-sizing: border-box;
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  @media (min-width: 2561px) {
-    .lyrics-container {
-      max-width: 2000px;
-    }
-  }
-
-  .lyrics-container.horizontal-mode.confirmed {
+  .lyrics-container.horizontal-mode {
     margin: 0;
     padding: 0.75rem 0.5rem;
     height: auto;
-    max-height: clamp(600px, 65vh, 750px);
+    max-height: 100%;
+    min-height: 0;
     width: 100%;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
   }
 
   .lyrics-container.horizontal-mode .lyrics-header {
@@ -709,7 +729,7 @@
     scrollbar-width: thin;
     scrollbar-color: var(--primary-color) var(--card-background);
     min-height: 0;
-    max-height: calc(clamp(600px, 65vh, 750px) - 100px);
+    max-height: none;
     padding-right: 0.5rem;
   }
 

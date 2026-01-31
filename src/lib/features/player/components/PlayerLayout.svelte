@@ -195,7 +195,7 @@
   }
 
   .video-wrapper {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -226,9 +226,9 @@
     .player-content.horizontal {
       display: grid;
       grid-template-columns: minmax(900px, 2fr) minmax(400px, 1.2fr);
-      grid-template-rows: 1fr;
+      grid-template-rows: minmax(0, min-content);
       gap: 1rem;
-      align-items: stretch;
+      align-items: start;
       width: 100%;
       margin: 0 auto;
       padding: 0;
@@ -242,10 +242,17 @@
       transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
+    .player-content.horizontal > :global(.lyrics-container) {
+      height: auto;
+      max-height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+
     @media (min-width: 2561px) {
       .player-content.horizontal {
         grid-template-columns: minmax(1400px, 2fr) minmax(600px, 1.2fr);
-        grid-template-rows: 1fr;
+        grid-template-rows: minmax(0, min-content);
         gap: 1.5rem;
       }
     }

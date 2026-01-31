@@ -9,6 +9,11 @@
 
   let { data } = $props();
 
+  // Initialize immediately for View Transitions
+  if (data.videoId && playerState.videoId !== data.videoId) {
+    playerState.videoId = data.videoId;
+  }
+
   $effect(() => {
     const idFromUrl = $page.url.searchParams.get('id');
     const offsetParam = $page.url.searchParams.get('offset');

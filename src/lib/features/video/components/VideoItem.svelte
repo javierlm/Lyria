@@ -62,6 +62,7 @@
       class="video-thumbnail"
       fetchpriority={priority ? 'high' : 'auto'}
       loading={priority ? 'eager' : 'lazy'}
+      style:view-transition-name="video-{video.videoId}"
     />
   {/if}
   <div class="video-details">
@@ -118,6 +119,10 @@
 
   .video-item.favorite {
     background-color: rgba(var(--primary-color-rgb), 0.15);
+  }
+
+  .video-item.favorite:hover {
+    background-color: rgba(var(--primary-color-rgb), 0.4);
   }
 
   .video-item:last-child {

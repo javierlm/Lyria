@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import IconMagnifyingGlass from 'phosphor-svelte/lib/MagnifyingGlass';
+  import { fade } from 'svelte/transition';
+  import MagnifyingGlassIcon from 'phosphor-svelte/lib/MagnifyingGlassIcon';
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
   import { demoStore } from '$lib/features/settings/stores/demoStore.svelte';
@@ -16,6 +17,8 @@
   onMount(() => {
     let cleanup: (() => void) | undefined;
 
+    let closeTimeout: ReturnType<typeof setTimeout> | undefined;
+
     function init() {
       if (centered) {
         searchStore.setCentered(true);
@@ -25,7 +28,7 @@
         if (!centered && searchContainerRef && !searchContainerRef.contains(event.target as Node)) {
           if (searchStore.showRecentVideos) {
             searchStore.showRecentVideos = false;
-            setTimeout(() => {
+            closeTimeout = setTimeout(() => {
               searchStore.reset();
               searchStore.showSearchField = false;
             }, 300);
@@ -37,7 +40,12 @@
       };
 
       document.addEventListener('click', handleClickOutside);
-      cleanup = () => document.removeEventListener('click', handleClickOutside);
+      cleanup = () => {
+        document.removeEventListener('click', handleClickOutside);
+        if (closeTimeout) {
+          clearTimeout(closeTimeout);
+        }
+      };
     }
 
     init();
@@ -73,13 +81,15 @@
   bind:this={searchContainerRef}
 >
   {#if !centered}
-    <button class="search-icon-button" onclick={() => searchStore.toggleSearchField()}>
-      <IconMagnifyingGlass size="24" weight="bold" />
-    </button>
+    <div class="search-icon-wrapper" out:fade={{ duration: 300 }}>
+      <button class="search-icon-button" onclick={() => searchStore.toggleSearchField()}>
+        <MagnifyingGlassIcon size="24" weight="bold" />
+      </button>
+    </div>
   {/if}
 
   {#if searchStore.showSearchField}
-    <div class="search-form-wrapper" class:centered>
+    <div class="search-form-wrapper" class:centered out:fade={{ duration: 200 }}>
       <SearchForm {centered} />
       <SearchFilters />
       <SearchResults />
@@ -93,7 +103,7 @@
     top: 1rem;
     right: 1rem;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     z-index: 1000;
     width: auto;
     gap: 1rem;
@@ -117,6 +127,12 @@
     transition: none;
   }
 
+  .search-icon-wrapper {
+    display: flex;
+    align-items: flex-start;
+    transition: all 0.3s ease;
+  }
+
   .search-icon-button {
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     border: none;
@@ -132,6 +148,7 @@
     transition: all 0.3s ease;
     flex-shrink: 0;
     outline: none;
+    margin-top: 0.4rem;
   }
 
   .search-icon-button:hover {
@@ -147,7 +164,11 @@
   }
 
   .search-form-wrapper:not(.centered) {
+    position: absolute;
+    right: calc(48px + 1rem);
+    top: 0;
     width: 600px;
+    z-index: 1001;
   }
 
   .search-form-wrapper.centered {

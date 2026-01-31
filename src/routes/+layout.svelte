@@ -14,6 +14,9 @@
   import '@fontsource/inter/600.css';
   import '@fontsource/inter/700.css';
 
+  import { onNavigate } from '$app/navigation';
+  import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
+
   let { data, children } = $props();
 
   $effect(() => {
@@ -22,6 +25,23 @@
 
   onMount(() => {
     injectAnalytics({ mode: dev ? 'development' : 'production' });
+  });
+
+  onNavigate((navigation) => {
+    if (!document.startViewTransition) {
+      searchStore.reset();
+      searchStore.showSearchField = false;
+      return;
+    }
+
+    return new Promise((resolve) => {
+      document.startViewTransition(async () => {
+        resolve();
+        searchStore.reset();
+        searchStore.showSearchField = false;
+        await navigation.complete;
+      });
+    });
   });
 </script>
 
@@ -46,7 +66,7 @@
   :root {
     --primary-color: #b91c1c;
     --primary-color-rgb: 185, 28, 28;
-    --primary-color-hover: #991b1b;
+    --primary-color-hover: #fca5a5;
     --on-primary-color: #ffffff;
 
     --secondary-color: #d43b74;
@@ -69,7 +89,7 @@
   :global(html.dark-mode) {
     --primary-color: #f87171;
     --primary-color-rgb: 248, 113, 113;
-    --primary-color-hover: #ef4444;
+    --primary-color-hover: #fecaca;
     --background-color: #101523;
     --on-primary-color: #101523;
 

@@ -119,6 +119,7 @@
   class="player-container"
   class:fullscreen={playerState.isFullscreen}
   role="region"
+  style:view-transition-name="video-{playerState.videoId}"
   onmouseenter={(e) => {
     if (!isTouch) {
       e.stopPropagation();
@@ -245,6 +246,7 @@
     background: black;
     transition: all 0.3s ease-in-out;
     overflow: hidden;
+    border-radius: 12px;
   }
 
   #player {

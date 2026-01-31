@@ -32,8 +32,6 @@
       const newUrlString = `play?id=${encodeURIComponent(id)}`;
       // eslint-disable-next-line svelte/no-navigation-without-resolve
       goto(newUrlString, { noScroll: true });
-      searchStore.showSearchField = false;
-      searchStore.searchValue = '';
     }
   }
 
