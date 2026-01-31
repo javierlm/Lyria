@@ -12,7 +12,6 @@
   import { LL } from '$i18n/i18n-svelte';
   import { translationStore } from '$lib/features/settings/stores/translationStore.svelte';
 
-  let hoveredIndex: number | null = $state(null);
   let lyricsContainerRef: HTMLDivElement | null = $state(null);
   let lyricsContentRef: HTMLDivElement | null = $state(null);
   let lyricRowRefs: (HTMLDivElement | null)[] = $state([]);
@@ -26,13 +25,13 @@
 
   let isHorizontalMode = $derived(
     playerState.lyricsState === 'found' &&
-      !playerState.lyricsAreSynced &&
       !playerState.isLoadingVideo &&
       playerState.duration > 0 &&
-      windowWidth >= 1400
+      windowWidth >= 1400 &&
+      (playerState.forceHorizontalMode || !playerState.lyricsAreSynced)
   );
 
-  // Medir la altura del reproductor (iframe) para sincronizar alturas
+  // Measure the height of the player for the horizontal mode
   $effect(() => {
     if (!isHorizontalMode || !lyricsContainerRef) return;
 
@@ -67,33 +66,250 @@
     )
   );
 
-  // Update the active line position whenever currentLineIndex changes or window is resized
-  $effect(() => {
-    // Reference windowWidth to make this effect react to window resizes
-    void windowWidth; // Referencing windowWidth to make it a dependency, that's how Svelte works in an $effect rune
+  // Shared condition for auto-scrolling in horizontal mode with synced lyrics
+  const canAutoScroll = $derived(
+    playerState.forceHorizontalMode &&
+      playerState.lyricsAreSynced &&
+      playerState.currentLineIndex >= 0
+  );
 
+  function scrollToLine(index: number, smooth: boolean = true) {
+    if (index < 0 || index >= lyricRowRefs.length) return;
+
+    const row = lyricRowRefs[index];
+    const container = lyricsContentRef;
+    if (!row || !container) return;
+
+    // Check if there's scrollable content
+    const canScroll = container.scrollHeight > container.clientHeight;
+    if (!canScroll) return;
+
+    const maxScrollTop = container.scrollHeight - container.clientHeight;
+    const rowOffsetTop = row.offsetTop;
+    const rowHeight = row.offsetHeight;
+    const containerHeight = container.clientHeight;
+
+    // Calculate ideal centered position
+    const idealScrollTop = rowOffsetTop - containerHeight / 2 + rowHeight / 2;
+
+    // Clamp to valid scroll range
+    const targetScrollTop = Math.max(0, Math.min(idealScrollTop, maxScrollTop));
+
+    // Always scroll to center the line when possible
+    container.scrollTo({
+      top: targetScrollTop,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+  }
+
+  function handleLineSelection(index: number, event?: KeyboardEvent) {
+    // For keyboard events, only handle Enter and Space keys
+    if (event && event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    if (!playerState.lyricsAreSynced) return;
+
+    seekTo(adjustedTimes[index] / 1000);
+
+    // Always scroll to center the selected line when in horizontal mode
+    if (playerState.forceHorizontalMode && isHorizontalMode) {
+      scrollToLine(index, true);
+    }
+  }
+
+  // Track previous line index to detect when it actually changes
+  let previousLineIndex = $state(-1);
+
+  $effect(() => {
+    const currentIndex = playerState.currentLineIndex;
+
+    // Only proceed if can auto-scroll and index actually changed
+    if (!canAutoScroll || currentIndex === previousLineIndex) {
+      previousLineIndex = currentIndex;
+      return;
+    }
+
+    previousLineIndex = currentIndex;
+
+    // Always scroll to center the new active line when it changes
+    // This happens during normal playback (autoscroll) or when clicking a line
+    scrollToLine(currentIndex, true);
+  });
+
+  // Track previous playing state to detect when user presses play
+  let wasPlaying = $state(false);
+
+  $effect(() => {
+    const isPlaying = playerState.isPlaying;
+    const currentIndex = playerState.currentLineIndex;
+
+    // Only proceed if can auto-scroll, playback just started, and index is valid
+    if (!canAutoScroll || !isPlaying || wasPlaying) {
+      wasPlaying = isPlaying;
+      return;
+    }
+
+    wasPlaying = isPlaying;
+
+    // Check if the active line is visible in the viewport
+    const activeRow = lyricRowRefs[currentIndex];
+    const container = lyricsContentRef;
+    if (!activeRow || !container) return;
+
+    const rowRect = activeRow.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Check if the row is fully visible within the container
+    const isVisible = rowRect.top >= containerRect.top && rowRect.bottom <= containerRect.bottom;
+
+    // If not visible, scroll to center it
+    if (!isVisible) {
+      scrollToLine(currentIndex, true);
+    }
+  });
+
+  // Track previous horizontal mode state
+  let wasHorizontalMode = $state(false);
+
+  function getLineIndexToScroll(): number {
+    const currentIndex = playerState.currentLineIndex;
+
+    // If there's an active line, use it
+    if (currentIndex >= 0) {
+      return currentIndex;
+    }
+
+    // If no active line, find the line just before or at the current time
+    const currentTimeMs = playerState.currentTime * 1000 + playerState.timingOffset;
+
+    // Find the last line that should have been active (startTime <= currentTime)
+    let lastActiveIndex = -1;
+    for (let i = 0; i < playerState.lines.length; i++) {
+      if (playerState.lines[i].startTimeMs <= currentTimeMs) {
+        lastActiveIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    // If we found a line that should be active, use it
+    if (lastActiveIndex >= 0) {
+      return lastActiveIndex;
+    }
+
+    // If we're before the first line, scroll to the beginning
+    return 0;
+  }
+
+  $effect(() => {
+    const currentHorizontalMode = isHorizontalMode;
+
+    // Only proceed if horizontal mode was just activated
+    if (!currentHorizontalMode || wasHorizontalMode) {
+      wasHorizontalMode = currentHorizontalMode;
+      return;
+    }
+
+    // Update tracking
+    wasHorizontalMode = currentHorizontalMode;
+
+    // Wait a bit for the layout transition to complete, then scroll to appropriate line
+    setTimeout(() => {
+      const targetIndex = getLineIndexToScroll();
+      scrollToLine(targetIndex, true);
+    }, 300);
+  });
+
+  function recalculateActiveLinePosition(containerInfo?: { height: number; top: number }) {
     const hasActiveLineWithText =
       playerState.currentLineIndex !== null &&
       playerState.currentLineIndex >= 0 &&
       playerState.lines[playerState.currentLineIndex]?.text;
 
     if (hasActiveLineWithText) {
-      // Espera a que el navegador termine el layout
-      requestAnimationFrame(() => {
-        const activeRow = lyricRowRefs[playerState.currentLineIndex];
-        const container = lyricsContentRef;
-        if (activeRow && container) {
-          const rowRect = activeRow.getBoundingClientRect();
-          const containerRect = container.getBoundingClientRect();
+      const activeRow = lyricRowRefs[playerState.currentLineIndex];
+      const container = lyricsContentRef;
+      if (activeRow && container) {
+        // Use getBoundingClientRect to calculate position relative to the container viewport
+        // This accounts for container scroll position correctly
+        const rowRect = activeRow.getBoundingClientRect();
+        // Use provided container info from ResizeObserver if available, otherwise calculate
+        const containerTop = containerInfo?.top ?? container.getBoundingClientRect().top;
 
-          activeLineOffset = rowRect.top - containerRect.top + container.scrollTop;
-          activeLineHeight = rowRect.height;
-        }
-      });
+        activeLineOffset = rowRect.top - containerTop + container.scrollTop;
+        activeLineHeight = rowRect.height;
+      }
     } else {
       activeLineHeight = 0;
       activeLineOffset = 0;
     }
+  }
+
+  $effect(() => {
+    void windowWidth;
+    void playerState.currentLineIndex;
+    recalculateActiveLinePosition();
+  });
+
+  $effect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Only respond to 'H' key, not when typing in input fields
+      if (e.key === 'h' || e.key === 'H') {
+        // Check if user is typing in an input, textarea, or contenteditable element
+        const target = e.target as HTMLElement;
+        if (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+
+        // Only toggle if screen is wide enough for horizontal mode
+        if (windowWidth >= 1400) {
+          e.preventDefault();
+          playerState.forceHorizontalMode = !playerState.forceHorizontalMode;
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  });
+
+  $effect(() => {
+    const container = lyricsContentRef;
+    if (!container) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const DEBOUNCE_MS = 100;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = setTimeout(() => {
+        // Use contentRect from ResizeObserver entry to avoid extra DOM reads
+        for (const entry of entries) {
+          const contentRect = entry.contentRect;
+          recalculateActiveLinePosition({
+            height: contentRect.height,
+            top: entry.target.getBoundingClientRect().top
+          });
+          break; // Only process the first entry (container)
+        }
+      }, DEBOUNCE_MS);
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
   });
 
   function formatTimestamp(ms: number): string {
@@ -162,7 +378,7 @@
       </button>
     </div>
   {:else}
-    <div style="height: 42px; margin-bottom: 1rem;"></div>
+    <div class="controls-placeholder"></div>
   {/if}
   <div class="lyrics-header">
     <h2 class="original-header">
@@ -204,20 +420,11 @@
         {#if line.text}
           <div
             class="lyric-row"
-            class:hovered={hoveredIndex === i}
             class:current={playerState.currentLineIndex === i}
             class:clickable={playerState.lyricsAreSynced}
             bind:this={lyricRowRefs[i]}
-            onmouseenter={() => (hoveredIndex = i)}
-            onmouseleave={() => (hoveredIndex = null)}
-            onclick={() => {
-              if (playerState.lyricsAreSynced) seekTo(adjustedTimes[i] / 1000);
-            }}
-            onkeydown={(e) => {
-              if (playerState.lyricsAreSynced && (e.key === 'Enter' || e.key === ' ')) {
-                seekTo(adjustedTimes[i] / 1000);
-              }
-            }}
+            onclick={() => handleLineSelection(i)}
+            onkeydown={(e) => handleLineSelection(i, e)}
             role="button"
             tabindex="0"
           >
@@ -300,8 +507,8 @@
     );
     border-radius: 8px;
     transition:
-      transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+      height 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.05s;
     pointer-events: none;
     z-index: 0;
   }
@@ -389,14 +596,15 @@
     border-bottom: none;
   }
 
-  .lyric-row.hovered {
+  .lyric-row:hover {
     background-color: rgba(var(--primary-color), 0.05);
     border-radius: 8px;
   }
 
-  .lyric-row.current {
+  .lyric-row.current .lyric-line .content {
     color: var(--primary-color);
-    font-weight: bold;
+    -webkit-text-stroke: 0.8px currentColor;
+    text-shadow: 0 0 1px currentColor;
   }
 
   .lyric-line {
@@ -413,8 +621,7 @@
     flex: 1;
     box-sizing: border-box;
     transition:
-      color 0.3s ease-in-out,
-      font-weight 0.3s ease-in-out,
+      color 0.4s ease-in-out,
       transform 0.2s ease-in-out;
     white-space: pre-wrap;
     align-items: baseline;
@@ -685,6 +892,11 @@
     cursor: not-allowed;
     opacity: 0.4;
     pointer-events: none;
+  }
+
+  .controls-placeholder {
+    height: 42px;
+    margin-bottom: 1rem;
   }
 
   .no-lyrics-message {

@@ -223,6 +223,18 @@ type RootTranslation = {
      * L​o​a​d​i​n​g​.​.​.
      */
     loading: string;
+    /**
+     * S​e​l​e​c​t​ ​L​y​r​i​c​s
+     */
+    selectLyrics: string;
+    /**
+     * E​n​t​e​r​ ​h​o​r​i​z​o​n​t​a​l​ ​m​o​d​e
+     */
+    enterHorizontalMode: string;
+    /**
+     * E​x​i​t​ ​h​o​r​i​z​o​n​t​a​l​ ​m​o​d​e
+     */
+    exitHorizontalMode: string;
   };
   footer: {
     /**
@@ -836,6 +848,18 @@ export type TranslationFunctions = {
      * Loading...
      */
     loading: () => LocalizedString;
+    /**
+     * Select Lyrics
+     */
+    selectLyrics: () => LocalizedString;
+    /**
+     * Enter horizontal mode
+     */
+    enterHorizontalMode: () => LocalizedString;
+    /**
+     * Exit horizontal mode
+     */
+    exitHorizontalMode: () => LocalizedString;
   };
   footer: {
     /**

@@ -63,7 +63,10 @@ const en = {
     decreaseTimingOffset: 'Decrease timing offset',
     increaseTimingOffset: 'Increase timing offset',
     clickToStart: 'Click to start',
-    loading: 'Loading...'
+    loading: 'Loading...',
+    selectLyrics: 'Select Lyrics',
+    enterHorizontalMode: 'Enter horizontal mode',
+    exitHorizontalMode: 'Exit horizontal mode'
   },
   // Footer
   footer: {

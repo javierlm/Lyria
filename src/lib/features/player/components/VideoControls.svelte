@@ -4,8 +4,8 @@
   import IconPause from 'phosphor-svelte/lib/Pause';
   import SpeakerHigh from 'phosphor-svelte/lib/SpeakerHigh';
   import SpeakerSlash from 'phosphor-svelte/lib/SpeakerSlash';
-  import IconArrowsOutSimple from 'phosphor-svelte/lib/ArrowsOutSimple';
-  import IconArrowsInSimple from 'phosphor-svelte/lib/ArrowsInSimple';
+  import ArrowsOutSimpleIcon from 'phosphor-svelte/lib/ArrowsOutSimpleIcon';
+  import ArrowsInSimpleIcon from 'phosphor-svelte/lib/ArrowsInSimpleIcon';
   import Eye from 'phosphor-svelte/lib/Eye';
   import EyeSlash from 'phosphor-svelte/lib/EyeSlash';
   import LL from '$i18n/i18n-svelte';
@@ -180,9 +180,9 @@
       : $LL.controls.enterFullscreen()}
   >
     {#if playerState.isFullscreen}
-      <IconArrowsInSimple size="20" weight="bold" />
+      <ArrowsInSimpleIcon size="20" weight="bold" />
     {:else}
-      <IconArrowsOutSimple size="20" weight="bold" />
+      <ArrowsOutSimpleIcon size="20" weight="bold" />
     {/if}
   </button>
 </div>
@@ -247,7 +247,7 @@
     border-radius: 5px;
   }
   .fullscreen-btn {
-    margin-left: 1rem;
+    margin-left: 0.5rem;
   }
 
   .time-display {

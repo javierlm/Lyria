@@ -63,7 +63,10 @@ const es = {
     decreaseTimingOffset: 'Disminuir desfase de tiempo',
     increaseTimingOffset: 'Aumentar desfase de tiempo',
     clickToStart: 'Haz clic para empezar',
-    loading: 'Cargando...'
+    loading: 'Cargando...',
+    selectLyrics: 'Seleccionar Letra',
+    enterHorizontalMode: 'Entrar al modo horizontal',
+    exitHorizontalMode: 'Salir del modo horizontal'
   },
   // Footer
   footer: {

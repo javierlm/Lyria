@@ -17,7 +17,7 @@
 
 <FloatingActionButton
   IconComponent={Target}
-  visible={playerState.lyricsAreSynced}
+  visible={playerState.lyricsAreSynced && !playerState.forceHorizontalMode}
   onClick={scrollToActiveLine}
   ariaLabel="Scroll to active line"
   bottom="80px"

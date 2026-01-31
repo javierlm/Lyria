@@ -8,7 +8,9 @@
   import LikeButton from '$lib/features/video/components/LikeButton.svelte';
   import Copy from 'phosphor-svelte/lib/Copy';
   import Check from 'phosphor-svelte/lib/Check';
-  import ListBullets from 'phosphor-svelte/lib/ListBullets';
+  import ListBulletsIcon from 'phosphor-svelte/lib/ListBulletsIcon';
+  import SquareSplitHorizontalIcon from 'phosphor-svelte/lib/SquareSplitHorizontalIcon';
+  import SquareSplitVerticalIcon from 'phosphor-svelte/lib/SquareSplitVerticalIcon';
   import LL from '$i18n/i18n-svelte';
   import BackToTop from '$lib/features/ui/components/BackToTop.svelte';
 
@@ -22,10 +24,10 @@
 
   const showHorizontalLayout = $derived(
     playerState.lyricsState === 'found' &&
-      !playerState.lyricsAreSynced &&
       !playerState.isLoadingVideo &&
       playerState.duration > 0 &&
-      windowWidth >= 1400
+      windowWidth >= 1400 &&
+      (playerState.forceHorizontalMode || !playerState.lyricsAreSynced)
   );
 
   $effect(() => {
@@ -97,6 +99,7 @@
         onclick={copyURL}
         class="action-button copy-button"
         aria-label={$LL.controls.copyUrl()}
+        title={$LL.controls.copyUrl()}
       >
         {#if copied}
           <Check size={iconSize} />
@@ -109,10 +112,32 @@
           playerState.isLyricSelectorOpen = true;
         }}
         class="action-button list-button"
-        aria-label="Select Lyrics"
+        aria-label={$LL.controls.selectLyrics()}
+        title={$LL.controls.selectLyrics()}
       >
-        <ListBullets size={iconSize} />
+        <ListBulletsIcon size={iconSize} />
       </button>
+      {#if windowWidth >= 1400}
+        <button
+          onclick={() => {
+            playerState.forceHorizontalMode = !playerState.forceHorizontalMode;
+          }}
+          class="action-button horizontal-mode-button"
+          class:active={playerState.forceHorizontalMode}
+          aria-label={playerState.forceHorizontalMode
+            ? $LL.controls.exitHorizontalMode()
+            : $LL.controls.enterHorizontalMode()}
+          title={playerState.forceHorizontalMode
+            ? $LL.controls.exitHorizontalMode()
+            : $LL.controls.enterHorizontalMode()}
+        >
+          {#if playerState.forceHorizontalMode}
+            <SquareSplitVerticalIcon size={iconSize} />
+          {:else}
+            <SquareSplitHorizontalIcon size={iconSize} />
+          {/if}
+        </button>
+      {/if}
     {/if}
   </div>
 
@@ -201,6 +226,7 @@
 
   :global(.lyrics-container) {
     margin-top: 1.5rem;
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .timing-controls-container {
@@ -223,6 +249,10 @@
   }
 
   @media (min-width: 1024px) {
+    .player-content {
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
     .player-content.horizontal {
       display: grid;
       grid-template-columns: minmax(900px, 2fr) minmax(400px, 1.2fr);
@@ -233,13 +263,15 @@
       margin: 0 auto;
       padding: 0;
       box-sizing: border-box;
+    }
+
+    .player-content > :global(.video-wrapper) {
       transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .player-content.horizontal > :global(.video-wrapper) {
       width: 100%;
       max-width: none;
-      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .player-content.horizontal > :global(.lyrics-container) {
@@ -286,5 +318,11 @@
 
   .action-button:hover {
     background-color: rgba(var(--primary-color-rgb), 0.1);
+  }
+
+  .action-button.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
   }
 </style>

@@ -48,7 +48,8 @@ export const playerState = $state({
   isLyricSelectorOpen: false,
   isLyricVideo: false,
   videoError: null as { code: number; message: string } | null,
-  parsedTitle: null as { artist: string; track: string } | null
+  parsedTitle: null as { artist: string; track: string } | null,
+  forceHorizontalMode: false
 });
 
 let playerInstance: YT.Player | null = null;
