@@ -5,6 +5,7 @@
   import { LL } from '$i18n/i18n-svelte';
   import { isYouTubeUrl, extractVideoId } from '$lib/shared/utils';
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
 
   function loadVideoFromUrl(url: string) {
     const id = extractVideoId(url);
@@ -24,45 +25,66 @@
   function handleDeleteRecentVideo(event: CustomEvent<string>) {
     searchStore.deleteRecentVideo(event.detail);
   }
+
   let dropdownMaxHeight: string | null = $state(null);
   let dropdownElement: HTMLDivElement = $state() as HTMLDivElement;
-  let lastCalculatedHeight: number = 0;
+  let isMobile = $state(false);
 
-  const KEYBOARD_BUFFER = 30;
-  const HEIGHT_CHANGE_THRESHOLD = 5;
+  // Dynamic bottom margin: 8% of the viewport height, with a minimum of 30px
+  function getBottomBuffer() {
+    return Math.max(30, window.innerHeight * 0.08);
+  }
 
-  function updateDropdownHeight() {
-    if (!searchStore.isKeyboardOpen || !window.visualViewport || !dropdownElement) {
+  function calculateMaxHeight() {
+    if (!dropdownElement || !searchStore.showRecentVideos) return;
+
+    // Only on mobile we perform dynamic calculation
+    if (!isMobile) {
       dropdownMaxHeight = null;
-      lastCalculatedHeight = 0;
       return;
     }
 
-    const visualViewportHeight = window.visualViewport.height;
+    const windowHeight = window.innerHeight;
     const dropdownRect = dropdownElement.getBoundingClientRect();
+    const bottomBuffer = getBottomBuffer();
 
-    const availableHeight = visualViewportHeight - dropdownRect.top - KEYBOARD_BUFFER;
-    const finalHeight = Math.max(100, availableHeight);
+    // Calculate available space from the dropdown's top to the bottom of the viewport
+    // Use viewport-relative buffer to adapt to different devices
+    const availableHeight = windowHeight - dropdownRect.top - bottomBuffer;
 
-    if (Math.abs(finalHeight - lastCalculatedHeight) < HEIGHT_CHANGE_THRESHOLD) {
-      return;
-    }
+    // Ensure a reasonable minimum (3 items) and a maximum of 6 items
+    const rowHeight = window.innerWidth <= 480 ? 59 : 65;
+    const minHeight = rowHeight * 3;
+    const maxHeight = rowHeight * 6;
 
-    lastCalculatedHeight = finalHeight;
+    const finalHeight = Math.max(minHeight, Math.min(availableHeight, maxHeight));
+
     dropdownMaxHeight = `${finalHeight}px`;
   }
 
-  $effect(() => {
-    if (searchStore.isKeyboardOpen) {
-      updateDropdownHeight();
-      window.visualViewport?.addEventListener('resize', updateDropdownHeight);
-    } else {
-      dropdownMaxHeight = null;
-    }
+  // Recalculate when the window is resized
+  function handleResize() {
+    isMobile = window.innerWidth <= 768;
+    calculateMaxHeight();
+  }
+
+  onMount(() => {
+    isMobile = window.innerWidth <= 768;
+    window.addEventListener('resize', handleResize);
+
+    // Calculate initially after the DOM updates
+    setTimeout(calculateMaxHeight, 0);
 
     return () => {
-      window.visualViewport?.removeEventListener('resize', updateDropdownHeight);
+      window.removeEventListener('resize', handleResize);
     };
+  });
+
+  // Recalculate when the dropdown is shown
+  $effect(() => {
+    if (searchStore.showRecentVideos && dropdownElement) {
+      setTimeout(calculateMaxHeight, 0);
+    }
   });
 </script>
 
@@ -70,7 +92,7 @@
   <div
     bind:this={dropdownElement}
     class="recent-videos-dropdown"
-    style:max-height={dropdownMaxHeight}
+    style:max-height={isMobile ? dropdownMaxHeight : null}
     transition:fade={{ duration: 150 }}
   >
     {#each searchStore.filteredVideos as video, index (video.videoId)}
@@ -87,7 +109,7 @@
   <div
     bind:this={dropdownElement}
     class="recent-videos-dropdown no-results"
-    style:max-height={dropdownMaxHeight}
+    style:max-height={isMobile ? dropdownMaxHeight : null}
     transition:fade={{ duration: 150 }}
   >
     <div class="no-results-message">
@@ -165,7 +187,7 @@
   @media (max-width: 768px) {
     .recent-videos-dropdown {
       --row-height: 65px;
-      --visible-rows: 8;
+      /* max-height is calculated dynamically in JavaScript */
     }
 
     .no-results-message {
@@ -184,7 +206,7 @@
   @media (max-width: 480px) {
     .recent-videos-dropdown {
       --row-height: 59px;
-      --visible-rows: 6;
+      /* max-height is calculated dynamically in JavaScript */
     }
 
     .no-results-message {

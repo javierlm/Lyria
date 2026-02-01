@@ -638,6 +638,13 @@ type RootTranslation = {
      */
     description: string;
   };
+  songOfTheDay: {
+    /**
+     * O​n​ ​t​h​i​s​ ​d​a​y​ ​i​n​ ​{​y​e​a​r​}
+     * @param {unknown} year
+     */
+    label: RequiredParams<'year'>;
+  };
 };
 
 export type TranslationFunctions = {
@@ -1252,6 +1259,12 @@ export type TranslationFunctions = {
      * Watch on Lyria
      */
     description: () => LocalizedString;
+  };
+  songOfTheDay: {
+    /**
+     * On this day in {year}
+     */
+    label: (arg: { year: unknown }) => LocalizedString;
   };
 };
 

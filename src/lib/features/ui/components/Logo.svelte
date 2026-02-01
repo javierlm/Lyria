@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
 
   let { isPlayerView = false } = $props();
 
@@ -18,8 +19,10 @@
         isPulsing = false;
       }, 300);
     }
-    // eslint-disable-next-line svelte/no-navigation-without-resolve
-    goto('/');
+
+    if (page.url.pathname !== '/') {
+      goto('/');
+    }
   };
 
   onMount(() => {

@@ -182,6 +182,9 @@ const es = {
   },
   meta: {
     description: 'Ver en Lyria'
+  },
+  songOfTheDay: {
+    label: 'Tal día como hoy en {year}'
   }
 } satisfies Translation;
 

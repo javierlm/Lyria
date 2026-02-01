@@ -182,6 +182,9 @@ const en = {
   },
   meta: {
     description: 'Watch on Lyria'
+  },
+  songOfTheDay: {
+    label: 'On this day in {year}'
   }
 } satisfies Translation;
 

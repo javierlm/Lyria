@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import Logo from '$lib/features/ui/components/Logo.svelte';
   import SearchBar from '$lib/features/search/components/SearchBar.svelte';
+  import SongOfTheDayCard from '$lib/features/song-of-the-day/components/SongOfTheDayCard.svelte';
+  import SongOfTheDaySkeleton from '$lib/features/song-of-the-day/components/SongOfTheDaySkeleton.svelte';
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
 
   let isKeyboardOpen = $state(false);
@@ -223,12 +225,28 @@
 
 <div class="search-screen" class:keyboard-open={isKeyboardOpen}>
   <div class="center-block">
+    <div class="song-of-day-container-mobile" class:hidden={isKeyboardOpen}>
+      <SongOfTheDayCard>
+        {#snippet skeleton()}
+          <SongOfTheDaySkeleton />
+        {/snippet}
+      </SongOfTheDayCard>
+    </div>
     <div class="logo-container">
       <Logo />
     </div>
 
     <div class="search-wrapper">
       <SearchBar centered={true} />
+      {#if !isKeyboardOpen}
+        <div class="song-of-day-wrapper-desktop">
+          <SongOfTheDayCard>
+            {#snippet skeleton()}
+              <SongOfTheDaySkeleton />
+            {/snippet}
+          </SongOfTheDayCard>
+        </div>
+      {/if}
     </div>
   </div>
 </div>
@@ -252,7 +270,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
     width: 100%;
     max-width: 800px;
     padding: 0 1rem;
@@ -265,7 +283,7 @@
     align-items: center;
     transform: scale(0.9);
     z-index: 1;
-    margin-bottom: 5%;
+    margin-bottom: 2%;
   }
 
   .search-screen.keyboard-open .logo-container {
@@ -285,6 +303,20 @@
     margin-top: -0.5rem;
   }
 
+  /* Desktop: wrapper positioned absolutely relative to search-wrapper */
+  .song-of-day-wrapper-mobile {
+    display: none;
+  }
+
+  .song-of-day-wrapper-desktop {
+    display: flex;
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 20px);
+    transform: translateY(-50%);
+    z-index: 10;
+  }
+
   @media (max-width: 768px) {
     .search-screen {
       padding-bottom: 75%;
@@ -298,12 +330,43 @@
 
     .center-block {
       max-width: 95%;
-      gap: 1rem;
+      gap: 0.75rem;
       padding: 0 0.5rem;
     }
 
     .search-screen.keyboard-open .center-block {
       gap: 0;
+    }
+
+    /* Hide desktop wrapper on mobile */
+    .song-of-day-wrapper-desktop {
+      display: none;
+    }
+
+    .song-of-day-container-mobile {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      margin-top: 0.5rem;
+      margin-bottom: 0.25rem;
+      /* Reservar espacio para evitar desplazamiento del layout */
+      min-height: 90px;
+      transition:
+        min-height 0.3s ease,
+        opacity 0.3s ease;
+      position: relative;
+      z-index: 10;
+      /* Prevenir desplazamiento por animaciones del search */
+      contain: layout;
+      transform: translateZ(0);
+      will-change: transform;
+    }
+
+    .song-of-day-container-mobile.hidden {
+      min-height: 0;
+      opacity: 0;
+      margin-top: 0;
+      margin-bottom: 0;
     }
 
     .logo-container {
@@ -332,6 +395,14 @@
 
     .search-screen.keyboard-open .center-block {
       gap: 0;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .song-of-day-container-mobile {
+      margin-top: 0.25rem;
+      margin-bottom: 0.125rem;
+      min-height: 70px;
     }
   }
 </style>
