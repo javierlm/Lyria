@@ -13,6 +13,7 @@ import {
   playerState,
   LyricsStates
 } from '$lib/features/player/stores/playerStore.svelte';
+
 import {
   parseTitle,
   removeJunkSuffixes,
@@ -21,7 +22,7 @@ import {
   isValidYouTubeId
 } from '$lib/shared/utils';
 import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
-import { replaceState } from '$app/navigation';
+import { goto } from '$app/navigation';
 
 let animationFrameId: number | null = null;
 let lastSyncedTime = 0;
@@ -40,7 +41,7 @@ let currentVideoLoadId = 0;
 
 function loadYouTubeAPI() {
   return new Promise<void>((resolve) => {
-    if (window.YT && window.YT.Player) {
+    if (globalThis.YT?.Player) {
       return resolve();
     }
     const tag = document.createElement('script');
@@ -378,7 +379,7 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
       controls: 0,
       disablekb: 1,
       showinfo: 0,
-      origin: window.location.origin
+      origin: globalThis.location.origin
     },
     events: {
       onReady: (event) => handlePlayerReady(event, videoId, loadId),
@@ -431,9 +432,7 @@ async function loadAndApplyVideoDelay(videoId: string) {
     const storedLyricId = await videoService.getVideoLyricId(currentVideoUrl);
     if (storedLyricId !== null) {
       playerState.manualLyricId = storedLyricId;
-      const url = new URL(window.location.href);
-      url.searchParams.set('lyricId', storedLyricId.toString());
-      replaceState(url, {});
+      // URL will be synchronized from the page component after navigation completes
     }
   }
 }
@@ -489,14 +488,45 @@ async function searchLyricsWithStrategies(
   videoData: YT.VideoData,
   duration: number
 ): Promise<LyricsResult> {
+  // Check for user preferences first - these take priority over official data
+  const hasUserPreferences = playerState.timingOffset !== 0 || playerState.manualLyricId !== null;
+
+  if (hasUserPreferences) {
+    console.log(
+      'User has personalized this video (offset or manual lyric), using standard search strategies'
+    );
+  } else {
+    // No user preferences - check for official song of the day data in sessionStorage
+    try {
+      const stored = sessionStorage.getItem('lyria-song-of-day-official');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Check if data matches current video and is not stale (< 24h)
+        if (
+          parsed.videoId === videoData.video_id &&
+          Date.now() - parsed.storedAt < 24 * 60 * 60 * 1000
+        ) {
+          console.log(
+            `Using official Song of the Day data: "${parsed.track}" by "${parsed.artist}"`
+          );
+          const result = await getSyncedLyrics(parsed.track, parsed.artist, duration);
+          if (result.found) {
+            return { ...result, candidates: result.candidates || [] };
+          }
+          console.log('Official data search failed, falling back to standard strategies');
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to retrieve song of day from sessionStorage:', error);
+    }
+  }
+
   const strategies = [tryCleanedTitle, tryParsedTitle, tryInvertedParameters];
   let collectedCandidates: LRCLibResponse[] = [];
 
   for (const strategy of strategies) {
     // Cache parsed title if not already present
-    if (!playerState.parsedTitle) {
-      playerState.parsedTitle = parseTitle(videoData.title);
-    }
+    playerState.parsedTitle ??= parseTitle(videoData.title);
     const { result, query } = await strategy(videoData, duration);
 
     if (result.candidates) {
@@ -636,6 +666,18 @@ async function handlePlayerReady(event: YT.PlayerEvent, videoId: string, loadId:
   const iframe = player.getIframe();
   if (iframe) {
     iframe.setAttribute('tabindex', '-1');
+
+    // Apply styles to remove white borders in Firefox Android (visual bug)
+    iframe.style.border = 'none';
+    iframe.style.outline = 'none';
+    iframe.style.position = 'absolute';
+    iframe.style.top = '50%';
+    iframe.style.left = '50%';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.transform = 'translate(-50%, -50%) scale(1.01)';
+    iframe.style.transformOrigin = 'center';
+    iframe.style.background = 'black';
   }
 
   await fetchAndProcessLyrics(player, loadId);
@@ -687,7 +729,7 @@ export function setVolume(volume: number) {
   if (player) {
     player.setVolume(volume);
     playerState.volume = volume;
-    if (typeof window !== 'undefined') {
+    if (globalThis.window !== undefined) {
       localStorage.setItem('lyria_volume', volume.toString());
     }
   }
@@ -742,37 +784,41 @@ export function toggleFullscreen(element: HTMLElement | null) {
 
   const isNativeFullscreen =
     document.fullscreenElement ||
-    (document as any).webkitFullscreenElement ||
-    (document as any).mozFullScreenElement ||
-    (document as any).msFullscreenElement;
+    (document as Document & { webkitFullscreenElement?: Element }).webkitFullscreenElement ||
+    (document as Document & { mozFullScreenElement?: Element }).mozFullScreenElement ||
+    (document as Document & { msFullscreenElement?: Element }).msFullscreenElement;
 
   if (isNativeFullscreen) {
     if (document.exitFullscreen) {
       document.exitFullscreen();
-    } else if ((document as any).webkitExitFullscreen) {
-      (document as any).webkitExitFullscreen();
-    } else if ((document as any).mozCancelFullScreen) {
-      (document as any).mozCancelFullScreen();
-    } else if ((document as any).msExitFullscreen) {
-      (document as any).msExitFullscreen();
+    } else if (
+      (document as Document & { webkitExitFullscreen?: () => void }).webkitExitFullscreen
+    ) {
+      (document as Document & { webkitExitFullscreen: () => void }).webkitExitFullscreen();
+    } else if ((document as Document & { mozCancelFullScreen?: () => void }).mozCancelFullScreen) {
+      (document as Document & { mozCancelFullScreen: () => void }).mozCancelFullScreen();
+    } else if ((document as Document & { msExitFullscreen?: () => void }).msExitFullscreen) {
+      (document as Document & { msExitFullscreen: () => void }).msExitFullscreen();
     }
   } else if (playerState.isFullscreen) {
     playerState.isFullscreen = false;
-  } else {
-    if (element.requestFullscreen) {
-      element.requestFullscreen().catch((err) => {
-        console.warn(`Native fullscreen failed: ${err.message}, falling back to CSS`);
-        playerState.isFullscreen = true;
-      });
-    } else if ((element as any).webkitRequestFullscreen) {
-      (element as any).webkitRequestFullscreen();
-    } else if ((element as any).mozRequestFullScreen) {
-      (element as any).mozRequestFullScreen();
-    } else if ((element as any).msRequestFullscreen) {
-      (element as any).msRequestFullscreen();
-    } else {
+  } else if (element.requestFullscreen) {
+    element.requestFullscreen().catch((err) => {
+      console.warn(`Native fullscreen failed: ${err.message}, falling back to CSS`);
       playerState.isFullscreen = true;
-    }
+    });
+  } else if (
+    (element as HTMLElement & { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen
+  ) {
+    (element as HTMLElement & { webkitRequestFullscreen: () => void }).webkitRequestFullscreen();
+  } else if (
+    (element as HTMLElement & { mozRequestFullScreen?: () => void }).mozRequestFullScreen
+  ) {
+    (element as HTMLElement & { mozRequestFullScreen: () => void }).mozRequestFullScreen();
+  } else if ((element as HTMLElement & { msRequestFullscreen?: () => void }).msRequestFullscreen) {
+    (element as HTMLElement & { msRequestFullscreen: () => void }).msRequestFullscreen();
+  } else {
+    playerState.isFullscreen = true;
   }
 }
 
@@ -793,9 +839,9 @@ export function syncTimingToFirstLine() {
 export async function selectLyric(id: number) {
   playerState.manualLyricId = id;
   // Update URL
-  const url = new URL(window.location.href);
+  const url = new URL(globalThis.location.href);
   url.searchParams.set('lyricId', id.toString());
-  replaceState(url, {});
+  goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
 
   // Persist the lyric ID selection
   if (playerState.videoId) {
@@ -834,9 +880,9 @@ export async function selectLyric(id: number) {
 export async function clearManualLyric() {
   playerState.manualLyricId = null;
   // Update URL
-  const url = new URL(window.location.href);
+  const url = new URL(globalThis.location.href);
   url.searchParams.delete('lyricId');
-  replaceState(url, {});
+  goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
 
   // Clear the persisted lyric ID selection
   if (playerState.videoId) {

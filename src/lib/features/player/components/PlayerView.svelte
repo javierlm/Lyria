@@ -10,7 +10,6 @@
     play
   } from '$lib/features/player/services/playerActions';
   import VideoControls from '$lib/features/player/components/VideoControls.svelte';
-  import { stopPropagation } from 'svelte/legacy';
   import LL from '$i18n/i18n-svelte';
 
   import LoadingScreen from '$lib/features/ui/components/LoadingScreen.svelte';

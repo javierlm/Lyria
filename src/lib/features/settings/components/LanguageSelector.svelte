@@ -62,6 +62,8 @@
 
   let dropdownOpen = $state(false);
   let maxDropdownWidth = $state(0); // State to store the maximum width
+  let openUpwards = $state(false); // State to track if dropdown should open upwards
+  let selectButtonRef: HTMLButtonElement | null = null;
 
   const selectedLanguage = $derived(playerState.userLang.toUpperCase());
   const currentLang = $derived(
@@ -104,6 +106,21 @@
       languageStatus = newStatus;
     })();
   });
+
+  // Function to toggle dropdown with position detection
+  function toggleDropdown() {
+    if (!dropdownOpen && selectButtonRef) {
+      const buttonRect = selectButtonRef.getBoundingClientRect();
+      // Use 250px for mobile (≤768px), 400px for desktop
+      const dropdownHeight = window.innerWidth <= 768 ? 250 : 400;
+      const spaceBelow = window.innerHeight - buttonRect.bottom;
+      const spaceAbove = buttonRect.top;
+
+      // Open upwards if there's not enough space below but enough space above
+      openUpwards = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+    }
+    dropdownOpen = !dropdownOpen;
+  }
 
   // Function to handle language selection
   function selectLanguage(code: string) {
@@ -163,7 +180,7 @@
   class="select-wrapper"
   style="--max-dropdown-width: {maxDropdownWidth ? `${maxDropdownWidth}px` : 'auto'};"
 >
-  <button class="select-button" onclick={() => (dropdownOpen = !dropdownOpen)}>
+  <button class="select-button" bind:this={selectButtonRef} onclick={toggleDropdown}>
     <div class="selected-option">
       <span class="flag-icon {currentLang.flagClass}"></span>
       <span>{currentLang.name}</span>
@@ -183,7 +200,7 @@
     <CaretDown weight="bold" class={dropdownOpen ? 'rotatecaret' : ''} style="margin-left: auto;" />
   </button>
 
-  <div class="dropdown" class:open={dropdownOpen}>
+  <div class="dropdown" class:open={dropdownOpen} class:open-upwards={openUpwards}>
     {#each languages as lang (lang.code)}
       <button
         class="dropdown-option"
@@ -471,7 +488,7 @@
     box-shadow: 0 20px 60px var(--darker-shadow-color);
     border: 1px solid var(--border-color);
     overflow: hidden;
-    z-index: 10;
+    z-index: 1000;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-10px);
@@ -483,6 +500,16 @@
   .dropdown.open {
     opacity: 1;
     visibility: visible;
+    transform: translateY(0);
+  }
+
+  .dropdown.open-upwards {
+    top: auto;
+    bottom: calc(100% + 8px);
+    transform: translateY(10px);
+  }
+
+  .dropdown.open-upwards.open {
     transform: translateY(0);
   }
 
@@ -577,6 +604,10 @@
   @media (max-width: 768px) {
     .select-wrapper {
       width: 140px;
+    }
+
+    .dropdown {
+      max-height: 250px;
     }
   }
 </style>

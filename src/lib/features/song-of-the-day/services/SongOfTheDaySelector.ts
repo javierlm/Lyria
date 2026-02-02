@@ -1,6 +1,7 @@
 import type { SongOfTheDayStored, WikidataSong, LyricsCheckResult } from '../domain/SongOfTheDay';
 import { WikidataMusicService } from './WikidataMusicService';
 import { LrcLibCheckerService } from './LrcLibCheckerService';
+import { YouTubeValidationService } from './YouTubeValidationService';
 
 interface CandidateSong {
   song: WikidataSong;
@@ -11,10 +12,12 @@ interface CandidateSong {
 export class SongOfTheDaySelector {
   private readonly wikidataService: WikidataMusicService;
   private readonly lrcLibService: LrcLibCheckerService;
+  private readonly youtubeValidator: YouTubeValidationService;
 
   constructor() {
     this.wikidataService = new WikidataMusicService();
     this.lrcLibService = new LrcLibCheckerService();
+    this.youtubeValidator = new YouTubeValidationService();
   }
 
   /**
@@ -36,9 +39,26 @@ export class SongOfTheDaySelector {
 
     console.log(`📊 Found ${wikidataSongs.length} songs from Wikidata`);
 
-    // Check lyrics for each Wikidata song
+    // Validate videos and check lyrics for each Wikidata song
     const candidates: CandidateSong[] = [];
     for (const song of wikidataSongs) {
+      // First, validate that the video is available and embeddable
+      console.log(`🔍 Validating video: ${song.videoId}`);
+      const validationResult = await this.youtubeValidator.validateVideo(song.videoId);
+
+      if (!validationResult.isValid) {
+        console.log(
+          `⏭️ Skipping "${song.title}" by ${song.artistName}: ${validationResult.reason}`
+        );
+        if (validationResult.error) {
+          console.log(`   Details: ${validationResult.error}`);
+        }
+        continue;
+      }
+
+      console.log(`✅ Video ${song.videoId} is valid, checking lyrics...`);
+
+      // Video is valid, now check for lyrics
       const lyricsResult = await this.lrcLibService.checkLyrics(song.artistName, song.title);
 
       // Priority: synced (1) > plain (2) > none (5)

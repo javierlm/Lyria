@@ -20,9 +20,9 @@ export const playerState = $state({
   duration: 0,
   currentTime: 0,
   volume:
-    typeof window !== 'undefined'
-      ? parseInt(localStorage.getItem('lyria_volume') || '100', 10)
-      : 100,
+    globalThis.window === undefined
+      ? 100
+      : Number.parseInt(localStorage.getItem('lyria_volume') || '100', 10),
   isMuted: false,
   lines: [] as SyncedLine[],
   translatedLines: [] as SyncedLine[],

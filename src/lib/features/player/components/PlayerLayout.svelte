@@ -232,7 +232,7 @@
   .timing-controls-container {
     display: flex;
     justify-content: center;
-    margin: 0 auto 1rem auto;
+    margin: 0 auto 0.75rem auto;
     width: 100%;
     max-width: clamp(800px, calc(46.875vw), 1200px);
     box-sizing: border-box;

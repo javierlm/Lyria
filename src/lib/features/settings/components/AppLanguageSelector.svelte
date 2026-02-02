@@ -4,7 +4,6 @@
   import { locales } from '$i18n/i18n-util';
   import CaretDown from 'phosphor-svelte/lib/CaretDown';
   import { browser } from '$app/environment';
-  import { page } from '$app/stores';
   import type { Locales } from '$i18n/i18n-types';
   import { loadLocaleAsync } from '$i18n/i18n-util.async';
   import ChromeAISettings from './ChromeAISettings.svelte';
@@ -75,8 +74,6 @@
       document.removeEventListener('click', handleClickOutside);
     }
   });
-
-  const isPlayPage = $derived($page.route.id?.includes('/play'));
 </script>
 
 <div class="select-wrapper">

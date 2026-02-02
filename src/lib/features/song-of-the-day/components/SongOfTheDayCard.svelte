@@ -3,6 +3,8 @@
   import type { SongOfTheDayDisplay } from '../domain/SongOfTheDay';
   import type { Snippet } from 'svelte';
   import LL from '$i18n/i18n-svelte';
+  import { goto } from '$app/navigation';
+  import { songOfTheDayStore } from '../stores/songOfTheDayStore.svelte';
 
   interface Props {
     skeleton?: Snippet;
@@ -25,12 +27,25 @@
       loading = false;
     }
   });
+
+  /**
+   * Handles click on the song card.
+   * Saves official artist/track to store before navigation.
+   * This ensures the player uses correct metadata for lyrics search.
+   */
+  function handleClick(event: MouseEvent): void {
+    if (!song) return;
+
+    event.preventDefault();
+    songOfTheDayStore.saveOfficialData(song);
+    goto(`/play?id=${song.videoId}`);
+  }
 </script>
 
 {#if loading}
   {@render skeleton?.()}
 {:else if song}
-  <a href="/play?id={song.videoId}" class="song-of-day-card">
+  <a href="/play?id={song.videoId}" class="song-of-day-card" onclick={handleClick}>
     <div class="thumbnail">
       <img src="https://img.youtube.com/vi/{song.videoId}/mqdefault.jpg" alt={song.track} />
     </div>
@@ -131,21 +146,6 @@
     max-width: 200px;
   }
 
-  /* Desktop: positioned to the right of search */
-  @media (min-width: 769px) {
-    .song-of-day-card {
-      position: absolute;
-      right: -380px;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-
-    .song-of-day-card:hover {
-      transform: translateY(calc(-50% - 2px));
-    }
-  }
-
-  /* Mobile: normal document flow when inside wrapper */
   @media (max-width: 768px) {
     .song-of-day-card {
       max-width: 320px;

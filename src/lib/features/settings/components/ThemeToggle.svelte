@@ -3,7 +3,7 @@
   import Sun from 'phosphor-svelte/lib/Sun';
   import Moon from 'phosphor-svelte/lib/Moon';
   import Desktop from 'phosphor-svelte/lib/Desktop';
-  import { fade, scale } from 'svelte/transition';
+  import { scale } from 'svelte/transition';
   import LL from '$i18n/i18n-svelte';
 
   const themeLabels = $derived({

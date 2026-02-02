@@ -20,7 +20,7 @@
     border-radius: 12px;
     max-width: 400px;
     min-width: 280px;
-    min-height: 90px;
+
     box-shadow: 0 2px 8px var(--shadow-color);
   }
 
@@ -47,7 +47,6 @@
     justify-content: center;
     flex: 1;
     min-width: 0;
-    gap: 6px;
   }
 
   .label-skeleton {
@@ -101,16 +100,6 @@
     }
   }
 
-  /* Desktop: positioned to the right of search */
-  @media (min-width: 769px) {
-    .skeleton-card {
-      position: absolute;
-      right: -380px;
-      top: 50%;
-      transform: translateY(-50%);
-    }
-  }
-
   /* Mobile: normal document flow */
   @media (max-width: 768px) {
     .skeleton-card {
@@ -127,7 +116,6 @@
 
     .info {
       justify-content: center;
-      gap: 4px;
     }
 
     .label-skeleton {
@@ -149,18 +137,18 @@
   /* Very small mobile screens - less than 360px */
   @media (max-width: 360px) {
     .skeleton-card {
-      max-width: 280px;
-      padding: 8px;
-      gap: 8px;
+      max-width: 100%;
+      padding: 6px;
+      gap: 6px;
     }
 
     .thumbnail-skeleton {
-      width: 70px;
-      height: 39px;
+      width: 60px;
+      height: 34px;
     }
 
     .info {
-      gap: 3px;
+      justify-content: center;
     }
 
     .label-skeleton {

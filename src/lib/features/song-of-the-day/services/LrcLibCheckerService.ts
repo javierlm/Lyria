@@ -2,6 +2,8 @@ import type { LyricsCheckResult } from '../domain/SongOfTheDay';
 
 const BASE_URL_SEARCH = 'https://lrclib.net/api/search';
 const SIMILARITY_THRESHOLD = 0.8;
+const TIMEOUT_MS = 10000;
+const MAX_RETRIES = 3;
 
 interface LRCLibResponse {
   id: number;
@@ -19,13 +21,9 @@ export class LrcLibCheckerService {
   async checkLyrics(artist: string, track: string): Promise<LyricsCheckResult> {
     try {
       const query = `${artist} ${track}`;
-      const response = await fetch(`${BASE_URL_SEARCH}?q=${encodeURIComponent(query)}`);
-
-      if (!response.ok) {
-        return { hasLyrics: false, type: 'none' };
-      }
-
-      const data: LRCLibResponse[] = await response.json();
+      const data = await this.fetchWithRetry<LRCLibResponse[]>(
+        `${BASE_URL_SEARCH}?q=${encodeURIComponent(query)}`
+      );
 
       if (!data || data.length === 0) {
         return { hasLyrics: false, type: 'none' };
@@ -65,6 +63,72 @@ export class LrcLibCheckerService {
       console.error('LRCLib check error:', error);
       return { hasLyrics: false, type: 'none' };
     }
+  }
+
+  private async fetchWithRetry<T>(url: string): Promise<T | null> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+        const response = await fetch(url, {
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          return null;
+        }
+
+        return (await response.json()) as T;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Check if it's a network error worth retrying
+        const isRetryableError = this.isRetryableError(lastError);
+
+        if (!isRetryableError) {
+          throw lastError;
+        }
+
+        if (attempt < MAX_RETRIES) {
+          const delayMs = Math.pow(2, attempt - 1) * 1000;
+          console.warn(
+            `LRCLib fetch attempt ${attempt}/${MAX_RETRIES} failed: ${lastError.message}. Retrying in ${delayMs}ms...`
+          );
+          await this.delay(delayMs);
+        }
+      }
+    }
+
+    console.error(`LRCLib fetch failed after ${MAX_RETRIES} attempts: ${lastError?.message}`);
+    return null;
+  }
+
+  private isRetryableError(error: Error): boolean {
+    const message = error.message.toLowerCase();
+
+    // Network errors
+    if (
+      message.includes('econnrefused') ||
+      message.includes('etimedout') ||
+      message.includes('socket') ||
+      message.includes('network') ||
+      message.includes('fetch') ||
+      message.includes('abort') ||
+      message.includes('timeout')
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private findBestMatch(

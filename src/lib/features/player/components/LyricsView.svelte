@@ -478,7 +478,7 @@
     border-radius: 12px;
     box-shadow: 0 10px 30px var(--shadow-color);
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     width: 100%;
     box-sizing: border-box;
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -722,7 +722,6 @@
 
     .lyrics-container {
       padding: 1rem;
-      margin: 1rem 0;
     }
 
     .lyrics-header {

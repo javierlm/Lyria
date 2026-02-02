@@ -228,7 +228,7 @@
                 <Check size={20} class="check-icon" />
               {/if}
             </button>
-            {#each playerState.candidates as candidate}
+            {#each playerState.candidates as candidate (candidate.id)}
               <button
                 class="option-item {playerState.manualLyricId === candidate.id
                   ? 'selected'

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import IconPlay from 'phosphor-svelte/lib/Play';
+  import PlayIcon from 'phosphor-svelte/lib/PlayIcon';
 
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
   import { LL } from '$i18n/i18n-svelte';
@@ -39,14 +39,12 @@
     event.preventDefault();
     const form = event.target as HTMLFormElement;
     const input = form.elements.namedItem('url') as HTMLInputElement;
+    const value = input.value.trim();
 
-    if (searchStore.filteredVideos.length === 1) {
-      const video = searchStore.filteredVideos[0];
-      const url = `https://www.youtube.com/watch?v=${video.videoId}`;
-      loadVideoFromUrl(url);
-      searchStore.searchValue = '';
-    } else if (isYouTubeUrl(input.value)) {
-      loadVideoFromUrl(input.value);
+    if (!value) return;
+
+    if (isYouTubeUrl(value)) {
+      loadVideoFromUrl(value);
     } else if (searchStore.filteredVideos.length > 0) {
       const video = searchStore.filteredVideos[0];
       const url = `https://www.youtube.com/watch?v=${video.videoId}`;
@@ -68,7 +66,7 @@
   />
 
   <button type="submit" class="submit-button">
-    <IconPlay size="20" weight="bold" />
+    <PlayIcon size="20" weight="bold" />
     <span class="search-button-text">{$LL.search.loadVideo()}</span>
   </button>
 </form>

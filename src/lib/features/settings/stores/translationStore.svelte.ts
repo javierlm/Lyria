@@ -9,6 +9,8 @@ type TranslatorAPI = {
   }) => Promise<any>;
 };
 
+type LanguageStatus = 'readily' | 'after-download' | 'no';
+
 class TranslationStore {
   isChromeAISupported = $state(false);
   useChromeAI = $state(false);
@@ -16,7 +18,7 @@ class TranslationStore {
   modelStatus = $state<ModelStatus>('checking');
   wasLastTranslationLocal = $state(false);
 
-  private availabilityCache = new Map<string, 'readily' | 'after-download' | 'no'>();
+  private readonly availabilityCache = new Map<string, LanguageStatus>();
   private translatorAPI: TranslatorAPI | null = null;
 
   constructor() {
@@ -25,7 +27,7 @@ class TranslationStore {
 
   private getTranslatorAPI(): TranslatorAPI | null {
     if (this.translatorAPI) return this.translatorAPI;
-    if (typeof window === 'undefined') return null;
+    if (globalThis.window === undefined) return null;
 
     if (window.ai?.translator) {
       this.translatorAPI = {
@@ -48,7 +50,7 @@ class TranslationStore {
   }
 
   async initialize() {
-    if (typeof window === 'undefined') return;
+    if (globalThis.window === undefined) return;
 
     const storedPreference = localStorage.getItem('useChromeAI');
     if (storedPreference !== null) {
@@ -59,7 +61,7 @@ class TranslationStore {
   }
 
   async checkAvailability() {
-    if (typeof window === 'undefined') return;
+    if (globalThis.window === undefined) return;
 
     try {
       const api = this.getTranslatorAPI();
@@ -80,7 +82,7 @@ class TranslationStore {
 
   async toggleChromeAI(enabled: boolean) {
     this.useChromeAI = enabled;
-    if (typeof window !== 'undefined') {
+    if (globalThis.window !== undefined) {
       localStorage.setItem('useChromeAI', String(enabled));
     }
 
@@ -163,7 +165,7 @@ class TranslationStore {
       let availability: string | undefined;
 
       // Try the new global Translator API first (using capabilities)
-      if ('Translator' in self) {
+      if ('Translator' in globalThis) {
         const TranslatorClass = (self as any).Translator;
         if (typeof TranslatorClass.availability === 'function') {
           availability = await TranslatorClass.availability({

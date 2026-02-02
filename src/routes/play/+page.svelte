@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from '$app/state';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
@@ -9,16 +9,11 @@
 
   let { data } = $props();
 
-  // Initialize immediately for View Transitions
-  if (data.videoId && playerState.videoId !== data.videoId) {
-    playerState.videoId = data.videoId;
-  }
-
   $effect(() => {
-    const idFromUrl = $page.url.searchParams.get('id');
-    const offsetParam = $page.url.searchParams.get('offset');
+    const idFromUrl = page.url.searchParams.get('id');
+    const offsetParam = page.url.searchParams.get('offset');
     const newOffset = offsetParam ? parseInt(offsetParam, 10) : 0;
-    const lyricIdParam = $page.url.searchParams.get('lyricId');
+    const lyricIdParam = page.url.searchParams.get('lyricId');
 
     if (idFromUrl !== playerState.videoId) {
       playerState.videoId = idFromUrl;
@@ -31,6 +26,30 @@
           playerState.manualLyricId = currentLyricId;
         }
       }
+    }
+  });
+
+  // Sync manualLyricId changes to URL (e.g., when loaded from storage)
+  $effect(() => {
+    // Only run after mount to avoid navigation issues
+    if (typeof window === 'undefined') return;
+
+    const currentLyricIdInUrl = page.url.searchParams.get('lyricId');
+    const expectedLyricId = playerState.manualLyricId?.toString() || null;
+
+    // Only update if there's a mismatch and we're on the same video
+    if (
+      currentLyricIdInUrl !== expectedLyricId &&
+      playerState.videoId === page.url.searchParams.get('id')
+    ) {
+      const url = new URL(window.location.href);
+      if (playerState.manualLyricId) {
+        url.searchParams.set('lyricId', playerState.manualLyricId.toString());
+      } else {
+        url.searchParams.delete('lyricId');
+      }
+      // Use replaceState directly on history API to avoid SvelteKit navigation
+      window.history.replaceState(window.history.state, '', url.toString());
     }
   });
 
