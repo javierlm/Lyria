@@ -250,7 +250,7 @@
   }
 
   /* Mobile: Position in normal flow */
-  @media (max-width: 768px) {
+  @media (max-width: 1650px) {
     .search-screen {
       justify-content: flex-start;
       padding-top: 2.5rem;
@@ -312,7 +312,7 @@
     }
   }
 
-  @media (max-width: 480px) {
+  @media (max-width: 600px) {
     .logo-container {
       transform: scale(0.5);
       margin-bottom: 0.5rem;
@@ -329,7 +329,7 @@
     }
   }
 
-  @media (max-width: 360px) {
+  @media (max-width: 400px) {
     .song-of-day-wrapper {
       min-height: 70px;
     }

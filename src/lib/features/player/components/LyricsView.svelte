@@ -28,7 +28,7 @@
       !playerState.isLoadingVideo &&
       playerState.duration > 0 &&
       windowWidth >= 1400 &&
-      (playerState.forceHorizontalMode || !playerState.lyricsAreSynced)
+      (!playerState.lyricsAreSynced || playerState.forceHorizontalMode)
   );
 
   // Measure the height of the player for the horizontal mode
@@ -68,9 +68,7 @@
 
   // Shared condition for auto-scrolling in horizontal mode with synced lyrics
   const canAutoScroll = $derived(
-    playerState.forceHorizontalMode &&
-      playerState.lyricsAreSynced &&
-      playerState.currentLineIndex >= 0
+    isHorizontalMode && playerState.lyricsAreSynced && playerState.currentLineIndex >= 0
   );
 
   function scrollToLine(index: number, smooth: boolean = true) {
@@ -216,7 +214,7 @@
 
     // Wait a bit for the layout transition to complete, then scroll to appropriate line
     setTimeout(() => {
-      const targetIndex = getLineIndexToScroll();
+      const targetIndex = !playerState.lyricsAreSynced ? 0 : getLineIndexToScroll();
       scrollToLine(targetIndex, true);
     }, 300);
   });
@@ -266,8 +264,9 @@
           return;
         }
 
-        // Only toggle if screen is wide enough for horizontal mode
-        if (windowWidth >= 1400) {
+        // Only toggle if screen is wide enough and lyrics are synced
+        // For unsynced lyrics, horizontal mode is always enabled and cannot be toggled
+        if (windowWidth >= 1400 && playerState.lyricsAreSynced) {
           e.preventDefault();
           playerState.forceHorizontalMode = !playerState.forceHorizontalMode;
         }

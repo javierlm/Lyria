@@ -119,6 +119,7 @@
       </button>
       {#if windowWidth >= 1400}
         <button
+          disabled={!playerState.lyricsAreSynced}
           onclick={() => {
             playerState.forceHorizontalMode = !playerState.forceHorizontalMode;
           }}
@@ -316,7 +317,7 @@
     }
   }
 
-  .action-button:hover {
+  .action-button:hover:not(:disabled) {
     background-color: rgba(var(--primary-color-rgb), 0.1);
   }
 
@@ -324,5 +325,11 @@
     background-color: var(--primary-color);
     color: white;
     border-color: var(--primary-color);
+  }
+
+  .action-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+    pointer-events: none;
   }
 </style>
