@@ -7,7 +7,10 @@
   import { isYouTubeUrl, extractVideoId } from '$lib/shared/utils';
   import { goto } from '$app/navigation';
 
-  let { centered = false } = $props<{ centered?: boolean }>();
+  let {
+    centered = false,
+    inputRef = $bindable<HTMLInputElement | null>(null)
+  }: { centered?: boolean; inputRef?: HTMLInputElement | null } = $props();
 
   function autofocus(node: HTMLElement) {
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
@@ -56,6 +59,7 @@
 
 <form onsubmit={handleSubmit} transition:slide={{ duration: 300 }}>
   <input
+    bind:this={inputRef}
     type="text"
     name="url"
     placeholder={$LL.search.placeholder()}

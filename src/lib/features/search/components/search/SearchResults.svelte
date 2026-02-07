@@ -2,10 +2,12 @@
   import { fade } from 'svelte/transition';
   import RecentVideoItem from '$lib/features/video/components/RecentVideoItem.svelte';
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
+  import { keyboardStore } from '$lib/stores/keyboardStore.svelte';
   import { LL } from '$i18n/i18n-svelte';
   import { isYouTubeUrl, extractVideoId } from '$lib/shared/utils';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { tick } from 'svelte';
 
   function loadVideoFromUrl(url: string) {
     const id = extractVideoId(url);
@@ -26,117 +28,76 @@
     searchStore.deleteRecentVideo(event.detail);
   }
 
+  let { inputElement = null }: { inputElement?: HTMLInputElement | null } = $props();
+
   let dropdownMaxHeight: string | null = $state(null);
   let dropdownElement: HTMLDivElement = $state() as HTMLDivElement;
   let isMobile = $state(false);
-  let isKeyboardOpen = $state(false);
-  let inputHasFocus = $state(false);
-  let maxViewportHeight = $state(0);
-  const MIN_VIEWPORT_HEIGHT = 600; // Minimum safe viewport height for calculations
 
-  // Check if running in standalone mode (PWA) vs browser
-  function isStandaloneMode(): boolean {
-    return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.matchMedia('(display-mode: fullscreen)').matches ||
-      (navigator as { standalone?: boolean }).standalone === true
-    );
-  }
+  // Use keyboard state from shared store
+  let isKeyboardOpen = $derived(keyboardStore.isOpen);
 
-  // Dynamic bottom margin: 8% of the viewport height normally, 15% when keyboard is open
-  // Smaller buffer when keyboard is open to ensure 3 items are visible
-  // In browser mode (not PWA), we add extra buffer for the browser navigation bar
-  function getBottomBuffer() {
-    const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const keyboardOpen = isKeyboardOpen;
-    const standalone = isStandaloneMode();
+  // In PWA mode or Firefox mobile, we use CSS only for height (no JS calculation)
+  // This ensures instant response synchronized with the logo
+  let isPWA = $derived(keyboardStore.isPWA);
 
-    if (keyboardOpen) {
-      // 8% with max of 60px and min of 30px - smaller buffer since more space is available now
-      return Math.min(60, Math.max(30, viewportHeight * 0.08));
-    }
+  // Detect Firefox mobile - also use CSS mode for better reliability
+  let isFirefoxMobile = $derived(
+    typeof window !== 'undefined' &&
+      navigator.userAgent.toLowerCase().includes('firefox') &&
+      (navigator.userAgent.toLowerCase().includes('android') ||
+        navigator.userAgent.toLowerCase().includes('mobile'))
+  );
 
-    // Base buffer: 8% of viewport for PWA mode
-    const baseBuffer = Math.max(30, viewportHeight * 0.08);
+  // Use CSS mode for PWA or Firefox mobile
+  let useCSSMode = $derived(isPWA || isFirefoxMobile);
 
-    // If not in standalone mode (browser mode), add extra buffer for browser navigation bar
-    // Browser navigation bars are typically 50-60px on mobile browsers
-    if (!standalone && window.innerWidth <= 768) {
-      // Browser mode: use 8% of viewport with a minimum of 50px
-      // Optimized balance between avoiding overflow and maximizing usable space
-      const browserBuffer = Math.max(50, viewportHeight * 0.08);
-      return browserBuffer;
-    }
-
-    return baseBuffer;
-  }
-
-  function detectKeyboard() {
-    const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const windowHeight = window.innerHeight;
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-    // Update max viewport height if current is higher
-    if (viewportHeight > maxViewportHeight) {
-      maxViewportHeight = viewportHeight;
-    }
-
-    // Use max known height or window height as reference, with minimum safe value
-    // This prevents incorrect calculations when viewport is initially small (e.g., Firefox on load)
-    const referenceHeight = Math.max(maxViewportHeight, windowHeight, MIN_VIEWPORT_HEIGHT);
-    const heightDifference = referenceHeight - viewportHeight;
-    const viewportSignificantlyReduced = heightDifference > 30; // Viewport reduced by more than 30px
-    const viewportNearFull = heightDifference < 20; // Within 20px of max height
-
-    // Logic:
-    // - If viewport is significantly reduced from max → keyboard is OPEN
-    // - If viewport is near full height → keyboard is CLOSED
-    // - On mobile with input focus, keyboard is likely open unless viewport is near full
-    let keyboardOpen;
-
-    if (viewportNearFull) {
-      // Viewport is at/near maximum height
-      keyboardOpen = false;
-    } else if (viewportSignificantlyReduced) {
-      // Viewport is significantly smaller than max → keyboard visible
-      keyboardOpen = true;
-    } else {
-      // Borderline case: use input focus on touch devices
-      keyboardOpen = inputHasFocus && isTouchDevice;
-    }
-
-    return keyboardOpen;
-  }
-
+  // Main calculation function - browser only (not PWA or Firefox)
   function calculateMaxHeight() {
-    if (!dropdownElement || !searchStore.showRecentVideos) return;
-
-    // Only on mobile we perform dynamic calculation
-    if (!isMobile) {
-      dropdownMaxHeight = null;
+    // Skip calculation in PWA or Firefox mobile - use CSS instead
+    if (useCSSMode) {
+      dropdownMaxHeight = null; // Let CSS control the height
       return;
     }
 
-    // Update keyboard detection
-    isKeyboardOpen = detectKeyboard();
+    if (!inputElement || !searchStore.showRecentVideos) return;
 
-    // Use visualViewport height when available (accounts for keyboard)
+    const inputRect = inputElement.getBoundingClientRect();
     const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const dropdownRect = dropdownElement.getBoundingClientRect();
-    const bottomBuffer = getBottomBuffer();
 
-    // Calculate available space from the dropdown's top to the bottom of the viewport
-    // Use viewport-relative buffer to adapt to different devices
-    const availableHeight = viewportHeight - dropdownRect.top - bottomBuffer;
+    // Calculate available space below input
+    const spaceBelowInput = viewportHeight - inputRect.bottom;
 
-    // Ensure a reasonable minimum (3 items) and a maximum of 6 items
-    const rowHeight = window.innerWidth <= 480 ? 59 : 65;
-    const minHeight = rowHeight * 3;
-    const maxHeight = rowHeight * 6;
+    // Progressive buffer based on viewport height
+    let bottomBuffer: number;
+    if (viewportHeight < 700) {
+      bottomBuffer = 100; // Small screens
+    } else if (viewportHeight < 850) {
+      bottomBuffer = 80; // Medium screens
+    } else {
+      bottomBuffer = 50; // Large screens
+    }
 
-    const finalHeight = Math.max(minHeight, Math.min(availableHeight, maxHeight));
+    const availableHeight = spaceBelowInput - bottomBuffer;
+    const rowHeight = isMobile ? 66 : 104;
+    const maxRows = Math.floor(availableHeight / rowHeight);
 
-    dropdownMaxHeight = `${finalHeight}px`;
+    // Determine max visible rows based on keyboard state and viewport
+    let maxVisibleRows: number;
+    if (keyboardStore.isOpen) {
+      maxVisibleRows = viewportHeight < 700 ? 3 : 4;
+    } else {
+      if (viewportHeight < 700) {
+        maxVisibleRows = 3;
+      } else if (viewportHeight < 850) {
+        maxVisibleRows = 4;
+      } else {
+        maxVisibleRows = isMobile ? 6 : 10;
+      }
+    }
+
+    const visibleRows = Math.max(3, Math.min(maxRows, maxVisibleRows));
+    dropdownMaxHeight = `${visibleRows * rowHeight}px`;
   }
 
   // Recalculate when the window is resized
@@ -147,76 +108,43 @@
 
   onMount(() => {
     isMobile = window.innerWidth <= 768;
-    // Initialize max viewport height with minimum safe value
-    // This prevents issues in Firefox where visualViewport may be incorrect on initial load
-    const initialViewportHeight = window.visualViewport?.height || window.innerHeight;
-    maxViewportHeight = Math.max(initialViewportHeight, MIN_VIEWPORT_HEIGHT);
+
+    // Initial calculation
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        calculateMaxHeight();
+      });
+    });
+
+    // Set up resize listener
     window.addEventListener('resize', handleResize);
-    const handleViewportResize = () => {
-      // Immediate calculation for viewport changes (keyboard open/close)
-      calculateMaxHeight();
-    };
-    window.visualViewport?.addEventListener('resize', handleViewportResize);
-
-    // Listen to scroll events which might happen when keyboard opens/closes
-    const handleScroll = () => {
-      if (isMobile && searchStore.showRecentVideos) {
-        // Quick recalculation after scroll
-        requestAnimationFrame(calculateMaxHeight);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Detect keyboard by monitoring input focus (more reliable than visualViewport on mobile)
-    const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target?.tagName === 'INPUT' && target?.getAttribute('type') === 'text') {
-        inputHasFocus = true;
-        // Recalculate immediately for focus events
-        calculateMaxHeight();
-      }
-    };
-
-    const handleFocusOut = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target?.tagName === 'INPUT' && target?.getAttribute('type') === 'text') {
-        inputHasFocus = false;
-        // Recalculate immediately for focus events
-        calculateMaxHeight();
-      }
-    };
-
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
-
-    // Calculate initially after the DOM updates
-    setTimeout(calculateMaxHeight, 0);
 
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll);
-      window.visualViewport?.removeEventListener('resize', handleViewportResize);
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
     };
   });
 
-  // Recalculate when the dropdown is shown
+  // React to keyboard state changes from the shared store
   $effect(() => {
-    if (searchStore.showRecentVideos && dropdownElement) {
-      setTimeout(calculateMaxHeight, 0);
+    if (searchStore.showRecentVideos && inputElement) {
+      // When keyboard state changes, recalculate immediately
+      // Use shorter delay in PWA for faster response
+      const delay = keyboardStore.isPWA ? 50 : 0;
+
+      setTimeout(() => {
+        calculateMaxHeight();
+      }, delay);
     }
   });
 
-  // Recalculate when keyboard opens/closes (visualViewport changes)
+  // Also recalculate when dropdown is shown
   $effect(() => {
-    if (isMobile && dropdownElement && searchStore.showRecentVideos) {
-      const viewportHeight = window.visualViewport?.height;
-      // This effect re-runs when viewport height changes (keyboard open/close)
-      if (viewportHeight !== undefined) {
-        // Immediate recalculation
-        requestAnimationFrame(calculateMaxHeight);
-      }
+    if (searchStore.showRecentVideos && inputElement) {
+      tick().then(() => {
+        requestAnimationFrame(() => {
+          calculateMaxHeight();
+        });
+      });
     }
   });
 </script>
@@ -225,9 +153,10 @@
   <div
     bind:this={dropdownElement}
     class="recent-videos-dropdown"
-    class:keyboard-open={isKeyboardOpen && !dropdownMaxHeight}
-    class:normal-mode={!isKeyboardOpen && !dropdownMaxHeight}
-    style:max-height={dropdownMaxHeight}
+    class:keyboard-open={isKeyboardOpen}
+    class:normal-mode={!isKeyboardOpen}
+    class:css-mode={useCSSMode}
+    style:max-height={!useCSSMode ? dropdownMaxHeight : null}
     transition:fade={{ duration: 150 }}
   >
     {#each searchStore.filteredVideos as video, index (video.videoId)}
@@ -244,9 +173,10 @@
   <div
     bind:this={dropdownElement}
     class="recent-videos-dropdown no-results"
-    class:keyboard-open={isKeyboardOpen && !dropdownMaxHeight}
-    class:normal-mode={!isKeyboardOpen && !dropdownMaxHeight}
-    style:max-height={dropdownMaxHeight}
+    class:keyboard-open={isKeyboardOpen}
+    class:normal-mode={!isKeyboardOpen}
+    class:css-mode={useCSSMode}
+    style:max-height={!useCSSMode ? dropdownMaxHeight : null}
     transition:fade={{ duration: 150 }}
   >
     <div class="no-results-message">
@@ -266,7 +196,7 @@
 
 <style>
   .recent-videos-dropdown {
-    --row-height: 88.25px;
+    --row-height: 104px;
     --visible-rows: 6;
     position: absolute;
     top: calc(100% + 0.5rem);
@@ -275,13 +205,14 @@
     background-color: var(--card-background);
     border-radius: 0.75rem;
     box-shadow: 0 10px 30px var(--shadow-color);
-    max-height: calc(var(--row-height) * var(--visible-rows));
+    max-height: min(calc(var(--row-height) * var(--visible-rows)), 720px);
     overflow-y: auto;
     width: 100%;
     transform: translateX(0);
     scrollbar-width: auto;
     scrollbar-color: var(--primary-color) var(--card-background);
     overscroll-behavior: contain;
+    transition: max-height 0.3s ease-out;
   }
 
   .recent-videos-dropdown.no-results {
@@ -323,21 +254,36 @@
 
   @media (max-width: 768px) {
     .recent-videos-dropdown {
-      --row-height: 65px;
-      /* max-height is controlled by CSS classes */
+      --row-height: 66px;
     }
 
-    /* Normal mode - allow up to 6 items or use calculated height */
     .recent-videos-dropdown.normal-mode {
       max-height: calc(var(--row-height) * 6);
     }
 
-    /* When keyboard is open, limit to show only 3 items to avoid overflow */
     .recent-videos-dropdown.keyboard-open {
-      /* Show 3 rows with extra space for padding/borders (65px * 3 + 20px padding) */
       max-height: calc(var(--row-height) * 3 + 20px);
-      /* Ensure it stays above other content but doesn't overlay the input */
       z-index: 100;
+    }
+
+    @media (max-height: 700px) {
+      .recent-videos-dropdown.normal-mode {
+        max-height: calc(var(--row-height) * 3);
+      }
+
+      .recent-videos-dropdown.keyboard-open {
+        max-height: calc(var(--row-height) * 3);
+      }
+    }
+
+    @media (min-height: 701px) and (max-height: 850px) {
+      .recent-videos-dropdown.normal-mode {
+        max-height: calc(var(--row-height) * 4);
+      }
+
+      .recent-videos-dropdown.keyboard-open {
+        max-height: calc(var(--row-height) * 3);
+      }
     }
 
     .no-results-message {
@@ -354,11 +300,6 @@
   }
 
   @media (max-width: 480px) {
-    .recent-videos-dropdown {
-      --row-height: 59px;
-      /* max-height is calculated dynamically in JavaScript */
-    }
-
     .no-results-message {
       padding: 1rem;
     }
@@ -369,6 +310,34 @@
 
     .no-results-message .hint {
       font-size: 0.75rem;
+    }
+  }
+
+  /* CSS MODE: CSS-only height control for instant response (PWA & Firefox mobile) */
+  /* These styles respond to .search-screen.keyboard-open class */
+  @media (max-width: 768px) {
+    /* Very small screens (iPhone SE and similar < 700px): always 3 rows */
+    @media (max-height: 700px) {
+      :global(.search-screen.keyboard-open) .recent-videos-dropdown.css-mode,
+      :global(.search-screen:not(.keyboard-open)) .recent-videos-dropdown.css-mode {
+        max-height: calc(66px * 3);
+      }
+    }
+
+    /* Everything else (701px+): fixed heights without intermediate media queries */
+    :global(.search-screen.keyboard-open) .recent-videos-dropdown.css-mode {
+      max-height: calc(66px * 3);
+    }
+
+    :global(.search-screen:not(.keyboard-open)) .recent-videos-dropdown.css-mode {
+      max-height: calc(66px * 6);
+    }
+
+    /* Firefox mobile: limit height to avoid overflow with the bottom bar */
+    @supports (-moz-appearance: none) {
+      :global(.search-screen:not(.keyboard-open)) .recent-videos-dropdown.css-mode {
+        max-height: min(calc(66px * 4), 55vh); /* 5 rows max or 65% of viewport */
+      }
     }
   }
 </style>

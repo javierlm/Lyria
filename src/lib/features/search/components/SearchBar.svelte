@@ -13,6 +13,7 @@
 
   let searchContainerRef: HTMLDivElement;
   let videosLoaded = $state(false);
+  let inputElement: HTMLInputElement | null = $state(null);
 
   onMount(() => {
     let cleanup: (() => void) | undefined;
@@ -90,9 +91,9 @@
 
   {#if searchStore.showSearchField}
     <div class="search-form-wrapper" class:centered out:fade={{ duration: 200 }}>
-      <SearchForm {centered} />
+      <SearchForm bind:inputRef={inputElement} {centered} />
       <SearchFilters />
-      <SearchResults />
+      <SearchResults {inputElement} />
     </div>
   {/if}
 </div>

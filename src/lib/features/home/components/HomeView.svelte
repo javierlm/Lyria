@@ -4,39 +4,10 @@
   import SearchBar from '$lib/features/search/components/SearchBar.svelte';
   import SongOfTheDayCard from '$lib/features/song-of-the-day/components/SongOfTheDayCard.svelte';
   import SongOfTheDaySkeleton from '$lib/features/song-of-the-day/components/SongOfTheDaySkeleton.svelte';
+  import { keyboardStore, initKeyboardStore } from '$lib/stores/keyboardStore.svelte';
 
-  let isKeyboardOpen = $state(false);
-  let inputHasFocus = $state(false);
-  let maxViewportHeight = $state(0);
-  const MIN_VIEWPORT_HEIGHT = 600;
-
-  function detectKeyboard() {
-    const viewportHeight = window.visualViewport?.height || window.innerHeight;
-    const windowHeight = window.innerHeight;
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-    if (viewportHeight > maxViewportHeight) {
-      maxViewportHeight = viewportHeight;
-    }
-
-    const referenceHeight = Math.max(maxViewportHeight, windowHeight, MIN_VIEWPORT_HEIGHT);
-    const heightDifference = referenceHeight - viewportHeight;
-    const viewportSignificantlyReduced = heightDifference > 30;
-    const viewportNearFull = heightDifference < 20;
-
-    let keyboardOpen;
-    if (viewportNearFull) {
-      keyboardOpen = false;
-    } else if (viewportSignificantlyReduced) {
-      keyboardOpen = true;
-    } else {
-      keyboardOpen = inputHasFocus && isTouchDevice;
-    }
-
-    if (keyboardOpen !== isKeyboardOpen) {
-      isKeyboardOpen = keyboardOpen;
-    }
-  }
+  // Use derived values from the shared store
+  let isKeyboardOpen = $derived(keyboardStore.isOpen);
 
   onMount(() => {
     const originalHtmlHeight = document.documentElement.style.height;
@@ -44,10 +15,8 @@
     const originalHtmlOverflow = document.documentElement.style.overflow;
     const originalBodyOverflow = document.body.style.overflow;
 
-    // Initialize max viewport height with minimum safe value
-    // This prevents issues in Firefox where visualViewport may be incorrect on initial load
-    const initialViewportHeight = window.visualViewport?.height || window.innerHeight;
-    maxViewportHeight = Math.max(initialViewportHeight, MIN_VIEWPORT_HEIGHT);
+    // Initialize the shared keyboard store
+    const cleanupKeyboardStore = initKeyboardStore();
 
     // Detect if running in PWA standalone mode and add class to body for CSS targeting
     const isStandalone =
@@ -98,40 +67,16 @@
       }
     };
 
-    const handleFocusIn = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target?.tagName === 'INPUT' && target?.getAttribute('type') === 'text') {
-        inputHasFocus = true;
-        detectKeyboard();
-      }
-    };
-
-    const handleFocusOut = (e: FocusEvent) => {
-      const target = e.target as HTMLElement;
-      if (target?.tagName === 'INPUT' && target?.getAttribute('type') === 'text') {
-        inputHasFocus = false;
-        detectKeyboard();
-      }
-    };
-
-    const handleViewportResize = () => {
-      detectKeyboard();
-    };
-
-    // Set up all listeners
-    window.visualViewport?.addEventListener('resize', handleViewportResize);
-    document.addEventListener('focusin', handleFocusIn);
-    document.addEventListener('focusout', handleFocusOut);
+    // Set up touch listeners
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
     document.addEventListener('touchmove', handleTouchMove, { passive: false });
 
-    // Initial detection
-    detectKeyboard();
-
     return () => {
-      window.visualViewport?.removeEventListener('resize', handleViewportResize);
-      document.removeEventListener('focusin', handleFocusIn);
-      document.removeEventListener('focusout', handleFocusOut);
+      // Cleanup keyboard store
+      if (cleanupKeyboardStore) {
+        cleanupKeyboardStore();
+      }
+
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchmove', handleTouchMove);
 
