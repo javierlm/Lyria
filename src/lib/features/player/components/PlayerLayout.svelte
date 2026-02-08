@@ -71,10 +71,10 @@
     try {
       if (wasFavorite) {
         await videoService.removeFavoriteVideo(videoId);
-        notify.success($LL.notifications.removedFromFavorites(), '');
+        notify.favoriteRemoved($LL.notifications.removedFromFavorites(), '');
       } else {
         await videoService.addFavoriteVideo(videoId);
-        notify.success($LL.notifications.addedToFavorites(), '');
+        notify.favoriteAdded($LL.notifications.addedToFavorites(), '');
       }
     } catch {
       notify.error($LL.notifications.favoriteError(), $LL.notifications.favoriteErrorMessage());
