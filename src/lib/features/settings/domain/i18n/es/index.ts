@@ -185,6 +185,21 @@ const es = {
   },
   songOfTheDay: {
     label: 'Tal día como hoy en {year}'
+  },
+  notifications: {
+    close: 'Cerrar notificación',
+    horizontalModeAutoActivated: 'Modo horizontal activado',
+    unsyncedLyricsHorizontalMode:
+      'La letra de esta canción no está sincronizada. Se ha activado automáticamente el modo horizontal para facilitar su lectura.',
+    translationFailed: 'Error en la traducción',
+    translationFailedMessage: 'No se pudieron traducir las letras. Inténtalo más tarde.',
+    addedToFavorites: 'Añadido a favoritos',
+    removedFromFavorites: 'Eliminado de favoritos',
+    favoriteError: 'No se pudo actualizar favoritos',
+    favoriteErrorMessage: 'Inténtalo de nuevo más tarde.',
+    urlCopied: 'URL copiada',
+    urlCopyError: 'No se pudo copiar la URL',
+    urlCopyErrorMessage: 'Copia el enlace manualmente.'
   }
 } satisfies Translation;
 

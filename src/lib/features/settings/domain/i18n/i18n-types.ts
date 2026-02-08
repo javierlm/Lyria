@@ -645,6 +645,56 @@ type RootTranslation = {
      */
     label: RequiredParams<'year'>;
   };
+  notifications: {
+    /**
+     * C​l​o​s​e​ ​n​o​t​i​f​i​c​a​t​i​o​n
+     */
+    close: string;
+    /**
+     * H​o​r​i​z​o​n​t​a​l​ ​m​o​d​e​ ​a​c​t​i​v​a​t​e​d
+     */
+    horizontalModeAutoActivated: string;
+    /**
+     * T​h​e​ ​l​y​r​i​c​s​ ​f​o​r​ ​t​h​i​s​ ​s​o​n​g​ ​a​r​e​ ​n​o​t​ ​s​y​n​c​e​d​.​ ​H​o​r​i​z​o​n​t​a​l​ ​m​o​d​e​ ​h​a​s​ ​b​e​e​n​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​ ​a​c​t​i​v​a​t​e​d​ ​t​o​ ​m​a​k​e​ ​r​e​a​d​i​n​g​ ​e​a​s​i​e​r​.
+     */
+    unsyncedLyricsHorizontalMode: string;
+    /**
+     * T​r​a​n​s​l​a​t​i​o​n​ ​f​a​i​l​e​d
+     */
+    translationFailed: string;
+    /**
+     * C​o​u​l​d​ ​n​o​t​ ​t​r​a​n​s​l​a​t​e​ ​t​h​e​ ​l​y​r​i​c​s​.​ ​P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​ ​l​a​t​e​r​.
+     */
+    translationFailedMessage: string;
+    /**
+     * A​d​d​e​d​ ​t​o​ ​f​a​v​o​r​i​t​e​s
+     */
+    addedToFavorites: string;
+    /**
+     * R​e​m​o​v​e​d​ ​f​r​o​m​ ​f​a​v​o​r​i​t​e​s
+     */
+    removedFromFavorites: string;
+    /**
+     * C​o​u​l​d​ ​n​o​t​ ​u​p​d​a​t​e​ ​f​a​v​o​r​i​t​e​s
+     */
+    favoriteError: string;
+    /**
+     * P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​ ​l​a​t​e​r​.
+     */
+    favoriteErrorMessage: string;
+    /**
+     * U​R​L​ ​c​o​p​i​e​d
+     */
+    urlCopied: string;
+    /**
+     * C​o​u​l​d​ ​n​o​t​ ​c​o​p​y​ ​U​R​L
+     */
+    urlCopyError: string;
+    /**
+     * P​l​e​a​s​e​ ​t​r​y​ ​c​o​p​y​i​n​g​ ​t​h​e​ ​l​i​n​k​ ​m​a​n​u​a​l​l​y​.
+     */
+    urlCopyErrorMessage: string;
+  };
 };
 
 export type TranslationFunctions = {
@@ -1265,6 +1315,56 @@ export type TranslationFunctions = {
      * On this day in {year}
      */
     label: (arg: { year: unknown }) => LocalizedString;
+  };
+  notifications: {
+    /**
+     * Close notification
+     */
+    close: () => LocalizedString;
+    /**
+     * Horizontal mode activated
+     */
+    horizontalModeAutoActivated: () => LocalizedString;
+    /**
+     * The lyrics for this song are not synced. Horizontal mode has been automatically activated to make reading easier.
+     */
+    unsyncedLyricsHorizontalMode: () => LocalizedString;
+    /**
+     * Translation failed
+     */
+    translationFailed: () => LocalizedString;
+    /**
+     * Could not translate the lyrics. Please try again later.
+     */
+    translationFailedMessage: () => LocalizedString;
+    /**
+     * Added to favorites
+     */
+    addedToFavorites: () => LocalizedString;
+    /**
+     * Removed from favorites
+     */
+    removedFromFavorites: () => LocalizedString;
+    /**
+     * Could not update favorites
+     */
+    favoriteError: () => LocalizedString;
+    /**
+     * Please try again later.
+     */
+    favoriteErrorMessage: () => LocalizedString;
+    /**
+     * URL copied
+     */
+    urlCopied: () => LocalizedString;
+    /**
+     * Could not copy URL
+     */
+    urlCopyError: () => LocalizedString;
+    /**
+     * Please try copying the link manually.
+     */
+    urlCopyErrorMessage: () => LocalizedString;
   };
 };
 

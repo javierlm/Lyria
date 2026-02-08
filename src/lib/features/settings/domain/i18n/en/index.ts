@@ -185,6 +185,21 @@ const en = {
   },
   songOfTheDay: {
     label: 'On this day in {year}'
+  },
+  notifications: {
+    close: 'Close notification',
+    horizontalModeAutoActivated: 'Horizontal mode activated',
+    unsyncedLyricsHorizontalMode:
+      'The lyrics for this song are not synced. Horizontal mode has been automatically activated to make reading easier.',
+    translationFailed: 'Translation failed',
+    translationFailedMessage: 'Could not translate the lyrics. Please try again later.',
+    addedToFavorites: 'Added to favorites',
+    removedFromFavorites: 'Removed from favorites',
+    favoriteError: 'Could not update favorites',
+    favoriteErrorMessage: 'Please try again later.',
+    urlCopied: 'URL copied',
+    urlCopyError: 'Could not copy URL',
+    urlCopyErrorMessage: 'Please try copying the link manually.'
   }
 } satisfies Translation;
 

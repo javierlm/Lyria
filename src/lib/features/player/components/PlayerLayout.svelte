@@ -15,12 +15,14 @@
   import BackToTop from '$lib/features/ui/components/BackToTop.svelte';
 
   import { videoService } from '$lib/features/video/services/videoService';
+  import { notify } from '$lib/features/notification';
 
   let windowWidth = $state(0);
   const iconSize = $derived(windowWidth > 768 ? 24 : 16);
 
   let copied = $state(false);
   let isFavorite = $state(false);
+  let notifiedHorizontalModeForVideo = $state<string | null>(null);
 
   const showHorizontalLayout = $derived(
     playerState.lyricsState === 'found' &&
@@ -33,6 +35,24 @@
   $effect(() => {
     if (playerState.videoId) {
       checkFavoriteStatus(playerState.videoId);
+    }
+  });
+
+  // Show notification when horizontal mode is auto-activated due to unsynced lyrics
+  $effect(() => {
+    if (
+      playerState.videoId &&
+      showHorizontalLayout &&
+      !playerState.lyricsAreSynced &&
+      playerState.lyricsState === 'found' &&
+      !playerState.forceHorizontalMode &&
+      notifiedHorizontalModeForVideo !== playerState.videoId
+    ) {
+      notifiedHorizontalModeForVideo = playerState.videoId;
+      notify.info(
+        $LL.notifications.horizontalModeAutoActivated(),
+        $LL.notifications.unsyncedLyricsHorizontalMode()
+      );
     }
   });
 
@@ -51,11 +71,13 @@
     try {
       if (wasFavorite) {
         await videoService.removeFavoriteVideo(videoId);
+        notify.success($LL.notifications.removedFromFavorites(), '');
       } else {
         await videoService.addFavoriteVideo(videoId);
+        notify.success($LL.notifications.addedToFavorites(), '');
       }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
+    } catch {
+      notify.error($LL.notifications.favoriteError(), $LL.notifications.favoriteErrorMessage());
       isFavorite = wasFavorite;
     }
   }
@@ -67,9 +89,11 @@
       .then(() => {
         copied = true;
         setTimeout(() => (copied = false), 2000);
+        notify.success($LL.notifications.urlCopied(), '');
       })
       .catch((err) => {
-        console.error('Error al copiar la URL:', err);
+        notify.error($LL.notifications.urlCopyError(), $LL.notifications.urlCopyErrorMessage());
+        console.error('Error copying URL:', err);
       });
   }
 </script>
