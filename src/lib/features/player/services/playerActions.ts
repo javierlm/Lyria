@@ -23,6 +23,7 @@ import {
 } from '$lib/shared/utils';
 import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
 import { goto } from '$app/navigation';
+import { notify } from '$lib/features/notification';
 
 let animationFrameId: number | null = null;
 let lastSyncedTime = 0;
@@ -70,7 +71,7 @@ export async function translateLyrics(targetLang: string) {
     );
 
     if (!translationResponse) {
-      console.error('Translation process returned null.');
+      notify.error('Translation failed', 'Could not translate the lyrics. Please try again later.');
       return;
     }
 
@@ -108,6 +109,7 @@ export async function translateLyrics(targetLang: string) {
       console.warn('Mismatch in line count between original and translated lyrics');
     }
   } catch (error) {
+    notify.error('Translation failed', 'Could not translate the lyrics. Please try again later.');
     console.error('Translation failed:', error);
   }
 }

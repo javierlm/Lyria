@@ -6,6 +6,7 @@
   import AppLanguageSelector from '$lib/features/settings/components/AppLanguageSelector.svelte';
   import ReloadPrompt from '$lib/features/ui/components/ReloadPrompt.svelte';
   import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
+  import { NotificationContainer } from '$lib/features/notification';
   import LL from '$i18n/i18n-svelte';
   import { onMount } from 'svelte';
   import { demoStore } from '$lib/features/settings/stores/demoStore.svelte';
@@ -60,6 +61,7 @@
   </div>
   {@render children()}
   <ReloadPrompt />
+  <NotificationContainer />
 </div>
 
 <style>

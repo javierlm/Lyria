@@ -28,9 +28,9 @@
 <style>
   .demo-mode-settings {
     padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--card-background);
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--border-color);
   }
 
   .setting-row {
@@ -51,7 +51,7 @@
   .label-text {
     font-size: 0.75rem;
     font-weight: 500;
-    color: var(--text-color, #fff);
+    color: var(--text-color);
   }
 
   .toggle-wrapper {
@@ -73,7 +73,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: var(--border-color);
     transition: 0.3s;
     border-radius: 20px;
   }
@@ -85,10 +85,10 @@
     width: 14px;
     left: 3px;
     bottom: 3px;
-    background-color: white;
+    background-color: var(--card-background);
     transition: 0.3s;
     border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 3px var(--shadow-color);
   }
 
   input:checked + .toggle-slider {
@@ -102,7 +102,8 @@
   .description {
     margin-top: 8px;
     font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-color);
+    opacity: 0.6;
     line-height: 1.4;
   }
 </style>
