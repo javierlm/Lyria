@@ -694,6 +694,14 @@ type RootTranslation = {
      * P​l​e​a​s​e​ ​t​r​y​ ​c​o​p​y​i​n​g​ ​t​h​e​ ​l​i​n​k​ ​m​a​n​u​a​l​l​y​.
      */
     urlCopyErrorMessage: string;
+    /**
+     * D​e​m​o​ ​m​o​d​e​ ​a​c​t​i​v​a​t​e​d
+     */
+    demoModeActivated: string;
+    /**
+     * D​e​m​o​ ​v​i​d​e​o​s​ ​a​r​e​ ​n​o​w​ ​a​v​a​i​l​a​b​l​e​.​ ​T​o​ ​e​x​i​t​ ​d​e​m​o​ ​m​o​d​e​,​ ​o​p​e​n​ ​t​h​e​ ​m​e​n​u​ ​a​n​d​ ​s​e​l​e​c​t​ ​"​D​i​s​a​b​l​e​ ​d​e​m​o​ ​m​o​d​e​"​.
+     */
+    demoModeActivatedMessage: string;
   };
 };
 
@@ -1365,6 +1373,14 @@ export type TranslationFunctions = {
      * Please try copying the link manually.
      */
     urlCopyErrorMessage: () => LocalizedString;
+    /**
+     * Demo mode activated
+     */
+    demoModeActivated: () => LocalizedString;
+    /**
+     * Demo videos are now available. To exit demo mode, open the menu and select "Disable demo mode".
+     */
+    demoModeActivatedMessage: () => LocalizedString;
   };
 };
 

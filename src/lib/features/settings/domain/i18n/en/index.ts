@@ -199,7 +199,10 @@ const en = {
     favoriteErrorMessage: 'Please try again later.',
     urlCopied: 'URL copied',
     urlCopyError: 'Could not copy URL',
-    urlCopyErrorMessage: 'Please try copying the link manually.'
+    urlCopyErrorMessage: 'Please try copying the link manually.',
+    demoModeActivated: 'Demo mode activated',
+    demoModeActivatedMessage:
+      'Demo videos are now available. To exit demo mode, open the menu and select "Disable demo mode".'
   }
 } satisfies Translation;
 
