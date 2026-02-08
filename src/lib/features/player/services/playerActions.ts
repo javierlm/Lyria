@@ -34,7 +34,10 @@ let isPlayerPlaying = false;
 const HUMAN_REACTION_TIME_MS = 500;
 const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
 const PERIODIC_SYNC_INTERVAL_MS = 5000;
+const BUFFER_SYNC_INTERVAL_MS = 1000;
 const VIDEO_LOAD_TIMEOUT_MS = 15000;
+
+let lastBufferSync = 0;
 
 let videoLoadTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let currentSearchId = 0;
@@ -172,6 +175,12 @@ function updateFrame() {
       syncWithIframe();
       lastPeriodicSync = now;
     }
+  }
+
+  if (player && now - lastBufferSync >= BUFFER_SYNC_INTERVAL_MS) {
+    const loadedFraction = player.getVideoLoadedFraction();
+    playerState.buffered = loadedFraction * playerState.duration;
+    lastBufferSync = now;
   }
 
   if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
@@ -344,6 +353,7 @@ function resetPlayerState() {
   playerState.isLyricVideo = false;
   playerState.videoError = null;
   playerState.parsedTitle = null;
+  playerState.buffered = 0;
 }
 
 export async function loadVideo(videoId: string, elementId: string, initialOffset?: number) {
@@ -686,6 +696,7 @@ async function handlePlayerReady(event: YT.PlayerEvent, videoId: string, loadId:
   if (loadId !== currentVideoLoadId) return;
 
   initializePlayerProperties(player);
+  playerState.buffered = player.getVideoLoadedFraction() * playerState.duration;
 
   startSync();
   player.playVideo();

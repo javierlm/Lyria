@@ -96,7 +96,8 @@
     step="0.1"
     oninput={handleSeek}
     class="seek-bar"
-    style="--progress: {(playerState.currentTime / playerState.duration) * 100 || 0}%;"
+    style="--progress: {(playerState.currentTime / playerState.duration) * 100 ||
+      0}%; --buffered: {(playerState.buffered / playerState.duration) * 100 || 0}%;"
   />
   <div class="time-display">{formatTime(playerState.duration)}</div>
 
@@ -263,8 +264,11 @@
     appearance: none;
     height: 8px;
     background:
-      linear-gradient(to right, transparent var(--progress, 0%), #555 var(--progress, 0%)),
-      linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      linear-gradient(135deg, var(--primary-color), var(--secondary-color)) no-repeat 0% 0% /
+        var(--progress, 0%) 100%,
+      linear-gradient(to right, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.4)) no-repeat 0%
+        0% / var(--buffered, 0%) 100%,
+      #555;
     outline: none;
     opacity: 0.7;
     transition: opacity 0.2s;
