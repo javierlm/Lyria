@@ -33,8 +33,8 @@
 
   $effect(() => {
     if (notification.duration > 0) {
-      const startTime = Date.now();
-      const endTime = startTime + notification.duration;
+      let animationFrameId: number;
+      const endTime = notification.createdAt + notification.duration;
 
       const updateProgress = () => {
         const now = Date.now();
@@ -42,13 +42,19 @@
         progressWidth = (remaining / notification.duration) * 100;
 
         if (remaining > 0) {
-          requestAnimationFrame(updateProgress);
+          animationFrameId = requestAnimationFrame(updateProgress);
         } else {
           closeNotification();
         }
       };
 
-      requestAnimationFrame(updateProgress);
+      animationFrameId = requestAnimationFrame(updateProgress);
+
+      return () => {
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
     }
   });
 </script>
@@ -88,10 +94,7 @@
     <div class="notification-progress-bar-wrapper">
       <div class="notification-progress-fill" style="width: {progressWidth}%;"></div>
     </div>
-    <div
-      class="notification-progress-circle"
-      style="--progress: {progressWidth};"
-    ></div>
+    <div class="notification-progress-circle" style="--progress: {progressWidth};"></div>
   {/if}
 </div>
 
