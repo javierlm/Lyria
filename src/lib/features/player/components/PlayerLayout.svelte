@@ -108,7 +108,11 @@
   <div class="title-container">
     <h1>
       {#if playerState.artist && playerState.track}
-        {playerState.artist} - {playerState.track}
+        {#if playerState.artist === playerState.track}
+          {playerState.artist}
+        {:else}
+          {playerState.artist} - {playerState.track}
+        {/if}
       {:else if playerState.track}
         {playerState.track}
       {:else if playerState.artist}

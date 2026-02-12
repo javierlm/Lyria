@@ -139,7 +139,10 @@
 <svelte:head>
   {#if data.videoId}
     {#if data.artist && data.track}
-      <meta property="og:title" content="{data.artist} - {data.track}" />
+      <meta
+        property="og:title"
+        content={data.artist === data.track ? data.artist : `${data.artist} - ${data.track}`}
+      />
     {:else if data.videoTitle}
       <meta property="og:title" content={data.videoTitle} />
     {:else}
