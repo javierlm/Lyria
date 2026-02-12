@@ -26,8 +26,6 @@ export const playerState = $state({
   isMuted: false,
   lines: [] as SyncedLine[],
   translatedLines: [] as SyncedLine[],
-  currentLine: '',
-  currentTranslatedLine: '',
   currentLineIndex: -1,
   isFullscreen: false,
   timingOffset: 0,
@@ -50,7 +48,12 @@ export const playerState = $state({
   videoError: null as { code: number; message: string } | null,
   parsedTitle: null as { artist: string; track: string } | null,
   forceHorizontalMode: false,
-  buffered: 0
+  buffered: 0,
+  // Transliteration state
+  transliteratedLines: [] as SyncedLine[],
+  showTransliteration: true,
+  transliterationAvailable: false,
+  transliterationLang: null as string | null
 });
 
 let playerInstance: YT.Player | null = null;

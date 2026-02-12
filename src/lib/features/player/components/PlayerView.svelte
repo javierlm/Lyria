@@ -20,6 +20,24 @@
   let currentLoadedVideoId: string | null = null;
   let isTouch = $state(false);
 
+  let currentLine = $derived(
+    playerState.currentLineIndex >= 0
+      ? playerState.lines[playerState.currentLineIndex]?.text || ''
+      : ''
+  );
+
+  let currentTranslatedLine = $derived(
+    playerState.currentLineIndex >= 0
+      ? playerState.translatedLines[playerState.currentLineIndex]?.text || ''
+      : ''
+  );
+
+  let currentTransliteratedLine = $derived(
+    playerState.currentLineIndex >= 0 && playerState.transliteratedLines.length > 0
+      ? playerState.transliteratedLines[playerState.currentLineIndex]?.text || ''
+      : ''
+  );
+
   const HIDE_DELAY = 3000;
 
   function resetHideControlsTimer() {
@@ -166,13 +184,18 @@
   <div id="player"></div>
 
   {#if playerState.lyricsAreSynced}
-    {#key playerState.currentLine}
+    {#key currentLine}
       <div class="subtitles" in:slide={{ duration: 300 }}>
-        {#if playerState.showOriginalSubtitle && playerState.currentLine}
-          <div class="subtitle-line">{playerState.currentLine}</div>
+        {#if playerState.showOriginalSubtitle && currentLine}
+          <div class="subtitle-line original">{currentLine}</div>
         {/if}
-        {#if playerState.showTranslatedSubtitle && playerState.currentTranslatedLine}
-          <div class="subtitle-line translated-subtitle">{playerState.currentTranslatedLine}</div>
+        {#if playerState.showTransliteration && currentTransliteratedLine}
+          <div class="subtitle-line transliterated" in:fade={{ duration: 200 }}>
+            {currentTransliteratedLine}
+          </div>
+        {/if}
+        {#if playerState.showTranslatedSubtitle && currentTranslatedLine}
+          <div class="subtitle-line translated">{currentTranslatedLine}</div>
         {/if}
       </div>
     {/key}
@@ -310,18 +333,39 @@
     width: fit-content;
   }
 
-  .translated-subtitle {
-    color: #cccccc;
+  .subtitle-line.original {
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  .subtitle-line.transliterated {
+    font-size: 1rem;
+    color: #bbbbbb;
+    opacity: 0.85;
+    margin-top: 0.3rem;
+    font-style: italic;
+    transition:
+      opacity 0.2s ease-out,
+      transform 0.2s ease-out;
+  }
+
+  .subtitle-line.translated {
     font-size: 1.2rem;
-    margin-top: 0.5rem;
+    color: #cccccc;
+    margin-top: 0.3rem;
   }
 
   @media (max-width: 768px) and (orientation: landscape) {
     .subtitles {
       bottom: 5px;
+    }
+    .subtitle-line.original {
       font-size: 1.2rem;
     }
-    .translated-subtitle {
+    .subtitle-line.transliterated {
+      font-size: 0.85rem;
+    }
+    .subtitle-line.translated {
       font-size: 1rem;
     }
   }
@@ -329,10 +373,15 @@
   @media (max-width: 768px) and (orientation: portrait) {
     .subtitles {
       bottom: 20px;
+    }
+    .subtitle-line.original {
       font-size: 0.9rem;
     }
-    .translated-subtitle {
-      font-size: 0.7rem;
+    .subtitle-line.transliterated {
+      font-size: 0.75rem;
+    }
+    .subtitle-line.translated {
+      font-size: 0.85rem;
     }
   }
 

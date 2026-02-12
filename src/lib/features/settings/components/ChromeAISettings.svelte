@@ -1,5 +1,6 @@
 <script lang="ts">
   import { translationStore } from '../stores/translationStore.svelte';
+  import ToggleSwitch from '$lib/features/ui/components/ToggleSwitch.svelte';
   import Check from 'phosphor-svelte/lib/Check';
   import DownloadSimple from 'phosphor-svelte/lib/DownloadSimple';
   import WarningCircle from 'phosphor-svelte/lib/WarningCircle';
@@ -11,21 +12,17 @@
 {#if translationStore.isChromeAISupported}
   <div class="chrome-ai-settings {className}">
     <div class="setting-row">
-      <label class="toggle-label" for="chrome-ai-toggle">
+      <div class="label-container">
         <span class="label-text">
           {$LL.chromeAI.useBrowserAI()}
           <span class="beta-badge">{$LL.chromeAI.beta()}</span>
         </span>
-        <div class="toggle-wrapper">
-          <input
-            type="checkbox"
-            id="chrome-ai-toggle"
-            checked={translationStore.useChromeAI}
-            onchange={(e) => translationStore.toggleChromeAI(e.currentTarget.checked)}
-          />
-          <span class="toggle-slider"></span>
-        </div>
-      </label>
+        <ToggleSwitch
+          checked={translationStore.useChromeAI}
+          onchange={(checked) => translationStore.toggleChromeAI(checked)}
+          id="chrome-ai-toggle"
+        />
+      </div>
     </div>
 
     <p class="disclaimer">{$LL.chromeAI.disclaimer()}</p>
@@ -86,13 +83,11 @@
     align-items: center;
   }
 
-  .toggle-label {
+  .label-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    cursor: pointer;
-    user-select: none;
   }
 
   .label-text {
@@ -113,52 +108,6 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-  }
-
-  /* Toggle Switch */
-  .toggle-wrapper {
-    position: relative;
-    width: 36px;
-    height: 20px;
-  }
-
-  .toggle-wrapper input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(255, 255, 255, 0.2);
-    transition: 0.3s;
-    border-radius: 20px;
-  }
-
-  .toggle-slider:before {
-    position: absolute;
-    content: '';
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background-color: white;
-    transition: 0.3s;
-    border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  }
-
-  input:checked + .toggle-slider {
-    background: var(--primary-color, #3a86ff);
-  }
-
-  input:checked + .toggle-slider:before {
-    transform: translateX(16px);
   }
 
   /* Status & Progress */

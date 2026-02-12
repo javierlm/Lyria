@@ -1,16 +1,60 @@
 <script lang="ts">
   import { LyricsStates, playerState } from '$lib/features/player/stores/playerStore.svelte';
   import { seekTo } from '$lib/features/player/services/playerActions';
-  import FileText from 'phosphor-svelte/lib/FileText';
-  import Translate from 'phosphor-svelte/lib/Translate';
-  import Eye from 'phosphor-svelte/lib/Eye';
-  import EyeSlash from 'phosphor-svelte/lib/EyeSlash';
-  import CloudSlash from 'phosphor-svelte/lib/CloudSlash';
+  import { fade } from 'svelte/transition';
+  import FileTextIcon from 'phosphor-svelte/lib/FileTextIcon';
+  import TranslateIcon from 'phosphor-svelte/lib/TranslateIcon';
+  import EyeIcon from 'phosphor-svelte/lib/EyeIcon';
+  import EyeSlashIcon from 'phosphor-svelte/lib/EyeSlashIcon';
+  import CloudSlashIcon from 'phosphor-svelte/lib/CloudSlashIcon';
+  import TextAaIcon from 'phosphor-svelte/lib/TextAaIcon';
   import LanguageSelector from '$lib/features/settings/components/LanguageSelector.svelte';
   import ScrollToActiveLine from '$lib/features/ui/components/ScrollToActiveLine.svelte';
+  import ToggleSwitch from '$lib/features/ui/components/ToggleSwitch.svelte';
   import { getPrimaryLanguage } from '$lib/shared/utils';
   import { LL } from '$i18n/i18n-svelte';
   import { translationStore } from '$lib/features/settings/stores/translationStore.svelte';
+  import { transliterateLyrics } from '$lib/features/player/services/transliterationService';
+  import { isTransliterableLanguage } from '$lib/features/settings/stores/transliterationStore.svelte';
+
+  async function handleTransliterationToggle(checked: boolean) {
+    console.log('[LyricsView] Toggle transliteration:', checked);
+    console.log('[LyricsView] Current state:', {
+      showTransliteration: playerState.showTransliteration,
+      transliteratedLinesLength: playerState.transliteratedLines.length,
+      transliterationLang: playerState.transliterationLang,
+      linesLength: playerState.lines.length
+    });
+
+    // If we're enabling and don't have transliterated lines yet, process them
+    if (
+      checked &&
+      playerState.transliteratedLines.length === 0 &&
+      playerState.transliterationLang
+    ) {
+      console.log('[LyricsView] Need to transliterate, calling backend...');
+      try {
+        const result = await transliterateLyrics(
+          playerState.lines,
+          playerState.transliterationLang
+        );
+        console.log('[LyricsView] Transliteration result:', result);
+        if (result.success) {
+          console.log(
+            '[LyricsView] Setting transliterated lines:',
+            result.lines.map((l) => l.text)
+          );
+          playerState.transliteratedLines = result.lines;
+        } else {
+          console.error('[LyricsView] Transliteration failed:', result.error);
+        }
+      } catch (error) {
+        console.error('Error transliterating lyrics:', error);
+      }
+    }
+    playerState.showTransliteration = checked;
+    console.log('[LyricsView] New showTransliteration state:', playerState.showTransliteration);
+  }
 
   let lyricsContainerRef: HTMLDivElement | null = $state(null);
   let lyricsContentRef: HTMLDivElement | null = $state(null);
@@ -29,6 +73,12 @@
       playerState.duration > 0 &&
       windowWidth >= 1400 &&
       (!playerState.lyricsAreSynced || playerState.forceHorizontalMode)
+  );
+
+  let shouldShowTransliteration = $derived(
+    playerState.transliterationAvailable &&
+      playerState.transliterationLang !== null &&
+      isTransliterableLanguage(playerState.transliterationLang)
   );
 
   // Measure the height of the player for the horizontal mode
@@ -353,9 +403,9 @@
           : $LL.lyrics.showOriginal()}
       >
         {#if playerState.showOriginalSubtitle}
-          <Eye size={20} />
+          <EyeIcon size={20} />
         {:else}
-          <EyeSlash size={20} />
+          <EyeSlashIcon size={20} />
         {/if}
       </button>
       <LanguageSelector />
@@ -370,9 +420,9 @@
           : $LL.lyrics.showTranslated()}
       >
         {#if playerState.showTranslatedSubtitle}
-          <Eye size={20} />
+          <EyeIcon size={20} />
         {:else}
-          <EyeSlash size={20} />
+          <EyeSlashIcon size={20} />
         {/if}
       </button>
     </div>
@@ -381,16 +431,30 @@
   {/if}
   <div class="lyrics-header">
     <h2 class="original-header">
-      <FileText size={iconSize} weight="bold" />
+      <FileTextIcon size={iconSize} weight="bold" />
       <span class="header-text">{$LL.lyrics.original()}</span>
     </h2>
+    <div class="transliteration-header-container">
+      {#if shouldShowTransliteration && playerState.lyricsState === LyricsStates.Found}
+        <ToggleSwitch
+          checked={playerState.showTransliteration}
+          onchange={handleTransliterationToggle}
+          id="transliteration-toggle"
+          label={$LL.lyrics.showTransliteration()}
+        >
+          {#snippet icon()}
+            <TextAaIcon size={16} />
+          {/snippet}
+        </ToggleSwitch>
+      {/if}
+    </div>
     <div class="translated-header-container">
       <h2 class="translated-header">
-        <Translate size={iconSize} weight="bold" />
+        <TranslateIcon size={iconSize} weight="bold" />
         <span class="header-text">{$LL.lyrics.translated()}</span>
         {#if translationStore.wasLastTranslationLocal && playerState.translatedLines.length > 0}
           <span class="local-indicator" title={$LL.chromeAI.localTranslationTooltip()}>
-            <CloudSlash size={16} weight="bold" />
+            <CloudSlashIcon size={16} weight="bold" />
           </span>
         {/if}
       </h2>
@@ -404,7 +468,7 @@
       </div>
     {:else if playerState.lyricsState === LyricsStates.NotFound}
       <div class="no-lyrics-message">
-        <FileText size={iconSize * 2} weight="bold" />
+        <FileTextIcon size={iconSize * 2} weight="bold" />
         <p>{$LL.lyrics.notFound()}</p>
       </div>
     {:else if playerState.lyricsState === LyricsStates.Found}
@@ -434,7 +498,14 @@
             >
               <span class="lyric-text-container">
                 <span class="sizer">{line.text}</span>
-                <span class="content">{line.text}</span>
+                <span class="content-wrapper">
+                  <span class="content">{line.text}</span>
+                  {#if playerState.showTransliteration && playerState.transliteratedLines[i]?.text}
+                    <span class="transliteration" in:fade={{ duration: 200 }}
+                      >{playerState.transliteratedLines[i].text}</span
+                    >
+                  {/if}
+                </span>
               </span>
             </button>
 
@@ -536,6 +607,13 @@
 
   .original-header {
     grid-column: 1;
+  }
+
+  .transliteration-header-container {
+    grid-column: 2;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .translated-header-container {
@@ -666,6 +744,44 @@
     visibility: hidden;
   }
 
+  .content-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    grid-area: text;
+  }
+
+  .transliteration {
+    font-size: 0.85em;
+    color: var(--text-color-light);
+    opacity: 0.7;
+    font-style: italic;
+    font-weight: normal;
+    line-height: 1.3;
+    transition:
+      opacity 0.2s ease-out,
+      max-height 0.2s ease-out;
+    overflow: hidden;
+  }
+
+  /* En línea activa, la transliteración también se resalta pero menos */
+  .lyric-row.current .transliteration {
+    opacity: 0.9;
+    color: color-mix(in srgb, var(--primary-color) 70%, var(--text-color-light));
+  }
+
+  /* Mobile: truncar si es muy largo */
+  @media (max-width: 768px) {
+    .transliteration {
+      font-size: 0.8em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+  }
+
   .timestamp {
     font-weight: bold;
     color: var(--text-color);
@@ -744,6 +860,13 @@
 
     .original-header {
       grid-column: 1;
+    }
+
+    .transliteration-header-container {
+      grid-column: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     .translated-header-container {
@@ -882,7 +1005,7 @@
   }
 
   .toggle-visibility:hover:not(:disabled) {
-    background-color: var(--shadow-color);
+    background: linear-gradient(135deg, var(--primary-color-hover), var(--secondary-color));
     transform: scale(1.05);
   }
 

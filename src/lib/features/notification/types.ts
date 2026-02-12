@@ -1,6 +1,13 @@
 import type { Component } from 'svelte';
 
-export type NotificationType = string;
+export type NotificationType =
+  | 'success'
+  | 'info'
+  | 'warning'
+  | 'error'
+  | 'pwa-update'
+  | 'favorite-added'
+  | 'favorite-removed';
 export type NotificationPosition =
   | 'top-right'
   | 'top-left'
@@ -11,7 +18,7 @@ export type NotificationPosition =
 
 export interface NotificationAction {
   label: string;
-  onClick: () => void;
+  onClick: () => void | Promise<void>;
   variant?: 'primary' | 'secondary' | 'danger';
 }
 

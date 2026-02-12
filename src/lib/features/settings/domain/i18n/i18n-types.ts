@@ -119,6 +119,14 @@ type RootTranslation = {
      * S​h​o​w​ ​t​r​a​n​s​l​a​t​e​d​ ​s​u​b​t​i​t​l​e​s
      */
     showTranslated: string;
+    /**
+     * H​i​d​e​ ​t​r​a​n​s​l​i​t​e​r​a​t​i​o​n
+     */
+    hideTransliteration: string;
+    /**
+     * S​h​o​w​ ​t​r​a​n​s​l​i​t​e​r​a​t​i​o​n
+     */
+    showTransliteration: string;
   };
   lyricSelector: {
     /**
@@ -702,6 +710,57 @@ type RootTranslation = {
      * D​e​m​o​ ​v​i​d​e​o​s​ ​a​r​e​ ​n​o​w​ ​a​v​a​i​l​a​b​l​e​.​ ​T​o​ ​e​x​i​t​ ​d​e​m​o​ ​m​o​d​e​,​ ​o​p​e​n​ ​t​h​e​ ​m​e​n​u​ ​a​n​d​ ​s​e​l​e​c​t​ ​"​D​i​s​a​b​l​e​ ​d​e​m​o​ ​m​o​d​e​"​.
      */
     demoModeActivatedMessage: string;
+    /**
+     * T​r​a​n​s​l​i​t​e​r​a​t​i​o​n​ ​a​v​a​i​l​a​b​l​e
+     */
+    transliterationAvailable: string;
+    /**
+     * T​h​i​s​ ​s​o​n​g​ ​i​s​ ​i​n​ ​{​l​a​n​g​u​a​g​e​}​.​ ​E​n​a​b​l​e​ ​t​r​a​n​s​l​i​t​e​r​a​t​i​o​n​?
+     * @param {unknown} language
+     */
+    transliterationAvailableMessage: RequiredParams<'language'>;
+    /**
+     * E​n​a​b​l​e
+     */
+    transliterationActivate: string;
+    /**
+     * N​o​t​ ​n​o​w
+     */
+    transliterationLater: string;
+    transliterationLanguages: {
+      /**
+       * J​a​p​a​n​e​s​e
+       */
+      ja: string;
+      /**
+       * C​h​i​n​e​s​e
+       */
+      zh: string;
+      /**
+       * K​o​r​e​a​n
+       */
+      ko: string;
+      /**
+       * G​r​e​e​k
+       */
+      el: string;
+      /**
+       * R​u​s​s​i​a​n
+       */
+      ru: string;
+      /**
+       * A​r​a​b​i​c
+       */
+      ar: string;
+      /**
+       * H​e​b​r​e​w
+       */
+      he: string;
+      /**
+       * T​h​a​i
+       */
+      th: string;
+    };
   };
 };
 
@@ -809,6 +868,14 @@ export type TranslationFunctions = {
      * Show translated subtitles
      */
     showTranslated: () => LocalizedString;
+    /**
+     * Hide transliteration
+     */
+    hideTransliteration: () => LocalizedString;
+    /**
+     * Show transliteration
+     */
+    showTransliteration: () => LocalizedString;
   };
   lyricSelector: {
     /**
@@ -1381,6 +1448,56 @@ export type TranslationFunctions = {
      * Demo videos are now available. To exit demo mode, open the menu and select "Disable demo mode".
      */
     demoModeActivatedMessage: () => LocalizedString;
+    /**
+     * Transliteration available
+     */
+    transliterationAvailable: () => LocalizedString;
+    /**
+     * This song is in {language}. Enable transliteration?
+     */
+    transliterationAvailableMessage: (arg: { language: unknown }) => LocalizedString;
+    /**
+     * Enable
+     */
+    transliterationActivate: () => LocalizedString;
+    /**
+     * Not now
+     */
+    transliterationLater: () => LocalizedString;
+    transliterationLanguages: {
+      /**
+       * Japanese
+       */
+      ja: () => LocalizedString;
+      /**
+       * Chinese
+       */
+      zh: () => LocalizedString;
+      /**
+       * Korean
+       */
+      ko: () => LocalizedString;
+      /**
+       * Greek
+       */
+      el: () => LocalizedString;
+      /**
+       * Russian
+       */
+      ru: () => LocalizedString;
+      /**
+       * Arabic
+       */
+      ar: () => LocalizedString;
+      /**
+       * Hebrew
+       */
+      he: () => LocalizedString;
+      /**
+       * Thai
+       */
+      th: () => LocalizedString;
+    };
   };
 };
 

@@ -59,7 +59,8 @@ const junkSuffixes = [
   'official theme',
   'official ost',
   'official original soundtrack',
-  'official original mix'
+  'official original mix',
+  'clip officiel'
 ];
 
 const junkRegex = new RegExp(`\\s*[-–—|]?\\s*\\b(?:${junkSuffixes.join('|')})\\s*$`, 'gi');
@@ -217,8 +218,8 @@ const pipeline: PipelineStep[] = [
   removeEmojis,
   normalizeHandles,
   extractFeaturedFromBrackets,
-  removeBrackets,
   removeJunkSuffixesStep,
+  removeBrackets,
   splitArtistAndTrack,
   extractFeaturedFromParts,
   mergeFeaturedIntoArtist,

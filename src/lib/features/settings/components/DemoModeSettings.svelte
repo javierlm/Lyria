@@ -1,25 +1,25 @@
 <script lang="ts">
   import { demoStore } from './../stores/demoStore.svelte';
+  import ToggleSwitch from '$lib/features/ui/components/ToggleSwitch.svelte';
   import LL from '$i18n/i18n-svelte';
+
+  function handleToggle(checked: boolean) {
+    if (checked) {
+      demoStore.activateDemoMode();
+    } else {
+      demoStore.deactivateDemoMode();
+    }
+  }
 </script>
 
 <div class="demo-mode-settings">
   <div class="setting-row">
-    <label class="toggle-label" for="demo-mode-toggle">
-      <span class="label-text">
-        {$LL.demoMode.title()}
-      </span>
-      <div class="toggle-wrapper">
-        <input
-          type="checkbox"
-          id="demo-mode-toggle"
-          checked={demoStore.isDemoMode}
-          onchange={(e) =>
-            e.currentTarget.checked ? demoStore.activateDemoMode() : demoStore.deactivateDemoMode()}
-        />
-        <span class="toggle-slider"></span>
-      </div>
-    </label>
+    <ToggleSwitch
+      checked={demoStore.isDemoMode}
+      onchange={handleToggle}
+      id="demo-mode-toggle"
+      label={$LL.demoMode.title()}
+    />
   </div>
 
   <p class="description">{$LL.demoMode.description()}</p>
@@ -37,66 +37,6 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-  }
-
-  .toggle-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  .label-text {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--text-color);
-  }
-
-  .toggle-wrapper {
-    position: relative;
-    width: 36px;
-    height: 20px;
-  }
-
-  .toggle-wrapper input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--border-color);
-    transition: 0.3s;
-    border-radius: 20px;
-  }
-
-  .toggle-slider:before {
-    position: absolute;
-    content: '';
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background-color: var(--card-background);
-    transition: 0.3s;
-    border-radius: 50%;
-    box-shadow: 0 1px 3px var(--shadow-color);
-  }
-
-  input:checked + .toggle-slider {
-    background: var(--primary-color, #3a86ff);
-  }
-
-  input:checked + .toggle-slider:before {
-    transform: translateX(16px);
   }
 
   .description {

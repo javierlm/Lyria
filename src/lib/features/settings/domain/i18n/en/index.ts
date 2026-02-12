@@ -33,7 +33,9 @@ const en = {
     hideOriginal: 'Hide original subtitles',
     showOriginal: 'Show original subtitles',
     hideTranslated: 'Hide translated subtitles',
-    showTranslated: 'Show translated subtitles'
+    showTranslated: 'Show translated subtitles',
+    hideTransliteration: 'Hide transliteration',
+    showTransliteration: 'Show transliteration'
   },
   lyricSelector: {
     title: 'Select Lyrics',
@@ -202,7 +204,21 @@ const en = {
     urlCopyErrorMessage: 'Please try copying the link manually.',
     demoModeActivated: 'Demo mode activated',
     demoModeActivatedMessage:
-      'Demo videos are now available. To exit demo mode, open the menu and select "Disable demo mode".'
+      'Demo videos are now available. To exit demo mode, open the menu and select "Disable demo mode".',
+    transliterationAvailable: 'Transliteration available',
+    transliterationAvailableMessage: 'This song is in {language}. Enable transliteration?',
+    transliterationActivate: 'Enable',
+    transliterationLater: 'Not now',
+    transliterationLanguages: {
+      ja: 'Japanese',
+      zh: 'Chinese',
+      ko: 'Korean',
+      el: 'Greek',
+      ru: 'Russian',
+      ar: 'Arabic',
+      he: 'Hebrew',
+      th: 'Thai'
+    }
   }
 } satisfies Translation;
 

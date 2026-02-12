@@ -23,7 +23,17 @@ import {
 } from '$lib/shared/utils';
 import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
 import { goto } from '$app/navigation';
-import { notify } from '$lib/features/notification';
+import { get } from 'svelte/store';
+import { notify, notificationStore } from '$lib/features/notification';
+import LL from '$i18n/i18n-svelte';
+import {
+  transliterationStore,
+  isTransliterableLanguage,
+  markNotificationSeen,
+  hasSeenNotification,
+  setTransliterationEnabled
+} from '$lib/features/settings/stores/transliterationStore.svelte';
+import { transliterateLyrics } from './transliterationService';
 
 let animationFrameId: number | null = null;
 let lastSyncedTime = 0;
@@ -234,14 +244,9 @@ function updateFrame() {
 
     if (needsUpdate && newIndex !== playerState.currentLineIndex) {
       playerState.currentLineIndex = newIndex;
-      playerState.currentLine = newIndex !== -1 ? playerState.lines[newIndex].text : '';
-      playerState.currentTranslatedLine =
-        newIndex !== -1 ? playerState.translatedLines[newIndex]?.text || '' : '';
     }
   } else {
     playerState.currentLineIndex = -1;
-    playerState.currentLine = '';
-    playerState.currentTranslatedLine = '';
   }
 
   if (isPlayerPlaying && !playerState.isSeeking) {
@@ -334,8 +339,10 @@ function resetPlayerState() {
   playerState.track = '';
   playerState.lines = [];
   playerState.translatedLines = [];
-  playerState.currentLine = '';
-  playerState.currentTranslatedLine = '';
+  playerState.transliteratedLines = [];
+  playerState.transliterationAvailable = false;
+  playerState.transliterationLang = null;
+  playerState.showTransliteration = true;
   playerState.currentLineIndex = -1;
   playerState.isTranslatedTextReady = false;
   playerState.lyricsAreSynced = false;
@@ -479,7 +486,8 @@ async function fetchAndProcessLyrics(player: YT.Player, loadId?: number) {
             playerState.candidates = candidates;
           });
         }
-        await translateLyrics(getLanguage());
+        // Start translation and transliteration in parallel (non-blocking)
+        processTranslationAndTransliteration(result, videoData);
       }
       return;
     } catch (e) {
@@ -492,8 +500,90 @@ async function fetchAndProcessLyrics(player: YT.Player, loadId?: number) {
   updatePlayerState(result, videoData);
 
   if (result.found) {
-    await translateLyrics(getLanguage());
+    // Start translation and transliteration in parallel (non-blocking)
+    processTranslationAndTransliteration(result, videoData);
   }
+}
+
+// Validate that detected language matches the actual script in the text
+function validateDetectedLanguage(lang: string, text: string): boolean {
+  const langCode = lang.toLowerCase().split('-')[0];
+
+  // Map languages to their script patterns
+  const scriptPatterns: Record<string, RegExp> = {
+    ja: /[\u3040-\u309F\u30A0-\u30FF]/, // Hiragana/Katakana
+    zh: /[\u4E00-\u9FAF]/, // Han characters
+    ko: /[\uAC00-\uD7AF]/, // Hangul
+    el: /[\u0370-\u03FF]/, // Greek
+    ru: /[\u0400-\u04FF]/, // Cyrillic (covers Russian, Ukrainian, Bulgarian, etc.)
+    uk: /[\u0400-\u04FF]/, // Cyrillic
+    bg: /[\u0400-\u04FF]/, // Cyrillic
+    sr: /[\u0400-\u04FF]/, // Cyrillic
+    mk: /[\u0400-\u04FF]/, // Cyrillic
+    ar: /[\u0600-\u06FF]/, // Arabic
+    he: /[\u0590-\u05FF]/, // Hebrew
+    th: /[\u0E00-\u0E7F]/, // Thai
+    hi: /[\u0900-\u097F]/, // Devanagari (Hindi)
+    bn: /[\u0980-\u09FF]/, // Bengali
+    ta: /[\u0B80-\u0BFF]/, // Tamil
+    te: /[\u0C00-\u0C7F]/, // Telugu
+    ka: /[\u10A0-\u10FF]/, // Georgian
+    hy: /[\u0530-\u058F]/, // Armenian
+    yi: /[\u0590-\u05FF]/ // Yiddish (uses Hebrew script)
+  };
+
+  const pattern = scriptPatterns[langCode];
+  if (!pattern) {
+    // For languages without specific script patterns (like Latin-based languages)
+    // we can't validate, so we trust the detection
+    return true;
+  }
+
+  return pattern.test(text);
+}
+
+async function processTranslationAndTransliteration(
+  result: LyricsResult,
+  videoData: YT.VideoData
+): Promise<void> {
+  const videoId = playerState.videoId || videoData.video_id || '';
+
+  // Run translation and language detection + transliteration in parallel
+  await Promise.all([
+    // Translation
+    translateLyrics(getLanguage()).catch((error) => {
+      console.error('[Translation] Error during translation:', error);
+    }),
+
+    // Transliteration (after language detection)
+    (async () => {
+      try {
+        const detectedLang = await frontendTranslationService.detectSourceLanguage(
+          result.lyrics.map((l) => l.text)
+        );
+
+        const lyricsText = result.lyrics.map((l) => l.text).join(' ');
+
+        // Validate Chrome AI detection against actual script
+        let validatedLang: string | undefined;
+        if (detectedLang) {
+          if (validateDetectedLanguage(detectedLang, lyricsText)) {
+            validatedLang = detectedLang;
+          }
+        }
+
+        // Fall back to script detection if Chrome AI was wrong or not available
+        const lang = validatedLang || detectScriptFromText(lyricsText);
+
+        if (lang) {
+          playerState.detectedSourceLanguage = lang;
+          await checkAndSetupTransliteration(lang, videoId);
+        }
+      } catch (error) {
+        console.error('[Transliteration] Error during setup:', error);
+      }
+    })()
+  ]);
 }
 
 async function searchLyricsWithStrategies(
@@ -633,16 +723,110 @@ function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
   if (result.candidates) {
     playerState.candidates = result.candidates;
   }
+}
 
-  // Attempt to detect language immediately if found
-  if (result.found && result.lyrics.length > 0) {
-    frontendTranslationService
-      .detectSourceLanguage(result.lyrics.map((l) => l.text))
-      .then((lang) => {
-        if (lang) {
-          playerState.detectedSourceLanguage = lang;
-        }
-      });
+// Simple script detection as fallback when Chrome AI is not available
+const SCRIPT_DETECTION_THRESHOLD = 0.1; // Minimum 10% of text must be non-Latin
+
+function detectScriptFromText(text: string): string | undefined {
+  const totalChars = text.length;
+  if (totalChars === 0) return undefined;
+
+  // Define script patterns with their language codes
+  const scripts: { pattern: RegExp; lang: string; name: string }[] = [
+    { pattern: /[\u3040-\u309F\u30A0-\u30FF]/g, lang: 'ja', name: 'Japanese' },
+    { pattern: /[\u4E00-\u9FAF]/g, lang: 'zh', name: 'Chinese' },
+    { pattern: /[\uAC00-\uD7AF]/g, lang: 'ko', name: 'Korean' },
+    { pattern: /[\u0370-\u03FF]/g, lang: 'el', name: 'Greek' },
+    { pattern: /[\u0400-\u04FF]/g, lang: 'ru', name: 'Cyrillic' },
+    { pattern: /[\u0600-\u06FF]/g, lang: 'ar', name: 'Arabic' },
+    { pattern: /[\u0590-\u05FF]/g, lang: 'he', name: 'Hebrew' },
+    { pattern: /[\u0E00-\u0E7F]/g, lang: 'th', name: 'Thai' }
+  ];
+
+  // Count characters for each script
+  for (const script of scripts) {
+    const matches = text.match(script.pattern);
+    if (matches && matches.length > 0) {
+      const percentage = matches.length / totalChars;
+
+      // Only return this language if it exceeds the threshold
+      if (percentage >= SCRIPT_DETECTION_THRESHOLD) {
+        return script.lang;
+      }
+    }
+  }
+
+  // Default to undefined (will not trigger transliteration)
+  return undefined;
+}
+
+async function checkAndSetupTransliteration(language: string, videoId: string) {
+  // Always reset state first to ensure clean state
+  playerState.transliterationAvailable = false;
+  playerState.transliterationLang = null;
+
+  const langCode = language.toLowerCase().split('-')[0];
+
+  console.log('[Transliteration] Checking language:', language, 'Video ID:', videoId);
+  console.log('[Transliteration] Is transliterable?', isTransliterableLanguage(langCode));
+
+  if (!isTransliterableLanguage(langCode)) {
+    console.log('[Transliteration] Language not transliterable');
+    return;
+  }
+
+  playerState.transliterationAvailable = true;
+  playerState.transliterationLang = langCode;
+
+  console.log('[Transliteration] Available! Enabled:', transliterationStore.enabled);
+
+  // If transliteration is enabled, process the lyrics
+  if (transliterationStore.enabled) {
+    try {
+      const result = await transliterateLyrics(playerState.lines, langCode);
+      if (result.success) {
+        playerState.transliteratedLines = result.lines;
+      }
+    } catch (error) {
+      console.error('Error transliterating lyrics:', error);
+    }
+  } else if (!hasSeenNotification(videoId)) {
+    const $LL = get(LL);
+
+    const langKey = langCode as keyof typeof $LL.notifications.transliterationLanguages;
+    const langName = $LL.notifications.transliterationLanguages[langKey]() || langCode;
+
+    notificationStore.create(
+      'info',
+      $LL.notifications.transliterationAvailable(),
+      $LL.notifications.transliterationAvailableMessage({ language: langName }),
+      {
+        actions: [
+          {
+            label: $LL.notifications.transliterationActivate(),
+            onClick: async () => {
+              setTransliterationEnabled(true);
+              markNotificationSeen(videoId);
+              try {
+                const result = await transliterateLyrics(playerState.lines, langCode);
+                if (result.success) {
+                  playerState.transliteratedLines = result.lines;
+                  playerState.showTransliteration = true;
+                }
+              } catch (error) {
+                console.error('Error transliterating lyrics:', error);
+              }
+            }
+          },
+          {
+            label: $LL.notifications.transliterationLater(),
+            onClick: () => markNotificationSeen(videoId)
+          }
+        ],
+        duration: null
+      }
+    );
   }
 }
 
@@ -729,9 +913,6 @@ export function seekTo(time: number) {
 
       if (activeIndex !== playerState.currentLineIndex) {
         playerState.currentLineIndex = activeIndex;
-        playerState.currentLine = activeIndex !== -1 ? playerState.lines[activeIndex].text : '';
-        playerState.currentTranslatedLine =
-          activeIndex !== -1 ? playerState.translatedLines[activeIndex]?.text || '' : '';
       }
     }
   }
@@ -866,6 +1047,10 @@ export async function selectLyric(id: number) {
   playerState.lyricsState = LyricsStates.Loading;
   playerState.lines = [];
   playerState.translatedLines = [];
+  playerState.transliteratedLines = [];
+  playerState.transliterationAvailable = false;
+  playerState.transliterationLang = null;
+  playerState.showTransliteration = true;
   playerState.isTranslatedTextReady = false;
 
   try {

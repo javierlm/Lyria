@@ -33,7 +33,9 @@ const es = {
     hideOriginal: 'Ocultar subtítulos originales',
     showOriginal: 'Mostrar subtítulos originales',
     hideTranslated: 'Ocultar subtítulos traducidos',
-    showTranslated: 'Mostrar subtítulos traducidos'
+    showTranslated: 'Mostrar subtítulos traducidos',
+    hideTransliteration: 'Ocultar transliteración',
+    showTransliteration: 'Mostrar transliteración'
   },
   lyricSelector: {
     title: 'Seleccionar Letra',
@@ -202,7 +204,21 @@ const es = {
     urlCopyErrorMessage: 'Copia el enlace manualmente.',
     demoModeActivated: 'Modo demo activado',
     demoModeActivatedMessage:
-      'Los videos de demo están disponibles. Para salir del modo demo, abre el menú y selecciona "Desactivar modo demo".'
+      'Los videos de demo están disponibles. Para salir del modo demo, abre el menú y selecciona "Desactivar modo demo".',
+    transliterationAvailable: 'Transliteración disponible',
+    transliterationAvailableMessage: 'Esta canción está en {language}. ¿Activar transliteración?',
+    transliterationActivate: 'Activar',
+    transliterationLater: 'Ahora no',
+    transliterationLanguages: {
+      ja: 'japonés',
+      zh: 'chino',
+      ko: 'coreano',
+      el: 'griego',
+      ru: 'ruso',
+      ar: 'árabe',
+      he: 'hebreo',
+      th: 'tailandés'
+    }
   }
 } satisfies Translation;
 

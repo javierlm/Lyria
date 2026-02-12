@@ -44,6 +44,10 @@ const testCases = [
   {
     input: 'Adele - Rolling in the Deep (Official Video)',
     expected: { artist: 'Adele', track: 'Rolling in the Deep' }
+  },
+  {
+    input: 'Aya Nakamura - Djadja (Clip officiel)',
+    expected: { artist: 'Aya Nakamura', track: 'Djadja' }
   }
 ];
 
