@@ -1,4 +1,5 @@
-import type { IVideoRepository, RecentVideo, FavoriteVideo } from '../domain/IVideoRepository';
+import { BaseVideoRepository } from '../domain/BaseVideoRepository';
+import type { RecentVideo, FavoriteVideo } from '../domain/IVideoRepository';
 import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 
 const VIDEO_DELAYS_STORE = 'videoDelays';
@@ -6,14 +7,16 @@ const RECENT_VIDEOS_STORE = 'recentVideos';
 const FAVORITE_VIDEOS_STORE = 'favoriteVideos';
 const RECENT_VIDEOS_LIMIT = 100;
 
-export abstract class BaseIndexedDBRepository implements IVideoRepository {
+export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
   protected db: IDBDatabase | null = null;
 
   constructor(
     protected readonly dbName: string,
     protected readonly dbVersion: number,
     protected readonly needsMigration: boolean
-  ) {}
+  ) {
+    super();
+  }
 
   close(): void {
     if (this.db) {
