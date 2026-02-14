@@ -22,39 +22,33 @@ Built with **Svelte 5** and **SvelteKit**, Lyria leverages the latest web techno
 
 - [Node.js](https://nodejs.org/) (v20 or higher recommended)
 - [pnpm](https://pnpm.io/)
-- [Turso CLI](https://docs.turso.tech/cli/installation) (for local database development)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for local database with fuzzy search)
 
-#### Installing Turso CLI
+#### Optional: local fuzzy search with Docker (recommended)
 
-**Linux/macOS:**
+If you want fuzzy search available while running the app locally, start a local `sqld` container with `fuzzy.so` preloaded as a trusted extension.
 
-```sh
-curl -sSfL https://get.tur.so/install.sh | bash
-```
-
-**Windows with WSL (Recommended):**
-
-1. Install Turso in WSL:
-
-   ```sh
-   wsl bash -c 'curl -sSfL https://get.tur.so/install.sh | bash'
-   ```
-
-2. Add a PowerShell function to use Turso from PowerShell:
+1. Start local fuzzy-enabled database:
 
    ```powershell
-   # Add to your PowerShell profile
-   function turso { wsl ~/.turso/turso @args }
+   pnpm run db:dev
    ```
 
-3. Verify installation:
+2. Run app in another terminal:
+
    ```powershell
-   turso --version
+   pnpm run dev
    ```
 
-> **Note:** Windows native installation via PowerShell installer exists but may install older versions. WSL installation is recommended for the latest version.
->
-> **Important for WSL users:** After installation, make sure Turso is in your WSL PATH by adding it to `~/.profile` (this is in addition to `~/.bashrc`). The project includes a cross-platform wrapper script (`scripts/turso-wrapper.js`) that automatically handles Turso execution on both Windows (via WSL) and Unix systems, so `pnpm run db:dev` works seamlessly on all platforms.
+3. Stop fuzzy local database when done:
+
+   ```powershell
+   pnpm run db:dev:stop
+   ```
+
+> The app uses `DATABASE_LOCAL_URL=http://127.0.0.1:8080` by default, so no extra change is required.
+
+> If you need Turso CLI for remote database management, install it separately from https://docs.turso.tech/cli/installation.
 
 ### Installation
 
@@ -132,13 +126,18 @@ The application will be available at `http://localhost:5173`.
 ### Available Scripts
 
 - `pnpm run dev`: Starts the development server.
-- `pnpm run dev:full`: Starts local libSQL database and app together.
+- `pnpm run dev:full`: Starts local Docker database and app together.
 - `pnpm run build`: Creates a production build.
 - `pnpm run preview`: Previews the production build locally.
 - `pnpm run check`: Runs Svelte check for type-checking.
 - `pnpm run lint`: Lints the codebase.
 - `pnpm run format`: Formats the code using Prettier.
-- `pnpm run db:dev`: Starts local libSQL server (Turso CLI) with `local.db`.
+- `pnpm run test:db`: Runs integration tests against an isolated local test database.
+- `pnpm run test:db:strict`: Runs database integration tests requiring fuzzy support.
+- `pnpm run test:db:watch`: Watches integration tests against an isolated local test database.
+- `pnpm run test:db:docker`: Runs strict database tests in Docker (app stays local).
+- `pnpm run db:dev`: Starts local `sqld` with SQLean fuzzy extension in Docker.
+- `pnpm run db:dev:stop`: Stops local fuzzy Docker database.
 - `pnpm run db:generate`: Generates Drizzle migrations.
 - `pnpm run db:migrate`: Applies Drizzle migrations.
 - `pnpm run auth:generate`: Generates Better Auth schema artifacts.
@@ -146,7 +145,17 @@ The application will be available at `http://localhost:5173`.
 - `pnpm run typesafe-i18n`: Generates i18n types.
 - `pnpm run sync:cache`: Syncs translation cache from remote to local.
 
-> The app validates FTS5 and fuzzy (`fuzzy_translit`, `fuzzy_jarowin`, `fuzzy_damlev`) on startup. If those are missing, start the database with Turso/libSQL (`pnpm run db:dev`).
+> The app validates FTS5 and fuzzy (`fuzzy_translit`, `fuzzy_jarowin`, `fuzzy_damlev`) on startup. If those are missing, make sure the local Docker database is running (`pnpm run db:dev`).
+
+### Database tests with Docker
+
+You can keep running the app locally (`pnpm run dev`) and execute strict database tests in a reproducible Docker environment:
+
+```sh
+pnpm run test:db:docker
+```
+
+This command builds a test image, starts a temporary local `sqld` server with SQLean fuzzy extension, and runs integration tests with fuzzy support required.
 
 ## 📦 Building for Production
 

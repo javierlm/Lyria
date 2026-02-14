@@ -1,0 +1,13 @@
+services:
+  db-fuzzy:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.db-service
+      target: dev-db
+    ports:
+      - '8080:8080'
+    volumes:
+      - sqld-dev-data:/var/lib/sqld
+
+volumes:
+  sqld-dev-data:

@@ -1,8 +1,11 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default defineConfig({
+  test: {
+    exclude: ['**/node_modules/**', '**/.git/**', 'src/lib/tests/server/**/*.integration.test.ts']
+  },
   server: {
     host: '0.0.0.0',
     port: 5173

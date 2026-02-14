@@ -28,5 +28,7 @@ vite.config.ts.timestamp-*
 /cache/
 local.db
 local.db-*
+local.test.db
+local.test.db-*
 
 .opencode

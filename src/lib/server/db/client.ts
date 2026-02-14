@@ -4,15 +4,16 @@ import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 
 const DEFAULT_LOCAL_LIBSQL_URL = 'http://127.0.0.1:8080';
+const runtimeEnv = process.env;
 
 function resolveDatabaseUrl(): string {
-  const mode = env.DATABASE_MODE ?? 'auto';
+  const mode = runtimeEnv.DATABASE_MODE ?? env.DATABASE_MODE ?? 'auto';
 
   if (dev && mode !== 'remote') {
-    return env.DATABASE_LOCAL_URL ?? DEFAULT_LOCAL_LIBSQL_URL;
+    return runtimeEnv.DATABASE_LOCAL_URL ?? env.DATABASE_LOCAL_URL ?? DEFAULT_LOCAL_LIBSQL_URL;
   }
 
-  const remoteUrl = env.DATABASE_URL;
+  const remoteUrl = runtimeEnv.DATABASE_URL ?? env.DATABASE_URL;
   if (!remoteUrl) {
     throw new Error('DATABASE_URL is required when using remote database mode');
   }
@@ -21,11 +22,14 @@ function resolveDatabaseUrl(): string {
 }
 
 const databaseUrl = resolveDatabaseUrl();
-const shouldUseAuthToken = !(dev && (env.DATABASE_MODE ?? 'auto') !== 'remote');
+const mode = runtimeEnv.DATABASE_MODE ?? env.DATABASE_MODE ?? 'auto';
+const shouldUseAuthToken = !(dev && mode !== 'remote');
 
 export const libsqlClient = createClient({
   url: databaseUrl,
-  authToken: shouldUseAuthToken ? env.DATABASE_AUTH_TOKEN : undefined
+  authToken: shouldUseAuthToken
+    ? (runtimeEnv.DATABASE_AUTH_TOKEN ?? env.DATABASE_AUTH_TOKEN)
+    : undefined
 });
 
 export const db = drizzle({ client: libsqlClient });
