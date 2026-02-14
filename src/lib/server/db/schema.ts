@@ -10,6 +10,7 @@ export const videos = sqliteTable(
     thumbnailUrl: text('thumbnail_url'),
     artistNormalized: text('artist_normalized').notNull(),
     trackNormalized: text('track_normalized').notNull(),
+    searchTextNormalized: text('search_text_normalized').notNull(),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -20,7 +21,9 @@ export const videos = sqliteTable(
   },
   (table) => [
     index('videos_artist_normalized_idx').on(table.artistNormalized),
-    index('videos_track_normalized_idx').on(table.trackNormalized)
+    index('videos_track_normalized_idx').on(table.trackNormalized),
+    index('videos_search_text_normalized_idx').on(table.searchTextNormalized),
+    index('videos_updated_at_idx').on(table.updatedAt)
   ]
 );
 

@@ -146,6 +146,8 @@ The application will be available at `http://localhost:5173`.
 - `pnpm run typesafe-i18n`: Generates i18n types.
 - `pnpm run sync:cache`: Syncs translation cache from remote to local.
 
+> The app validates FTS5 and fuzzy (`fuzzy_translit`, `fuzzy_jarowin`, `fuzzy_damlev`) on startup. If those are missing, start the database with Turso/libSQL (`pnpm run db:dev`).
+
 ## 📦 Building for Production
 
 To create a production version of the app, run:

@@ -38,6 +38,12 @@ interface SearchRow {
   lastWatchedAt: number | null;
 }
 
+interface NormalizedVideoFields {
+  artistNormalized: string;
+  trackNormalized: string;
+  searchTextNormalized: string;
+}
+
 function normalizeSearchText(value: string): string {
   return value
     .toLowerCase()
@@ -46,6 +52,17 @@ function normalizeSearchText(value: string): string {
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function buildNormalizedVideoFields(artist: string, track: string): NormalizedVideoFields {
+  const artistNormalized = normalizeSearchText(artist);
+  const trackNormalized = normalizeSearchText(track);
+
+  return {
+    artistNormalized,
+    trackNormalized,
+    searchTextNormalized: `${artistNormalized} ${trackNormalized}`.trim()
+  };
 }
 
 function resolveVideoId(videoInput: string): string | null {
@@ -123,6 +140,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
   private async upsertVideo(metadata: VideoMetadata): Promise<void> {
     const artist = metadata.artist.trim() || 'Unknown Artist';
     const track = metadata.track.trim() || 'Unknown Track';
+    const normalizedFields = buildNormalizedVideoFields(artist, track);
 
     await db
       .insert(videos)
@@ -131,8 +149,9 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         artist,
         track,
         thumbnailUrl: metadata.thumbnailUrl,
-        artistNormalized: normalizeSearchText(artist),
-        trackNormalized: normalizeSearchText(track),
+        artistNormalized: normalizedFields.artistNormalized,
+        trackNormalized: normalizedFields.trackNormalized,
+        searchTextNormalized: normalizedFields.searchTextNormalized,
         updatedAt: new Date()
       })
       .onConflictDoUpdate({
@@ -141,8 +160,9 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
           artist,
           track,
           thumbnailUrl: metadata.thumbnailUrl,
-          artistNormalized: normalizeSearchText(artist),
-          trackNormalized: normalizeSearchText(track),
+          artistNormalized: normalizedFields.artistNormalized,
+          trackNormalized: normalizedFields.trackNormalized,
+          searchTextNormalized: normalizedFields.searchTextNormalized,
           updatedAt: new Date()
         }
       });
@@ -438,11 +458,19 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
       return [];
     }
 
+    const normalizedTokens = normalizedQuery.split(' ').filter((token) => token.length > 0);
+    if (normalizedTokens.length === 0) {
+      return [];
+    }
+
     const safeLimit = Math.max(1, Math.min(limit, MAX_SEARCH_LIMIT));
     const perSourceLimit = safeLimit * FUZZY_SOURCE_LIMIT_MULTIPLIER;
+    const recentFallbackLimit = Math.max(safeLimit, 20);
     const userIdArg = this.userId ?? null;
     const exactVideoId = resolveVideoId(query) ?? '';
     const ftsQuery = buildFtsQuery(normalizedQuery);
+    const firstToken = normalizedTokens[0];
+    const fuzzyEnabled = normalizedQuery.length >= 3 ? 1 : 0;
 
     const rows = await libsqlClient.execute({
       sql: `
@@ -478,6 +506,50 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
           ORDER BY bm25(videos_fts) ASC
           LIMIT ?
         ),
+        prefix_results AS (
+          SELECT
+            v.video_id AS videoId,
+            v.artist AS artist,
+            v.track AS track,
+            v.thumbnail_url AS thumbnailUrl,
+            u.is_favorite AS isFavorite,
+            u.last_watched_at AS lastWatchedAt,
+            200.0 AS score,
+            2 AS priority
+          FROM videos v
+          LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
+          WHERE ? <> ''
+            AND (
+              v.search_text_normalized LIKE (? || '%')
+              OR v.search_text_normalized LIKE ('% ' || ? || '%')
+            )
+          ORDER BY v.updated_at DESC
+          LIMIT ?
+        ),
+        recent_results AS (
+          SELECT
+            v.video_id AS videoId,
+            v.artist AS artist,
+            v.track AS track,
+            v.thumbnail_url AS thumbnailUrl,
+            u.is_favorite AS isFavorite,
+            u.last_watched_at AS lastWatchedAt,
+            20.0 AS score,
+            4 AS priority
+          FROM videos v
+          LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
+          ORDER BY v.updated_at DESC
+          LIMIT ?
+        ),
+        candidate_pool AS (
+          SELECT videoId FROM exact_results
+          UNION
+          SELECT videoId FROM fts_results
+          UNION
+          SELECT videoId FROM prefix_results
+          UNION
+          SELECT videoId FROM recent_results
+        ),
         fuzzy_raw AS (
           SELECT
             v.video_id AS videoId,
@@ -496,6 +568,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
             ) AS damlev,
             CASE WHEN ? <> '' AND lower(v.video_id) = lower(?) THEN 1 ELSE 0 END AS exactId
           FROM videos v
+          INNER JOIN candidate_pool cp ON cp.videoId = v.video_id
           LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
         ),
         fuzzy_results AS (
@@ -507,9 +580,9 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
             isFavorite,
             lastWatchedAt,
             (jarowin * 120.0) - (damlev * 3.0) + (exactId * 300.0) AS score,
-            2 AS priority
+            3 AS priority
           FROM fuzzy_raw
-          WHERE jarowin >= ? OR damlev <= ? OR exactId = 1
+          WHERE ? = 1 AND (jarowin >= ? OR damlev <= ? OR exactId = 1)
           ORDER BY score DESC
           LIMIT ?
         ),
@@ -519,6 +592,9 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
           UNION ALL
           SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, score, priority
           FROM fts_results
+          UNION ALL
+          SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, score, priority
+          FROM prefix_results
           UNION ALL
           SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, score, priority
           FROM fuzzy_results
@@ -553,11 +629,19 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         ftsQuery,
         ftsQuery,
         perSourceLimit,
+        userIdArg,
+        firstToken,
+        firstToken,
+        firstToken,
+        perSourceLimit,
+        userIdArg,
+        recentFallbackLimit,
         normalizedQuery,
         normalizedQuery,
         exactVideoId,
         exactVideoId,
         userIdArg,
+        fuzzyEnabled,
         FUZZY_JAROWIN_THRESHOLD,
         FUZZY_DAMLEV_THRESHOLD,
         perSourceLimit,

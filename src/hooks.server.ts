@@ -1,5 +1,6 @@
 import { detectLocale } from '$i18n/i18n-util';
 import { auth } from '$lib/server/auth';
+import { ensureDatabaseCapabilities } from '$lib/server/db/capabilities';
 import { building } from '$app/environment';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 import type { Handle } from '@sveltejs/kit';
@@ -13,6 +14,10 @@ export const handle: Handle = async ({ event, resolve }) => {
   );
 
   event.locals.locale = locale;
+
+  if (!building) {
+    await ensureDatabaseCapabilities();
+  }
 
   try {
     const session = await auth.api.getSession({
