@@ -9,10 +9,34 @@ declare namespace svelte.JSX {
 }
 
 declare global {
+  interface AuthSession {
+    id: string;
+    userId: string;
+    expiresAt: Date;
+  }
+
+  interface AuthUser {
+    id: string;
+    name: string;
+    email: string;
+    image?: string | null;
+    emailVerified?: boolean;
+  }
+
   namespace App {
     // interface Error {}
-    // interface Locals {}
-    // interface PageData {}
+    interface Locals {
+      locale?: string;
+      session?: AuthSession;
+      user?: AuthUser;
+    }
+
+    interface PageData {
+      locale: string;
+      session?: AuthSession;
+      user?: AuthUser;
+    }
+
     // interface Platform {}
   }
 
@@ -26,6 +50,21 @@ declare module '$env/static/private' {
   export const VERCEL: string;
   export const UPSTASH_REDIS_REST_URL: string;
   export const UPSTASH_REDIS_REST_TOKEN: string;
+  export const BETTER_AUTH_SECRET: string;
+  export const BETTER_AUTH_URL: string;
+  export const GOOGLE_CLIENT_ID: string;
+  export const GOOGLE_CLIENT_SECRET: string;
+  export const MICROSOFT_CLIENT_ID: string;
+  export const MICROSOFT_CLIENT_SECRET: string;
+  export const MICROSOFT_TENANT_ID: string;
+  export const SPOTIFY_CLIENT_ID: string;
+  export const SPOTIFY_CLIENT_SECRET: string;
+  export const DEEZER_CLIENT_ID: string;
+  export const DEEZER_CLIENT_SECRET: string;
+  export const DATABASE_MODE: string;
+  export const DATABASE_URL: string;
+  export const DATABASE_AUTH_TOKEN: string;
+  export const DATABASE_LOCAL_URL: string;
 }
 
 export {};

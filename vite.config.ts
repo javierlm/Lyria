@@ -8,7 +8,7 @@ export default defineConfig({
     port: 5173
   },
   optimizeDeps: {
-    include: ['phosphor-svelte', '@fontsource/inter', 'typesafe-i18n', 'workbox-window'],
+    include: ['phosphor-svelte', 'typesafe-i18n', 'workbox-window'],
     exclude: ['cld3-asm']
   },
   ssr: {
