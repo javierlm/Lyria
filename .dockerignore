@@ -1,0 +1,10 @@
+node_modules
+.git
+.svelte-kit
+build
+dist
+cache
+local.db
+local.db-*
+local.test.db
+local.test.db-*

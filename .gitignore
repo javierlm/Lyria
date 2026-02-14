@@ -26,5 +26,9 @@ vite.config.ts.timestamp-*
 
 .vercel
 /cache/
+local.db
+local.db-*
+local.test.db
+local.test.db-*
 
 .opencode

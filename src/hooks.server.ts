@@ -1,4 +1,8 @@
 import { detectLocale } from '$i18n/i18n-util';
+import { auth } from '$lib/server/auth';
+import { ensureDatabaseCapabilities } from '$lib/server/db/capabilities';
+import { building } from '$app/environment';
+import { svelteKitHandler } from 'better-auth/svelte-kit';
 import type { Handle } from '@sveltejs/kit';
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -9,7 +13,32 @@ export const handle: Handle = async ({ event, resolve }) => {
     () => event.request.headers.get('accept-language')?.split(',') ?? []
   );
 
-  return resolve(event, {
-    transformPageChunk: ({ html }) => html.replace('%lang%', locale)
+  event.locals.locale = locale;
+
+  if (!building) {
+    await ensureDatabaseCapabilities();
+  }
+
+  try {
+    const session = await auth.api.getSession({
+      headers: event.request.headers
+    });
+
+    if (session) {
+      event.locals.session = session.session;
+      event.locals.user = session.user;
+    }
+  } catch (error) {
+    console.warn('[auth] Session lookup failed, continuing without session', error);
+  }
+
+  return svelteKitHandler({
+    event,
+    resolve: (authEvent) =>
+      resolve(authEvent, {
+        transformPageChunk: ({ html }) => html.replace('%lang%', locale)
+      }),
+    auth,
+    building
   });
 };
