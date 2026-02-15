@@ -34,3 +34,5 @@ local.test.db-*
 .opencode
 
 meta/
+
+.vercel

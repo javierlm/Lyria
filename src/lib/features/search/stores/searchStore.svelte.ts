@@ -1,7 +1,6 @@
 import { videoService } from '$lib/features/video/services/videoService';
-import type { RecentVideo } from '$lib/features/video/domain/IVideoRepository';
 import { extractVideoId } from '$lib/shared/utils';
-import { SvelteMap } from 'svelte/reactivity';
+import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 type VideoSource = 'user-recent' | 'user-favorite' | 'catalog' | 'ghost';
 
@@ -26,7 +25,7 @@ export type VideoItem = {
   source: VideoSource;
 };
 
-class SearchStore {
+export class SearchStore {
   showSearchField = $state(false);
   showRecentVideos = $state(false);
   recentVideos: VideoItem[] = $state([]);
@@ -39,6 +38,153 @@ class SearchStore {
 
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly DEBOUNCE_DELAY = 300;
+  private readonly MIN_SEARCH_LENGTH = 3;
+  private readonly SINGLE_TERM_FUZZY_MIN_LENGTH = 4;
+  private readonly SINGLE_TERM_FUZZY_MAX_DISTANCE = 1;
+
+  private isValidSearch(query: string): boolean {
+    return query.trim().length >= this.MIN_SEARCH_LENGTH;
+  }
+
+  private getSearchTerms(query: string): string[] {
+    return query
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((term) => term.length > 0);
+  }
+
+  private buildSearchableText(video: Pick<VideoItem, 'artist' | 'track'>): string {
+    return `${video.artist?.toLowerCase() || ''} ${video.track?.toLowerCase() || ''}`;
+  }
+
+  private normalizeToken(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  private tokenizeSearchableText(searchableText: string): string[] {
+    return searchableText
+      .split(/\s+/)
+      .map((token) => this.normalizeToken(token))
+      .filter((token) => token.length > 0);
+  }
+
+  private shouldUseSingleTermFuzzy(searchTerms: string[]): boolean {
+    if (searchTerms.length !== 1) {
+      return false;
+    }
+
+    const normalizedTerm = this.normalizeToken(searchTerms[0]);
+    return normalizedTerm.length >= this.SINGLE_TERM_FUZZY_MIN_LENGTH;
+  }
+
+  private levenshteinDistance(a: string, b: string, maxDistance: number): number {
+    if (a === b) {
+      return 0;
+    }
+
+    if (Math.abs(a.length - b.length) > maxDistance) {
+      return maxDistance + 1;
+    }
+
+    const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+
+    for (let i = 1; i <= a.length; i++) {
+      let diagonal = previous[0];
+      previous[0] = i;
+
+      let left = i;
+      let smallestInRow = left;
+
+      for (let j = 1; j <= b.length; j++) {
+        const up = previous[j];
+        const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1;
+        const value = Math.min(up + 1, left + 1, diagonal + substitutionCost);
+
+        diagonal = up;
+        previous[j] = value;
+        left = value;
+
+        if (value < smallestInRow) {
+          smallestInRow = value;
+        }
+      }
+
+      if (smallestInRow > maxDistance) {
+        return maxDistance + 1;
+      }
+    }
+
+    return previous[b.length];
+  }
+
+  private isSingleTermFuzzyMatch(searchTerm: string, candidate: string): boolean {
+    if (candidate.includes(searchTerm)) {
+      return true;
+    }
+
+    return (
+      this.levenshteinDistance(searchTerm, candidate, this.SINGLE_TERM_FUZZY_MAX_DISTANCE) <=
+      this.SINGLE_TERM_FUZZY_MAX_DISTANCE
+    );
+  }
+
+  private matchesSearch(
+    video: Pick<VideoItem, 'artist' | 'track'>,
+    searchTerms: string[]
+  ): boolean {
+    const searchableText = this.buildSearchableText(video);
+
+    if (searchTerms.every((term) => searchableText.includes(term))) {
+      return true;
+    }
+
+    if (!this.shouldUseSingleTermFuzzy(searchTerms)) {
+      return false;
+    }
+
+    const fuzzyTerm = this.normalizeToken(searchTerms[0]);
+    if (!fuzzyTerm) {
+      return false;
+    }
+
+    return this.tokenizeSearchableText(searchableText).some((token) =>
+      this.isSingleTermFuzzyMatch(fuzzyTerm, token)
+    );
+  }
+
+  private resolveSource(isFavorite?: boolean, timestamp?: number | null): VideoSource {
+    if (isFavorite) {
+      return 'user-favorite';
+    }
+
+    if (timestamp != null) {
+      return 'user-recent';
+    }
+
+    return 'catalog';
+  }
+
+  private getSourcePriority(source: VideoSource): number {
+    if (source === 'user-favorite') {
+      return 3;
+    }
+
+    if (source === 'user-recent') {
+      return 2;
+    }
+
+    return 1;
+  }
+
+  private compareBySourceAndTimestamp(a: VideoItem, b: VideoItem): number {
+    const priorityDiff = this.getSourcePriority(b.source) - this.getSourcePriority(a.source);
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    return (b.timestamp ?? 0) - (a.timestamp ?? 0);
+  }
 
   constructor() {}
 
@@ -64,11 +210,10 @@ class SearchStore {
   }
 
   searchVideos(query: string): VideoItem[] {
-    if (!query.trim() || query.trim().length < 2) {
+    if (!this.isValidSearch(query)) {
       return this.getBaseVideos();
     }
 
-    const lowerQuery = query.toLowerCase().trim();
     const videoId = extractVideoId(query);
 
     if (videoId) {
@@ -76,16 +221,13 @@ class SearchStore {
     }
 
     const baseVideos = this.getBaseVideos();
-    const searchTerms = lowerQuery.split(/\s+/).filter((term) => term.length > 0);
+    const searchTerms = this.getSearchTerms(query);
 
     if (searchTerms.length === 0) {
       return baseVideos;
     }
 
-    return baseVideos.filter((video) => {
-      const combinedText = `${video.artist?.toLowerCase() || ''} ${video.track?.toLowerCase() || ''}`;
-      return searchTerms.every((term) => combinedText.includes(term));
-    });
+    return baseVideos.filter((video) => this.matchesSearch(video, searchTerms));
   }
 
   async searchGlobalVideos(query: string): Promise<VideoItem[]> {
@@ -107,7 +249,7 @@ class SearchStore {
           thumbnailUrl: result.thumbnailUrl,
           timestamp,
           isFavorite: result.isFavorite,
-          source: result.isRecent ? 'user-recent' : result.isFavorite ? 'user-favorite' : 'catalog'
+          source: result.isFavorite ? 'user-favorite' : result.isRecent ? 'user-recent' : 'catalog'
         };
       });
     } catch (error) {
@@ -116,18 +258,59 @@ class SearchStore {
     }
   }
 
+  /**
+   * Enriches global search results with local data (favorites/recents from IndexedDB).
+   * This ensures that even for anonymous users, videos that are locally favorited/recent
+   * are shown with the correct source and metadata.
+   */
+  private enrichWithLocalData(globalResults: VideoItem[], query: string): VideoItem[] {
+    const localVideoMap = new SvelteMap(this.recentVideos.map((video) => [video.videoId, video]));
+    const globalVideoIds = new SvelteSet(globalResults.map((v) => v.videoId));
+    const searchTerms = this.getSearchTerms(query);
+
+    const enrichedResults = globalResults.map((globalVideo) => {
+      const localVideo = localVideoMap.get(globalVideo.videoId);
+      if (!localVideo) {
+        return globalVideo;
+      }
+
+      return {
+        ...globalVideo,
+        isFavorite: localVideo.isFavorite,
+        timestamp: localVideo.timestamp,
+        source: this.resolveSource(localVideo.isFavorite, localVideo.timestamp)
+      };
+    });
+
+    const matchingLocalVideos = this.recentVideos.filter((localVideo) => {
+      if (globalVideoIds.has(localVideo.videoId)) {
+        return false;
+      }
+
+      return this.matchesSearch(localVideo, searchTerms);
+    });
+
+    return [...enrichedResults, ...matchingLocalVideos].sort((a, b) =>
+      this.compareBySourceAndTimestamp(a, b)
+    );
+  }
+
   triggerSearch() {
     clearTimeout(this.debounceTimer);
     this.ghostVideo = null;
 
-    if (!this.searchValue.trim()) {
+    if (!this.isValidSearch(this.searchValue)) {
       this.filteredVideos = this.getBaseVideos();
       this.showRecentVideos = this.filteredVideos.length > 0;
       return;
     }
 
     this.debounceTimer = setTimeout(async () => {
-      this.filteredVideos = await this.searchGlobalVideos(this.searchValue);
+      const trimmedQuery = this.searchValue.trim();
+      const globalResults = await this.searchGlobalVideos(trimmedQuery);
+
+      // Enrich with local data (handles anonymous users with local favorites/recents)
+      this.filteredVideos = this.enrichWithLocalData(globalResults, trimmedQuery);
 
       if (this.showOnlyFavorites) {
         this.filteredVideos = this.filteredVideos.filter((video) => video.isFavorite);
@@ -188,7 +371,7 @@ class SearchStore {
       videoMap.set(recent.videoId, {
         ...recent,
         isFavorite: existing?.isFavorite ?? false,
-        source: 'user-recent'
+        source: existing?.source === 'user-favorite' ? 'user-favorite' : 'user-recent'
       });
     });
 

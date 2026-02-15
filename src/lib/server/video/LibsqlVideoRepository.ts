@@ -84,26 +84,35 @@ function resolveVideoId(videoInput: string): string | null {
 }
 
 function buildFtsQuery(normalizedQuery: string): string {
-  const terms = normalizedQuery
+  const allTerms = normalizedQuery
     .split(' ')
     .filter((term) => term.length > 0)
-    .slice(0, 6)
-    .map((term) => `${term.replace(/"/g, '')}*`);
+    .slice(0, 6);
 
+  // For multi-word queries, filter out very short terms (<= 3 chars) if we have longer terms
+  // This prevents matching on common words like "the", "and", "of" etc.
+  const significantTerms = allTerms.filter((term) => term.length > 3);
+  const termsToUse = significantTerms.length > 0 ? significantTerms : allTerms;
+
+  const terms = termsToUse.map((term) => `${term.replace(/"/g, '')}*`);
   return terms.join(' AND ');
 }
 
 function buildRelaxedFtsQuery(normalizedQuery: string): string {
-  const terms = normalizedQuery
+  const allTerms = normalizedQuery
     .split(' ')
     .filter((term) => term.length > 0)
-    .slice(0, 6)
-    .map((term) => `${term.replace(/"/g, '')}*`);
+    .slice(0, 6);
 
-  if (terms.length < 3) {
+  // For multi-word queries, filter out very short terms (<= 3 chars) if we have longer terms
+  const significantTerms = allTerms.filter((term) => term.length > 3);
+  const termsToUse = significantTerms.length > 0 ? significantTerms : allTerms;
+
+  if (termsToUse.length < 3) {
     return '';
   }
 
+  const terms = termsToUse.map((term) => `${term.replace(/"/g, '')}*`);
   return terms
     .map((_, index) => terms.filter((__, termIndex) => termIndex !== index).join(' AND '))
     .map((query) => `(${query})`)
@@ -116,7 +125,7 @@ function buildCharPatternQuery(normalizedQuery: string): string {
     return '';
   }
 
-  return `${compact.split('').join('%')}%`;
+  return `%${compact.split('').join('%')}%`;
 }
 
 function resolveFuzzyThresholds(normalizedQueryLength: number): {
@@ -602,6 +611,18 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         : 0;
     const { jarowinThreshold, damlevThreshold } = resolveFuzzyThresholds(normalizedQuery.length);
 
+    // Multi-token query detection and strong tokens extraction (length >= 4)
+    const isMultiTokenQuery = normalizedTokens.length >= 2;
+    const strongTokens = normalizedTokens.filter((token) => token.length >= 4);
+    const hasStrongTokens = strongTokens.length > 0;
+    const multiTokenFuzzyEnabled = isMultiTokenQuery && hasStrongTokens ? 1 : 0;
+    // Use first strong token (>= 4 chars) for prefix search to avoid matching common short words
+    const prefixToken = strongTokens[0] ?? firstToken;
+
+    // Stricter thresholds for multi-token fuzzy search
+    const multiTokenJarowinThreshold = jarowinThreshold + 0.05;
+    const multiTokenDamlevThreshold = Math.max(1, damlevThreshold - 1);
+
     const rows = await libsqlClient.execute({
       sql: `
         WITH exact_results AS (
@@ -701,6 +722,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
           SELECT videoId FROM primary_candidate_pool
           UNION
           SELECT videoId FROM recent_results
+          WHERE (SELECT total FROM candidate_count) < ?
         ),
         candidate_count AS (
           SELECT COUNT(1) AS total FROM primary_candidate_pool
@@ -713,6 +735,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
             AND (SELECT total FROM candidate_count) < ?
             AND ? <> ''
             AND v.search_text_normalized LIKE ?
+            AND ? = 0
           ORDER BY v.updated_at DESC
           LIMIT ?
         ),
@@ -727,6 +750,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
             v.artist AS artist,
             v.track AS track,
             v.thumbnail_url AS thumbnailUrl,
+            v.search_text_normalized AS searchTextNormalized,
             u.is_favorite AS isFavorite,
             u.last_watched_at AS lastWatchedAt,
             fuzzy_jarowin(
@@ -767,10 +791,29 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
             4 AS priority
           FROM fuzzy_raw
           WHERE ? = 1 AND (
-            jarowin >= ?
-            OR damlev <= ?
-            OR exactId = 1
-            OR (? = 1 AND (artistJarowin >= ? OR trackJarowin >= ?))
+            -- Standard fuzzy match for single tokens
+            (
+              jarowin >= ?
+              OR damlev <= ?
+              OR exactId = 1
+              OR (? = 1 AND (artistJarowin >= ? OR trackJarowin >= ?))
+            )
+            -- For multi-token queries, require stricter threshold OR strong token match
+            AND (
+              ? = 0  -- Not multi-token
+              OR (
+                -- Multi-token: stricter thresholds
+                jarowin >= ?
+                OR damlev <= ?
+              )
+              OR (
+                -- Multi-token: at least one strong token appears in text
+                ? = 1 AND (
+                  searchTextNormalized LIKE '%' || ? || '%'
+                  OR searchTextNormalized LIKE '%' || ? || '%'
+                )
+              )
+            )
           )
           ORDER BY score DESC
           LIMIT ?
@@ -827,16 +870,18 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         relaxedFtsQuery,
         perSourceLimit,
         userIdArg,
-        firstToken,
-        firstToken,
-        firstToken,
+        prefixToken,
+        prefixToken,
+        prefixToken,
         perSourceLimit,
         userIdArg,
         recentFallbackLimit,
+        FUZZY_MIN_CANDIDATES, // Threshold for candidate_pool to include recent_results
         fuzzyEnabled,
         FUZZY_MIN_CANDIDATES,
         charPatternQuery,
         charPatternQuery,
+        multiTokenFuzzyEnabled,
         perSourceLimit,
         normalizedQuery,
         normalizedQuery,
@@ -845,6 +890,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         exactVideoId,
         exactVideoId,
         userIdArg,
+        // fuzzy_results parameters
         singleTokenFuzzyEnabled,
         fuzzyEnabled,
         jarowinThreshold,
@@ -852,6 +898,13 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         singleTokenFuzzyEnabled,
         FUZZY_SINGLE_TOKEN_JAROWIN_THRESHOLD,
         FUZZY_SINGLE_TOKEN_JAROWIN_THRESHOLD,
+        // Multi-token conditions
+        multiTokenFuzzyEnabled,
+        multiTokenJarowinThreshold,
+        multiTokenDamlevThreshold,
+        multiTokenFuzzyEnabled,
+        strongTokens[0] ?? '',
+        strongTokens[1] ?? strongTokens[0] ?? '',
         perSourceLimit,
         safeLimit
       ]
