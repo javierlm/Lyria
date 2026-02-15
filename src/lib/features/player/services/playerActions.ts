@@ -1037,13 +1037,7 @@ export async function selectLyric(id: number) {
   url.searchParams.set('lyricId', id.toString());
   goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
 
-  // Persist the lyric ID selection
-  if (playerState.videoId) {
-    const videoUrl = `https://www.youtube.com/watch?v=${playerState.videoId}`;
-    videoService.setVideoLyricId(videoUrl, id);
-  }
-
-  // Load new lyric
+  // Load new lyric first to get metadata
   playerState.lyricsState = LyricsStates.Loading;
   playerState.lines = [];
   playerState.translatedLines = [];
@@ -1062,6 +1056,15 @@ export async function selectLyric(id: number) {
     const player = getPlayer();
     const videoData = player?.getVideoData() || { title: '', author: '', video_id: '' };
     updatePlayerState(result, videoData);
+
+    // Persist the lyric ID selection with metadata
+    if (playerState.videoId && result.found) {
+      const videoUrl = `https://www.youtube.com/watch?v=${playerState.videoId}`;
+      videoService.setVideoLyricId(videoUrl, id, {
+        artist: result.artistName,
+        track: result.trackName
+      });
+    }
 
     if (result.found) {
       if (result.artistName && result.trackName) {

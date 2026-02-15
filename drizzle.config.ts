@@ -13,7 +13,7 @@ if (!url) {
 }
 
 export default defineConfig({
-  schema: './src/lib/server/db/schema.ts',
+  schema: './src/lib/server/db/all-schema.ts',
   out: './drizzle',
   dialect: 'turso',
   dbCredentials: {

@@ -37,9 +37,17 @@ export const userVideoState = sqliteTable(
       .references(() => videos.videoId, { onDelete: 'cascade' }),
     isFavorite: integer('is_favorite', { mode: 'boolean' }).default(false).notNull(),
     favoriteAddedAt: integer('favorite_added_at', { mode: 'timestamp_ms' }),
+    favoriteRemovedAt: integer('favorite_removed_at', { mode: 'timestamp_ms' }),
     lastWatchedAt: integer('last_watched_at', { mode: 'timestamp_ms' }),
+    recentRemovedAt: integer('recent_removed_at', { mode: 'timestamp_ms' }),
     delayMs: integer('delay_ms').default(0).notNull(),
     manualLyricId: integer('manual_lyric_id'),
+    customArtist: text('custom_artist'),
+    customTrack: text('custom_track'),
+    customArtistNormalized: text('custom_artist_normalized'),
+    customTrackNormalized: text('custom_track_normalized'),
+    customSearchTextNormalized: text('custom_search_text_normalized'),
+    customMetadataAt: integer('custom_metadata_at', { mode: 'timestamp_ms' }),
     createdAt: integer('created_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),

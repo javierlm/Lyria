@@ -3,7 +3,28 @@ import type { RecentVideo } from '$lib/features/video/domain/IVideoRepository';
 import { extractVideoId } from '$lib/shared/utils';
 import { SvelteMap } from 'svelte/reactivity';
 
-export type VideoItem = RecentVideo & { isFavorite?: boolean; isGhost?: boolean };
+type VideoSource = 'user-recent' | 'user-favorite' | 'catalog' | 'ghost';
+
+interface SearchApiResult {
+  videoId: string;
+  artist: string;
+  track: string;
+  thumbnailUrl?: string;
+  isFavorite: boolean;
+  isRecent: boolean;
+  lastWatchedAt: number | null;
+}
+
+export type VideoItem = {
+  videoId: string;
+  artist: string;
+  track: string;
+  thumbnailUrl?: string;
+  timestamp?: number | null;
+  isFavorite?: boolean;
+  isGhost?: boolean;
+  source: VideoSource;
+};
 
 class SearchStore {
   showSearchField = $state(false);
@@ -67,6 +88,34 @@ class SearchStore {
     });
   }
 
+  async searchGlobalVideos(query: string): Promise<VideoItem[]> {
+    try {
+      const response = await fetch(`/api/search/videos?q=${encodeURIComponent(query)}&limit=30`);
+      if (!response.ok) {
+        return [];
+      }
+
+      const results = (await response.json()) as SearchApiResult[];
+
+      return results.map((result) => {
+        const timestamp = result.lastWatchedAt;
+
+        return {
+          videoId: result.videoId,
+          artist: result.artist,
+          track: result.track,
+          thumbnailUrl: result.thumbnailUrl,
+          timestamp,
+          isFavorite: result.isFavorite,
+          source: result.isRecent ? 'user-recent' : result.isFavorite ? 'user-favorite' : 'catalog'
+        };
+      });
+    } catch (error) {
+      console.error('Failed to search videos from API:', error);
+      return [];
+    }
+  }
+
   triggerSearch() {
     clearTimeout(this.debounceTimer);
     this.ghostVideo = null;
@@ -78,7 +127,11 @@ class SearchStore {
     }
 
     this.debounceTimer = setTimeout(async () => {
-      this.filteredVideos = this.searchVideos(this.searchValue);
+      this.filteredVideos = await this.searchGlobalVideos(this.searchValue);
+
+      if (this.showOnlyFavorites) {
+        this.filteredVideos = this.filteredVideos.filter((video) => video.isFavorite);
+      }
 
       const videoId = extractVideoId(this.searchValue);
       if (videoId && this.filteredVideos.length === 0 && !this.isFetchingGhost) {
@@ -99,10 +152,11 @@ class SearchStore {
             videoId,
             artist,
             track,
-            timestamp: 0,
+            timestamp: null,
             thumbnailUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
             isFavorite: false,
-            isGhost: true
+            isGhost: true,
+            source: 'ghost'
           };
           this.filteredVideos = [this.ghostVideo];
         }
@@ -122,15 +176,25 @@ class SearchStore {
     const videoMap = new SvelteMap<string, VideoItem>();
 
     favorites.forEach((fav) => {
-      videoMap.set(fav.videoId, { ...fav, isFavorite: true });
+      videoMap.set(fav.videoId, {
+        ...fav,
+        isFavorite: true,
+        source: 'user-favorite'
+      });
     });
 
     recents.forEach((recent) => {
       const existing = videoMap.get(recent.videoId);
-      videoMap.set(recent.videoId, { ...recent, isFavorite: existing?.isFavorite ?? false });
+      videoMap.set(recent.videoId, {
+        ...recent,
+        isFavorite: existing?.isFavorite ?? false,
+        source: 'user-recent'
+      });
     });
 
-    this.recentVideos = Array.from(videoMap.values()).sort((a, b) => b.timestamp - a.timestamp);
+    this.recentVideos = Array.from(videoMap.values()).sort(
+      (a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0)
+    );
 
     if (this.searchValue.trim()) {
       this.filteredVideos = this.searchVideos(this.searchValue);

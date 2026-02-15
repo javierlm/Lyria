@@ -35,6 +35,22 @@ describe('Global search integration', () => {
       thumbnailUrl: 'https://img.youtube.com/vi/kXYiU_JCYtU/mqdefault.jpg'
     });
 
+    await seedUserA.addRecentVideo({
+      videoId: 'pRpeEdMmmQ0',
+      artist: 'Shakira',
+      track: 'Waka Waka',
+      timestamp: Date.now() - 3000,
+      thumbnailUrl: 'https://img.youtube.com/vi/pRpeEdMmmQ0/mqdefault.jpg'
+    });
+
+    await seedUserA.addRecentVideo({
+      videoId: 'IHgFJEJgUrg',
+      artist: 'Bullet for My Valentine',
+      track: "Tears Don't Fall",
+      timestamp: Date.now() - 4000,
+      thumbnailUrl: 'https://img.youtube.com/vi/IHgFJEJgUrg/mqdefault.jpg'
+    });
+
     await seedUserA.addFavoriteVideo('5anLPw0Efmo');
   });
 
@@ -52,6 +68,20 @@ describe('Global search integration', () => {
 
     expect(results.length).toBeGreaterThan(0);
     expect(results.some((result) => result.videoId === '5anLPw0Efmo')).toBe(true);
+  });
+
+  it.skipIf(!fuzzySupport)('matches single-word artist typo', async () => {
+    const anonymousRepository = createLibsqlVideoRepository();
+    const results = await anonymousRepository.searchVideos('shkira', 10);
+
+    expect(results.some((result) => result.videoId === 'pRpeEdMmmQ0')).toBe(true);
+  });
+
+  it.skipIf(!fuzzySupport)('matches typo in a multi-word query', async () => {
+    const anonymousRepository = createLibsqlVideoRepository();
+    const results = await anonymousRepository.searchVideos('bllet for my valentine', 10);
+
+    expect(results.some((result) => result.videoId === 'IHgFJEJgUrg')).toBe(true);
   });
 
   it.skipIf(!fuzzySupport)(

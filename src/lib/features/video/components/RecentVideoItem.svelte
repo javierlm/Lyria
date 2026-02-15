@@ -1,17 +1,25 @@
 <script lang="ts">
-  import type { RecentVideo } from '$lib/features/video/domain/IVideoRepository';
   import VideoItem from './VideoItem.svelte';
   import IconX from 'phosphor-svelte/lib/X';
   import { createEventDispatcher, onMount } from 'svelte';
   import { swipe } from '$lib/features/ui/actions/swipe';
 
   type Props = {
-    video: RecentVideo & { isGhost?: boolean };
+    video: {
+      videoId: string;
+      artist: string;
+      track: string;
+      thumbnailUrl?: string;
+      timestamp?: number | null;
+      isGhost?: boolean;
+      source?: 'user-recent' | 'user-favorite' | 'catalog' | 'ghost';
+    };
     isFavorite?: boolean;
     priority?: boolean;
+    canDelete?: boolean;
   };
 
-  let { video, isFavorite = false, priority = false }: Props = $props();
+  let { video, isFavorite = false, priority = false, canDelete = true }: Props = $props();
 
   const dispatch = createEventDispatcher<{
     delete: string;
@@ -44,7 +52,7 @@
   });
 
   function onSwipe(event: CustomEvent<{ dx: number }>) {
-    if (video.isGhost) return;
+    if (video.isGhost || !canDelete) return;
     translateX += event.detail.dx;
     // Limit translation
     translateX = Math.max(deleteThreshold * 1.5, Math.min(0, translateX));
@@ -80,7 +88,7 @@
     <button class="recent-video-item" onclick={handleSelect} tabindex="0">
       <VideoItem {video} {isFavorite} isGhost={video.isGhost} {priority}>
         {#snippet children()}
-          {#if !video.isGhost}
+          {#if !video.isGhost && canDelete}
             <div class="desktop-delete-action">
               <button class="delete-button" onclick={handleDelete} aria-label="Delete video">
                 <IconX size="20" weight="bold" />
@@ -92,7 +100,7 @@
     </button>
   </div>
 
-  {#if !video.isGhost}
+  {#if !video.isGhost && canDelete}
     <div class="mobile-delete-action">
       <button class="delete-button" onclick={handleDelete} aria-label="Delete video">
         <IconX size="20" weight="bold" />

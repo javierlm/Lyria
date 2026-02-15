@@ -640,6 +640,78 @@ type RootTranslation = {
      */
     description: string;
   };
+  auth: {
+    /**
+     * A​c​c​o​u​n​t
+     */
+    account: string;
+    /**
+     * S​i​g​n​ ​i​n
+     */
+    signIn: string;
+    /**
+     * S​i​g​n​ ​o​u​t
+     */
+    signOut: string;
+    /**
+     * P​r​o​v​i​d​e​r​s
+     */
+    providersSection: string;
+    /**
+     * E​m​a​i​l​ ​a​n​d​ ​p​a​s​s​w​o​r​d
+     */
+    emailSection: string;
+    /**
+     * N​a​m​e
+     */
+    namePlaceholder: string;
+    /**
+     * E​m​a​i​l
+     */
+    emailPlaceholder: string;
+    /**
+     * P​a​s​s​w​o​r​d
+     */
+    passwordPlaceholder: string;
+    /**
+     * C​r​e​a​t​e​ ​a​c​c​o​u​n​t
+     */
+    createAccount: string;
+    /**
+     * S​i​g​n​ ​i​n​ ​w​i​t​h​ ​e​m​a​i​l
+     */
+    signInWithEmail: string;
+    /**
+     * C​r​e​a​t​e​ ​a​ ​n​e​w​ ​a​c​c​o​u​n​t
+     */
+    createNewAccount: string;
+    /**
+     * I​ ​a​l​r​e​a​d​y​ ​h​a​v​e​ ​a​n​ ​a​c​c​o​u​n​t
+     */
+    alreadyHaveAccount: string;
+    errors: {
+      /**
+       * C​o​u​l​d​ ​n​o​t​ ​s​i​g​n​ ​i​n​.
+       */
+      signInFailed: string;
+      /**
+       * C​o​u​l​d​ ​n​o​t​ ​s​i​g​n​ ​o​u​t​.
+       */
+      signOutFailed: string;
+      /**
+       * C​o​u​l​d​ ​n​o​t​ ​c​o​m​p​l​e​t​e​ ​a​u​t​h​e​n​t​i​c​a​t​i​o​n​.
+       */
+      authFailed: string;
+      /**
+       * E​m​a​i​l​ ​a​n​d​ ​p​a​s​s​w​o​r​d​ ​a​r​e​ ​r​e​q​u​i​r​e​d​.
+       */
+      emailPasswordRequired: string;
+      /**
+       * N​a​m​e​ ​i​s​ ​r​e​q​u​i​r​e​d​ ​t​o​ ​s​i​g​n​ ​u​p​.
+       */
+      nameRequired: string;
+    };
+  };
   meta: {
     /**
      * W​a​t​c​h​ ​o​n​ ​L​y​r​i​a
@@ -1378,6 +1450,78 @@ export type TranslationFunctions = {
      * Try the app with pre-loaded demo videos
      */
     description: () => LocalizedString;
+  };
+  auth: {
+    /**
+     * Account
+     */
+    account: () => LocalizedString;
+    /**
+     * Sign in
+     */
+    signIn: () => LocalizedString;
+    /**
+     * Sign out
+     */
+    signOut: () => LocalizedString;
+    /**
+     * Providers
+     */
+    providersSection: () => LocalizedString;
+    /**
+     * Email and password
+     */
+    emailSection: () => LocalizedString;
+    /**
+     * Name
+     */
+    namePlaceholder: () => LocalizedString;
+    /**
+     * Email
+     */
+    emailPlaceholder: () => LocalizedString;
+    /**
+     * Password
+     */
+    passwordPlaceholder: () => LocalizedString;
+    /**
+     * Create account
+     */
+    createAccount: () => LocalizedString;
+    /**
+     * Sign in with email
+     */
+    signInWithEmail: () => LocalizedString;
+    /**
+     * Create a new account
+     */
+    createNewAccount: () => LocalizedString;
+    /**
+     * I already have an account
+     */
+    alreadyHaveAccount: () => LocalizedString;
+    errors: {
+      /**
+       * Could not sign in.
+       */
+      signInFailed: () => LocalizedString;
+      /**
+       * Could not sign out.
+       */
+      signOutFailed: () => LocalizedString;
+      /**
+       * Could not complete authentication.
+       */
+      authFailed: () => LocalizedString;
+      /**
+       * Email and password are required.
+       */
+      emailPasswordRequired: () => LocalizedString;
+      /**
+       * Name is required to sign up.
+       */
+      nameRequired: () => LocalizedString;
+    };
   };
   meta: {
     /**

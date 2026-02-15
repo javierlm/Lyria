@@ -182,6 +182,27 @@ const es = {
     badge: 'Demo',
     description: 'Prueba la app con videos de demo precargados'
   },
+  auth: {
+    account: 'Cuenta',
+    signIn: 'Iniciar sesion',
+    signOut: 'Cerrar sesion',
+    providersSection: 'Proveedores',
+    emailSection: 'Email y password',
+    namePlaceholder: 'Nombre',
+    emailPlaceholder: 'Email',
+    passwordPlaceholder: 'Password',
+    createAccount: 'Crear cuenta',
+    signInWithEmail: 'Entrar con email',
+    createNewAccount: 'Crear cuenta nueva',
+    alreadyHaveAccount: 'Ya tengo cuenta',
+    errors: {
+      signInFailed: 'No se pudo iniciar sesion.',
+      signOutFailed: 'No se pudo cerrar sesion.',
+      authFailed: 'No se pudo completar la autenticacion.',
+      emailPasswordRequired: 'Email y password son obligatorios.',
+      nameRequired: 'El nombre es obligatorio para registrarte.'
+    }
+  },
   meta: {
     description: 'Ver en Lyria'
   },

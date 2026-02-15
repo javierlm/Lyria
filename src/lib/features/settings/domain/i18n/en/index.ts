@@ -182,6 +182,27 @@ const en = {
     badge: 'Demo',
     description: 'Try the app with pre-loaded demo videos'
   },
+  auth: {
+    account: 'Account',
+    signIn: 'Sign in',
+    signOut: 'Sign out',
+    providersSection: 'Providers',
+    emailSection: 'Email and password',
+    namePlaceholder: 'Name',
+    emailPlaceholder: 'Email',
+    passwordPlaceholder: 'Password',
+    createAccount: 'Create account',
+    signInWithEmail: 'Sign in with email',
+    createNewAccount: 'Create a new account',
+    alreadyHaveAccount: 'I already have an account',
+    errors: {
+      signInFailed: 'Could not sign in.',
+      signOutFailed: 'Could not sign out.',
+      authFailed: 'Could not complete authentication.',
+      emailPasswordRequired: 'Email and password are required.',
+      nameRequired: 'Name is required to sign up.'
+    }
+  },
   meta: {
     description: 'Watch on Lyria'
   },

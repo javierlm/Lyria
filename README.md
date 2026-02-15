@@ -93,6 +93,7 @@ If you want fuzzy search available while running the app locally, start a local 
 
     # Better Auth
     BETTER_AUTH_URL=http://localhost:5173
+    BETTER_AUTH_BASE_URL=http://localhost:5173
     BETTER_AUTH_SECRET=replace_with_a_minimum_32_char_secret
 
     # Social providers
@@ -140,8 +141,8 @@ The application will be available at `http://localhost:5173`.
 - `pnpm run db:dev:stop`: Stops local fuzzy Docker database.
 - `pnpm run db:generate`: Generates Drizzle migrations.
 - `pnpm run db:migrate`: Applies Drizzle migrations.
-- `pnpm run auth:generate`: Generates Better Auth schema artifacts.
-- `pnpm run auth:migrate`: Applies Better Auth migrations.
+- `pnpm run auth:generate`: Generates Better Auth schema artifacts to `src/lib/server/db/auth-schema.ts`.
+- `pnpm run auth:migrate`: Applies Drizzle migrations (Better Auth uses Drizzle in this project).
 - `pnpm run typesafe-i18n`: Generates i18n types.
 - `pnpm run sync:cache`: Syncs translation cache from remote to local.
 

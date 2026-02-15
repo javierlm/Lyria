@@ -51,6 +51,7 @@ declare module '$env/static/private' {
   export const UPSTASH_REDIS_REST_URL: string;
   export const UPSTASH_REDIS_REST_TOKEN: string;
   export const BETTER_AUTH_SECRET: string;
+  export const BETTER_AUTH_BASE_URL: string;
   export const BETTER_AUTH_URL: string;
   export const GOOGLE_CLIENT_ID: string;
   export const GOOGLE_CLIENT_SECRET: string;

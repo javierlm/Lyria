@@ -6,11 +6,17 @@ let capabilitiesCheckPromise: Promise<void> | null = null;
 
 async function verifyFts5Support(): Promise<void> {
   try {
-    await libsqlClient.execute('CREATE VIRTUAL TABLE temp.__lyria_fts_cap USING fts5(content)');
-    await libsqlClient.execute('DROP TABLE IF EXISTS temp.__lyria_fts_cap');
+    const result = await libsqlClient.execute(
+      `SELECT name FROM pragma_module_list WHERE lower(name) = 'fts5' LIMIT 1`
+    );
+
+    const hasFts5 = result.rows.length > 0;
+    if (!hasFts5) {
+      throw new Error('fts5 module not found in pragma_module_list');
+    }
   } catch (error) {
     throw new Error(
-      `[db] FTS5 extension is not available. Start local database with Turso/libSQL. Details: ${String(error)}`
+      `[db] FTS5 extension is not available. Ensure the local Docker DB is running (pnpm run db:dev) or use a compatible Turso/libSQL backend. Details: ${String(error)}`
     );
   }
 }
@@ -33,7 +39,7 @@ async function verifyFuzzySupport(): Promise<void> {
   const missing = REQUIRED_FUZZY_FUNCTIONS.filter((name) => !available.has(name));
   if (missing.length > 0) {
     throw new Error(
-      `[db] Missing fuzzy extension functions: ${missing.join(', ')}. Start local database with Turso/libSQL (turso dev).`
+      `[db] Missing fuzzy extension functions: ${missing.join(', ')}. Ensure the local Docker DB is running (pnpm run db:dev) or use a compatible Turso/libSQL backend.`
     );
   }
 }
