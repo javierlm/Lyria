@@ -7,6 +7,7 @@
   import UserCircle from 'phosphor-svelte/lib/UserCircle';
   import { portal } from '$lib/features/ui/actions/portal';
   import LL from '$i18n/i18n-svelte';
+  import ProviderIcon from './ProviderIcon.svelte';
 
   type ProviderId = 'google' | 'microsoft' | 'spotify' | 'deezer';
 
@@ -189,12 +190,15 @@
           <div class="panel-section">
             <p class="section-title">{$LL.auth.providersSection()}</p>
             <div class="provider-grid">
-              {#each providers as provider}
+              {#each providers as provider (provider.id)}
                 <button
                   class="provider-btn"
                   onclick={() => signInWithProvider(provider.id)}
                   disabled={isLoading}
                 >
+                  <span class="provider-icon">
+                    <ProviderIcon provider={provider.id} size={20} />
+                  </span>
                   {provider.label}
                 </button>
               {/each}
@@ -272,6 +276,11 @@
     transition: all 0.2s ease;
   }
 
+  .auth-controls > .auth-btn {
+    height: var(--top-control-height);
+    box-sizing: border-box;
+  }
+
   .auth-btn:hover:not(:disabled) {
     border-color: var(--primary-color);
     color: var(--primary-color);
@@ -284,7 +293,7 @@
 
   .auth-btn.secondary {
     font-weight: 500;
-    border-radius: 8px;
+    border-radius: 999px;
   }
 
   .user-pill {
@@ -294,7 +303,9 @@
     background: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: 999px;
-    padding: 0.25rem 0.35rem 0.25rem 0.7rem;
+    height: 40px;
+    box-sizing: border-box;
+    padding: 0.2rem 0.35rem 0.2rem 0.7rem;
     box-shadow: 0 2px 6px var(--shadow-color);
     max-width: min(50vw, 420px);
   }
@@ -399,6 +410,10 @@
   }
 
   .provider-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: 10px;
     background: var(--card-background);
@@ -420,6 +435,13 @@
   .provider-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .provider-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .email-form {

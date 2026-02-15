@@ -83,11 +83,11 @@
         <div class="video-new-badge">
           <span>{$LL.video.unplayed()}</span>
         </div>
-      {:else if video.source === 'catalog' || video.timestamp === null || video.timestamp === undefined}
+      {:else if video.source === 'catalog'}
         <div class="video-global-badge">
           <span>Resultado global</span>
         </div>
-      {:else}
+      {:else if video.timestamp !== null && video.timestamp !== undefined}
         <div class="video-time-ago">
           <IconClock size="16" weight="bold" />
           <span>{formatTimeAgo(video.timestamp)}</span>

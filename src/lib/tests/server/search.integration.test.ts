@@ -51,6 +51,14 @@ describe('Global search integration', () => {
       thumbnailUrl: 'https://img.youtube.com/vi/IHgFJEJgUrg/mqdefault.jpg'
     });
 
+    await seedUserA.addRecentVideo({
+      videoId: 'c8XdrOhEZl0',
+      artist: 'Epica',
+      track: 'Unchain Utopia',
+      timestamp: Date.now() - 5000,
+      thumbnailUrl: 'https://img.youtube.com/vi/c8XdrOhEZl0/mqdefault.jpg'
+    });
+
     await seedUserA.addFavoriteVideo('5anLPw0Efmo');
   });
 
@@ -82,6 +90,13 @@ describe('Global search integration', () => {
     const results = await anonymousRepository.searchVideos('bllet for my valentine', 10);
 
     expect(results.some((result) => result.videoId === 'IHgFJEJgUrg')).toBe(true);
+  });
+
+  it.skipIf(!fuzzySupport)('matches single-word typo in track title', async () => {
+    const anonymousRepository = createLibsqlVideoRepository();
+    const results = await anonymousRepository.searchVideos('utopa', 10);
+
+    expect(results.some((result) => result.videoId === 'c8XdrOhEZl0')).toBe(true);
   });
 
   it.skipIf(!fuzzySupport)(
