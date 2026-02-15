@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { RecentVideo } from '$lib/features/video/domain/IVideoRepository';
   import IconClock from 'phosphor-svelte/lib/Clock';
   import IconHeart from 'phosphor-svelte/lib/Heart';
   import type { Snippet } from 'svelte';
@@ -7,7 +6,15 @@
   import LL from '$i18n/i18n-svelte';
 
   type Props = {
-    video: RecentVideo & { isGhost?: boolean };
+    video: {
+      videoId: string;
+      artist: string;
+      track: string;
+      thumbnailUrl?: string;
+      timestamp?: number | null;
+      isGhost?: boolean;
+      source?: 'user-recent' | 'user-favorite' | 'catalog' | 'ghost';
+    };
     isFavorite?: boolean;
     isGhost?: boolean;
     priority?: boolean;
@@ -75,6 +82,10 @@
       {#if isGhost}
         <div class="video-new-badge">
           <span>{$LL.video.unplayed()}</span>
+        </div>
+      {:else if video.source === 'catalog' || video.timestamp === null || video.timestamp === undefined}
+        <div class="video-global-badge">
+          <span>Resultado global</span>
         </div>
       {:else}
         <div class="video-time-ago">
@@ -196,6 +207,17 @@
     display: flex;
     align-items: center;
     color: var(--primary-color);
+  }
+
+  .video-global-badge {
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(var(--primary-color-rgb), 0.12);
+    color: var(--text-color);
   }
 
   .video-actions {

@@ -6,10 +6,12 @@
   import AppLanguageSelector from '$lib/features/settings/components/AppLanguageSelector.svelte';
   import ReloadPrompt from '$lib/features/ui/components/ReloadPrompt.svelte';
   import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
+  import AuthControls from '$lib/features/auth/components/AuthControls.svelte';
   import { NotificationContainer } from '$lib/features/notification';
   import LL from '$i18n/i18n-svelte';
   import { onMount } from 'svelte';
   import { demoStore } from '$lib/features/settings/stores/demoStore.svelte';
+  import { authStore } from '$lib/features/auth/stores/authStore.svelte';
   import '@fontsource/inter/400.css';
   import '@fontsource/inter/500.css';
   import '@fontsource/inter/600.css';
@@ -22,6 +24,13 @@
 
   $effect(() => {
     setLocale(data.locale);
+  });
+
+  $effect(() => {
+    authStore.setAuthState({
+      session: data.session,
+      user: data.user
+    });
   });
 
   onMount(() => {
@@ -55,6 +64,7 @@
   <div class="top-controls">
     <AppLanguageSelector />
     <ThemeToggle />
+    <AuthControls />
     {#if demoStore.isDemoMode}
       <span class="demo-badge">DEMO</span>
     {/if}

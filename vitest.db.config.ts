@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [sveltekit()],
   test: {
     include: ['src/lib/tests/server/**/*.integration.test.ts'],
+    exclude: ['**/node_modules/**', '**/.git/**'],
     globalSetup: ['./src/lib/tests/server/dbGlobalSetup.ts'],
     setupFiles: ['./src/lib/tests/server/dbTestEnvSetup.ts'],
     env: {

@@ -163,6 +163,7 @@
       <RecentVideoItem
         {video}
         isFavorite={video.isFavorite}
+        canDelete={video.source === 'user-recent'}
         priority={index < 5}
         on:select={(e) => handleRecentVideoClick(e.detail)}
         on:delete={handleDeleteRecentVideo}

@@ -118,16 +118,25 @@ export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
     });
   }
 
-  async setVideoLyricId(videoUrl: string, lyricId: number | null): Promise<void> {
+  async setVideoLyricId(
+    videoUrl: string,
+    lyricId: number | null,
+    metadata?: { artist?: string; track?: string }
+  ): Promise<void> {
     const db = await this.openDB();
     const transaction = db.transaction([VIDEO_DELAYS_STORE], 'readwrite');
     const store = transaction.objectStore(VIDEO_DELAYS_STORE);
     const key = `lyricId:${videoUrl}`;
+    const metadataKey = `lyricMetadata:${videoUrl}`;
 
     if (lyricId === null) {
       store.delete(key);
+      store.delete(metadataKey);
     } else {
       store.put(lyricId, key);
+      if (metadata?.artist && metadata?.track) {
+        store.put(metadata, metadataKey);
+      }
     }
 
     return new Promise((resolve, reject) => {

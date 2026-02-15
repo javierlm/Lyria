@@ -5,6 +5,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 interface PreferencesPayload {
   delay?: number;
   lyricId?: number | null;
+  metadata?: { artist?: string; track?: string };
 }
 
 export const GET: RequestHandler = async ({ params, locals }) => {
@@ -63,7 +64,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
   }
 
   if (hasLyricId) {
-    await repository.setVideoLyricId(videoId, payload.lyricId ?? null);
+    await repository.setVideoLyricId(videoId, payload.lyricId ?? null, payload.metadata);
   }
 
   const [delay, lyricId] = await Promise.all([

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@libsql/client';
 
@@ -39,16 +39,23 @@ async function waitForDatabase(url: string): Promise<void> {
 }
 
 async function applyBaseMigration(url: string): Promise<void> {
-  const migrationPath = resolve('drizzle/0000_init_meta.sql');
-  const migrationSql = readFileSync(migrationPath, 'utf8');
-  const statements = migrationSql
-    .split('--> statement-breakpoint')
-    .map((statement) => statement.trim())
-    .filter((statement) => statement.length > 0);
+  const migrationFiles = readdirSync(resolve('drizzle'))
+    .filter((fileName) => /^\d+_.*\.sql$/.test(fileName))
+    .sort((left, right) => left.localeCompare(right));
 
   const client = createClient({ url });
-  for (const statement of statements) {
-    await client.execute(statement);
+
+  for (const migrationFile of migrationFiles) {
+    const migrationPath = resolve(`drizzle/${migrationFile}`);
+    const migrationSql = readFileSync(migrationPath, 'utf8');
+    const statements = migrationSql
+      .split('--> statement-breakpoint')
+      .map((statement) => statement.trim())
+      .filter((statement) => statement.length > 0);
+
+    for (const statement of statements) {
+      await client.execute(statement);
+    }
   }
 }
 

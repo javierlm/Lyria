@@ -3,7 +3,11 @@ import type { FavoriteVideo, IVideoRepository, RecentVideo } from './IVideoRepos
 export abstract class BaseVideoRepository implements IVideoRepository {
   abstract setVideoDelay(videoUrl: string, delay: number): Promise<void>;
   abstract getVideoDelay(videoUrl: string): Promise<number | undefined>;
-  abstract setVideoLyricId(videoUrl: string, lyricId: number | null): Promise<void>;
+  abstract setVideoLyricId(
+    videoUrl: string,
+    lyricId: number | null,
+    metadata?: { artist?: string; track?: string }
+  ): Promise<void>;
   abstract getVideoLyricId(videoUrl: string): Promise<number | null>;
   abstract addRecentVideo(video: RecentVideo): Promise<void>;
   abstract getRecentVideos(): Promise<RecentVideo[]>;

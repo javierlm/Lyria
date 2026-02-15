@@ -32,3 +32,5 @@ local.test.db
 local.test.db-*
 
 .opencode
+
+meta/
