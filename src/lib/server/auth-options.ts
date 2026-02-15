@@ -19,6 +19,35 @@ interface DeezerUserProfile {
 const runtimeEnv = process.env;
 const isDevelopment = runtimeEnv.NODE_ENV !== 'production';
 
+function getStaticTrustedOrigins(): string[] {
+  const origins = new Set<string>();
+  const configuredTrustedOrigins = runtimeEnv.BETTER_AUTH_TRUSTED_ORIGINS;
+
+  if (configuredTrustedOrigins) {
+    for (const origin of configuredTrustedOrigins.split(',')) {
+      const trimmedOrigin = origin.trim();
+      if (trimmedOrigin) {
+        origins.add(trimmedOrigin);
+      }
+    }
+  }
+
+  const configuredBaseUrl = runtimeEnv.BETTER_AUTH_BASE_URL || runtimeEnv.BETTER_AUTH_URL;
+  if (configuredBaseUrl) {
+    origins.add(configuredBaseUrl);
+  }
+
+  if (runtimeEnv.VERCEL_URL) {
+    origins.add(`https://${runtimeEnv.VERCEL_URL}`);
+  }
+
+  if (isDevelopment) {
+    origins.add('http://localhost:5173');
+  }
+
+  return Array.from(origins);
+}
+
 function getAuthSecret(): string {
   const secret = runtimeEnv.BETTER_AUTH_SECRET;
   if (secret) {
@@ -38,6 +67,11 @@ function getAuthBaseUrl(): string {
     return baseUrl;
   }
 
+  // Fallback for Vercel preview deployments
+  if (runtimeEnv.VERCEL_URL) {
+    return `https://${runtimeEnv.VERCEL_URL}`;
+  }
+
   if (isDevelopment) {
     return 'http://localhost:5173';
   }
@@ -55,6 +89,17 @@ export function createAuthBaseOptions() {
     appName: 'Lyria',
     baseURL: getAuthBaseUrl(),
     secret: getAuthSecret(),
+    trustedOrigins: (request?: Request) => {
+      const origins = new Set(getStaticTrustedOrigins());
+
+      if (request) {
+        try {
+          origins.add(new URL(request.url).origin);
+        } catch {}
+      }
+
+      return Array.from(origins);
+    },
     database: drizzleAdapter(db, {
       provider: 'sqlite',
       schema: authSchema

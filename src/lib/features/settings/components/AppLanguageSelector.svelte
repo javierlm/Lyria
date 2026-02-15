@@ -168,7 +168,7 @@
     font-size: 0.8rem;
     transition: all 0.3s ease;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    height: 42px;
+    height: var(--top-control-height);
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
@@ -278,7 +278,7 @@
     .select-button {
       padding: 8px 5px;
       font-size: 0.8rem;
-      height: 38px;
+      height: var(--top-control-height);
     }
 
     .desktop-view {

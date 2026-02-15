@@ -276,6 +276,11 @@
     transition: all 0.2s ease;
   }
 
+  .auth-controls > .auth-btn {
+    height: var(--top-control-height);
+    box-sizing: border-box;
+  }
+
   .auth-btn:hover:not(:disabled) {
     border-color: var(--primary-color);
     color: var(--primary-color);
@@ -288,7 +293,7 @@
 
   .auth-btn.secondary {
     font-weight: 500;
-    border-radius: 8px;
+    border-radius: 999px;
   }
 
   .user-pill {
@@ -298,7 +303,9 @@
     background: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: 999px;
-    padding: 0.25rem 0.35rem 0.25rem 0.7rem;
+    height: 40px;
+    box-sizing: border-box;
+    padding: 0.2rem 0.35rem 0.2rem 0.7rem;
     box-shadow: 0 2px 6px var(--shadow-color);
     max-width: min(50vw, 420px);
   }

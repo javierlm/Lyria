@@ -92,6 +92,7 @@
 
     --theme-transition-duration: 0.5s;
     --theme-transition-timing: ease-in-out;
+    --top-control-height: 40px;
   }
 
   :global(html) {
