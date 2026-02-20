@@ -187,12 +187,17 @@ const en = {
     signIn: 'Sign in',
     signOut: 'Sign out',
     providersSection: 'Providers',
+    providers: {
+      google: 'Google',
+      microsoft: 'Microsoft',
+      spotify: 'Spotify'
+    },
     emailSection: 'Email and password',
     namePlaceholder: 'Name',
     emailPlaceholder: 'Email',
     passwordPlaceholder: 'Password',
     createAccount: 'Create account',
-    signInWithEmail: 'Sign in with email',
+    signInWithEmail: 'Sign in',
     createNewAccount: 'Create a new account',
     alreadyHaveAccount: 'I already have an account',
     errors: {
@@ -223,6 +228,8 @@ const en = {
     urlCopied: 'URL copied',
     urlCopyError: 'Could not copy URL',
     urlCopyErrorMessage: 'Please try copying the link manually.',
+    signedIn: 'Session started',
+    signedInMessage: 'You are now signed in.',
     demoModeActivated: 'Demo mode activated',
     demoModeActivatedMessage:
       'Demo videos are now available. To exit demo mode, open the menu and select "Disable demo mode".',

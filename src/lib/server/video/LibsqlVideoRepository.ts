@@ -3,22 +3,11 @@ import { userVideoState, videos } from '$lib/server/db/schema';
 import { BaseVideoRepository } from '$lib/features/video/domain/BaseVideoRepository';
 import type { FavoriteVideo, RecentVideo } from '$lib/features/video/domain/IVideoRepository';
 import { extractVideoId, isValidYouTubeId } from '$lib/shared/utils';
-import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, isNotNull } from 'drizzle-orm';
 
 const MAX_RECENT_VIDEOS = 100;
 const DEFAULT_SEARCH_LIMIT = 30;
 const MAX_SEARCH_LIMIT = 60;
-const FUZZY_MIN_CANDIDATES = 5;
-const FUZZY_SHORT_JAROWIN_THRESHOLD = 0.85;
-const FUZZY_SHORT_DAMLEV_THRESHOLD = 3;
-const FUZZY_MEDIUM_JAROWIN_THRESHOLD = 0.82;
-const FUZZY_MEDIUM_DAMLEV_THRESHOLD = 4;
-const FUZZY_LONG_JAROWIN_THRESHOLD = 0.8;
-const FUZZY_LONG_DAMLEV_THRESHOLD = 5;
-const FUZZY_SINGLE_TOKEN_MIN_LENGTH = 4;
-const FUZZY_SINGLE_TOKEN_MAX_LENGTH = 8;
-const FUZZY_SINGLE_TOKEN_JAROWIN_THRESHOLD = 0.79;
-const FUZZY_SOURCE_LIMIT_MULTIPLIER = 4;
 
 export interface SearchVideoResult {
   videoId: string;
@@ -94,62 +83,16 @@ function buildFtsQuery(normalizedQuery: string): string {
   const significantTerms = allTerms.filter((term) => term.length > 3);
   const termsToUse = significantTerms.length > 0 ? significantTerms : allTerms;
 
-  const terms = termsToUse.map((term) => `${term.replace(/"/g, '')}*`);
-  return terms.join(' AND ');
-}
-
-function buildRelaxedFtsQuery(normalizedQuery: string): string {
-  const allTerms = normalizedQuery
-    .split(' ')
+  const terms = termsToUse
+    .map((term) => term.replace(/[^a-z0-9]/g, ''))
     .filter((term) => term.length > 0)
-    .slice(0, 6);
+    .map((term) => `"${term}"*`);
 
-  // For multi-word queries, filter out very short terms (<= 3 chars) if we have longer terms
-  const significantTerms = allTerms.filter((term) => term.length > 3);
-  const termsToUse = significantTerms.length > 0 ? significantTerms : allTerms;
-
-  if (termsToUse.length < 3) {
+  if (terms.length === 0) {
     return '';
   }
 
-  const terms = termsToUse.map((term) => `${term.replace(/"/g, '')}*`);
-  return terms
-    .map((_, index) => terms.filter((__, termIndex) => termIndex !== index).join(' AND '))
-    .map((query) => `(${query})`)
-    .join(' OR ');
-}
-
-function buildCharPatternQuery(normalizedQuery: string): string {
-  const compact = normalizedQuery.replace(/\s+/g, '');
-  if (compact.length < 4) {
-    return '';
-  }
-
-  return `%${compact.split('').join('%')}%`;
-}
-
-function resolveFuzzyThresholds(normalizedQueryLength: number): {
-  jarowinThreshold: number;
-  damlevThreshold: number;
-} {
-  if (normalizedQueryLength <= 4) {
-    return {
-      jarowinThreshold: FUZZY_SHORT_JAROWIN_THRESHOLD,
-      damlevThreshold: FUZZY_SHORT_DAMLEV_THRESHOLD
-    };
-  }
-
-  if (normalizedQueryLength <= 10) {
-    return {
-      jarowinThreshold: FUZZY_MEDIUM_JAROWIN_THRESHOLD,
-      damlevThreshold: FUZZY_MEDIUM_DAMLEV_THRESHOLD
-    };
-  }
-
-  return {
-    jarowinThreshold: FUZZY_LONG_JAROWIN_THRESHOLD,
-    damlevThreshold: FUZZY_LONG_DAMLEV_THRESHOLD
-  };
+  return terms.join(' AND ');
 }
 
 function toNumber(value: unknown): number | null {
@@ -275,6 +218,26 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     });
   }
 
+  private async resolveExistingVideoId(videoInput: string): Promise<string | null> {
+    const resolved = resolveVideoId(videoInput);
+    if (resolved) {
+      return resolved;
+    }
+
+    const trimmed = videoInput.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const existing = await db
+      .select({ videoId: videos.videoId })
+      .from(videos)
+      .where(eq(videos.videoId, trimmed))
+      .limit(1);
+
+    return existing[0]?.videoId ?? null;
+  }
+
   async addRecentVideo(video: RecentVideo): Promise<void> {
     const userId = this.requireUserId();
 
@@ -286,6 +249,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     });
 
     const watchedAt = new Date(video.timestamp || Date.now());
+    const customNormalizedFields = buildNormalizedVideoFields(video.artist, video.track);
 
     await db
       .insert(userVideoState)
@@ -294,6 +258,12 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         videoId: video.videoId,
         lastWatchedAt: watchedAt,
         recentRemovedAt: null,
+        customArtist: video.artist,
+        customTrack: video.track,
+        customArtistNormalized: customNormalizedFields.artistNormalized,
+        customTrackNormalized: customNormalizedFields.trackNormalized,
+        customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
+        customMetadataAt: watchedAt,
         updatedAt: new Date()
       })
       .onConflictDoUpdate({
@@ -301,28 +271,37 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         set: {
           lastWatchedAt: watchedAt,
           recentRemovedAt: null,
+          customArtist: video.artist,
+          customTrack: video.track,
+          customArtistNormalized: customNormalizedFields.artistNormalized,
+          customTrackNormalized: customNormalizedFields.trackNormalized,
+          customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
+          customMetadataAt: watchedAt,
           updatedAt: new Date()
         }
       });
 
-    const recents = await db
-      .select({ id: userVideoState.id })
-      .from(userVideoState)
-      .where(and(eq(userVideoState.userId, userId), isNotNull(userVideoState.lastWatchedAt)))
-      .orderBy(desc(userVideoState.lastWatchedAt))
-      .limit(MAX_RECENT_VIDEOS + 200);
-
-    if (recents.length > MAX_RECENT_VIDEOS) {
-      const staleIds = recents.slice(MAX_RECENT_VIDEOS).map((row) => row.id);
-
-      await db
-        .update(userVideoState)
-        .set({
-          lastWatchedAt: null,
-          updatedAt: new Date()
-        })
-        .where(inArray(userVideoState.id, staleIds));
-    }
+    await libsqlClient.execute({
+      sql: `
+        WITH ranked AS (
+          SELECT
+            id,
+            ROW_NUMBER() OVER (ORDER BY last_watched_at DESC) AS rn
+          FROM user_video_state
+          WHERE user_id = ? AND last_watched_at IS NOT NULL
+        )
+        UPDATE user_video_state
+        SET
+          last_watched_at = NULL,
+          updated_at = cast(unixepoch('subsecond') * 1000 as integer)
+        WHERE id IN (
+          SELECT id
+          FROM ranked
+          WHERE rn > ?
+        )
+      `,
+      args: [userId, MAX_RECENT_VIDEOS]
+    });
   }
 
   async getRecentVideos(): Promise<RecentVideo[]> {
@@ -462,7 +441,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
   async setVideoDelay(videoInput: string, delay: number): Promise<void> {
     const userId = this.requireUserId();
 
-    const videoId = resolveVideoId(videoInput);
+    const videoId = await this.resolveExistingVideoId(videoInput);
     if (!videoId) {
       return;
     }
@@ -489,7 +468,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
   async getVideoDelay(videoInput: string): Promise<number | undefined> {
     const userId = this.requireUserId();
 
-    const videoId = resolveVideoId(videoInput);
+    const videoId = await this.resolveExistingVideoId(videoInput);
     if (!videoId) {
       return undefined;
     }
@@ -515,7 +494,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
   ): Promise<void> {
     const userId = this.requireUserId();
 
-    const videoId = resolveVideoId(videoInput);
+    const videoId = await this.resolveExistingVideoId(videoInput);
     if (!videoId) {
       return;
     }
@@ -568,7 +547,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
   async getVideoLyricId(videoInput: string): Promise<number | null> {
     const userId = this.requireUserId();
 
-    const videoId = resolveVideoId(videoInput);
+    const videoId = await this.resolveExistingVideoId(videoInput);
     if (!videoId) {
       return null;
     }
@@ -588,44 +567,18 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
       return [];
     }
 
-    const normalizedTokens = normalizedQuery.split(' ').filter((token) => token.length > 0);
-    if (normalizedTokens.length === 0) {
-      return [];
-    }
-
     const safeLimit = Math.max(1, Math.min(limit, MAX_SEARCH_LIMIT));
-    const perSourceLimit = safeLimit * FUZZY_SOURCE_LIMIT_MULTIPLIER;
-    const recentFallbackLimit = Math.max(safeLimit, 20);
     const userIdArg = this.userId ?? null;
     const exactVideoId = resolveVideoId(query) ?? '';
     const ftsQuery = buildFtsQuery(normalizedQuery);
-    const relaxedFtsQuery = buildRelaxedFtsQuery(normalizedQuery);
-    const charPatternQuery = buildCharPatternQuery(normalizedQuery);
-    const firstToken = normalizedTokens[0];
-    const fuzzyEnabled = normalizedQuery.length >= 3 ? 1 : 0;
-    const singleTokenFuzzyEnabled =
-      normalizedTokens.length === 1 &&
-      normalizedQuery.length >= FUZZY_SINGLE_TOKEN_MIN_LENGTH &&
-      normalizedQuery.length <= FUZZY_SINGLE_TOKEN_MAX_LENGTH
-        ? 1
-        : 0;
-    const { jarowinThreshold, damlevThreshold } = resolveFuzzyThresholds(normalizedQuery.length);
-
-    // Multi-token query detection and strong tokens extraction (length >= 4)
-    const isMultiTokenQuery = normalizedTokens.length >= 2;
-    const strongTokens = normalizedTokens.filter((token) => token.length >= 4);
-    const hasStrongTokens = strongTokens.length > 0;
-    const multiTokenFuzzyEnabled = isMultiTokenQuery && hasStrongTokens ? 1 : 0;
-    // Use first strong token (>= 4 chars) for prefix search to avoid matching common short words
-    const prefixToken = strongTokens[0] ?? firstToken;
-
-    // Stricter thresholds for multi-token fuzzy search
-    const multiTokenJarowinThreshold = jarowinThreshold + 0.05;
-    const multiTokenDamlevThreshold = Math.max(1, damlevThreshold - 1);
+    if (!ftsQuery && !exactVideoId) {
+      return [];
+    }
 
     const rows = await libsqlClient.execute({
       sql: `
-        WITH exact_results AS (
+        WITH
+        exact_results AS (
           SELECT
             v.video_id AS videoId,
             v.artist AS artist,
@@ -633,8 +586,8 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
             v.thumbnail_url AS thumbnailUrl,
             u.is_favorite AS isFavorite,
             u.last_watched_at AS lastWatchedAt,
-            4000.0 AS score,
-            0 AS priority
+            0 AS priority,
+            NULL AS bm25Score
           FROM videos v
           LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
           WHERE ? <> '' AND v.video_id = ?
@@ -648,8 +601,8 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
             v.thumbnail_url AS thumbnailUrl,
             u.is_favorite AS isFavorite,
             u.last_watched_at AS lastWatchedAt,
-            (1000.0 - bm25(videos_fts)) AS score,
-            1 AS priority
+            1 AS priority,
+            bm25(videos_fts) AS bm25Score
           FROM videos_fts
           JOIN videos v ON v.rowid = videos_fts.rowid
           LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
@@ -657,182 +610,10 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
           ORDER BY bm25(videos_fts) ASC
           LIMIT ?
         ),
-        fts_relaxed_results AS (
-          SELECT
-            v.video_id AS videoId,
-            v.artist AS artist,
-            v.track AS track,
-            v.thumbnail_url AS thumbnailUrl,
-            u.is_favorite AS isFavorite,
-            u.last_watched_at AS lastWatchedAt,
-            (800.0 - bm25(videos_fts)) AS score,
-            2 AS priority
-          FROM videos_fts
-          JOIN videos v ON v.rowid = videos_fts.rowid
-          LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
-          WHERE ? <> '' AND ? <> '' AND videos_fts MATCH ?
-          ORDER BY bm25(videos_fts) ASC
-          LIMIT ?
-        ),
-        prefix_results AS (
-          SELECT
-            v.video_id AS videoId,
-            v.artist AS artist,
-            v.track AS track,
-            v.thumbnail_url AS thumbnailUrl,
-            u.is_favorite AS isFavorite,
-            u.last_watched_at AS lastWatchedAt,
-            200.0 AS score,
-            3 AS priority
-          FROM videos v
-          LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
-          WHERE ? <> ''
-            AND (
-              v.search_text_normalized LIKE (? || '%')
-              OR v.search_text_normalized LIKE ('% ' || ? || '%')
-            )
-          ORDER BY v.updated_at DESC
-          LIMIT ?
-        ),
-        recent_results AS (
-          SELECT
-            v.video_id AS videoId,
-            v.artist AS artist,
-            v.track AS track,
-            v.thumbnail_url AS thumbnailUrl,
-            u.is_favorite AS isFavorite,
-            u.last_watched_at AS lastWatchedAt,
-            20.0 AS score,
-            6 AS priority
-          FROM videos v
-          LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
-          ORDER BY v.updated_at DESC
-          LIMIT ?
-        ),
-        primary_candidate_pool AS (
-          SELECT videoId FROM exact_results
-          UNION
-          SELECT videoId FROM fts_results
-          UNION
-          SELECT videoId FROM fts_relaxed_results
-          UNION
-          SELECT videoId FROM prefix_results
-        ),
-        candidate_pool AS (
-          SELECT videoId FROM primary_candidate_pool
-          UNION
-          SELECT videoId FROM recent_results
-          WHERE (SELECT total FROM candidate_count) < ?
-        ),
-        candidate_count AS (
-          SELECT COUNT(1) AS total FROM primary_candidate_pool
-        ),
-        fallback_seed AS (
-          SELECT
-            v.video_id AS videoId
-          FROM videos v
-          WHERE ? = 1
-            AND (SELECT total FROM candidate_count) < ?
-            AND ? <> ''
-            AND v.search_text_normalized LIKE ?
-            AND ? = 0
-          ORDER BY v.updated_at DESC
-          LIMIT ?
-        ),
-        fuzzy_pool AS (
-          SELECT videoId FROM candidate_pool
-          UNION
-          SELECT videoId FROM fallback_seed
-        ),
-        fuzzy_raw AS (
-          SELECT
-            v.video_id AS videoId,
-            v.artist AS artist,
-            v.track AS track,
-            v.thumbnail_url AS thumbnailUrl,
-            v.search_text_normalized AS searchTextNormalized,
-            u.is_favorite AS isFavorite,
-            u.last_watched_at AS lastWatchedAt,
-            fuzzy_jarowin(
-              fuzzy_translit(lower(v.artist || ' ' || v.track)),
-              fuzzy_translit(lower(?))
-            ) AS jarowin,
-            fuzzy_damlev(
-              fuzzy_translit(lower(v.artist || ' ' || v.track)),
-              fuzzy_translit(lower(?))
-            ) AS damlev,
-            fuzzy_jarowin(
-              fuzzy_translit(lower(v.artist)),
-              fuzzy_translit(lower(?))
-            ) AS artistJarowin,
-            fuzzy_jarowin(
-              fuzzy_translit(lower(v.track)),
-              fuzzy_translit(lower(?))
-            ) AS trackJarowin,
-            CASE WHEN ? <> '' AND lower(v.video_id) = lower(?) THEN 1 ELSE 0 END AS exactId
-          FROM videos v
-          INNER JOIN fuzzy_pool cp ON cp.videoId = v.video_id
-          LEFT JOIN user_video_state u ON u.video_id = v.video_id AND u.user_id = ?
-        ),
-        fuzzy_results AS (
-          SELECT
-            videoId,
-            artist,
-            track,
-            thumbnailUrl,
-            isFavorite,
-            lastWatchedAt,
-            (
-              (CASE
-                WHEN ? = 1 THEN max(jarowin, artistJarowin, trackJarowin)
-                ELSE jarowin
-              END) * 120.0
-            ) - (damlev * 3.0) + (exactId * 300.0) AS score,
-            4 AS priority
-          FROM fuzzy_raw
-          WHERE ? = 1 AND (
-            -- Standard fuzzy match for single tokens
-            (
-              jarowin >= ?
-              OR damlev <= ?
-              OR exactId = 1
-              OR (? = 1 AND (artistJarowin >= ? OR trackJarowin >= ?))
-            )
-            -- For multi-token queries, require stricter threshold OR strong token match
-            AND (
-              ? = 0  -- Not multi-token
-              OR (
-                -- Multi-token: stricter thresholds
-                jarowin >= ?
-                OR damlev <= ?
-              )
-              OR (
-                -- Multi-token: at least one strong token appears in text
-                ? = 1 AND (
-                  searchTextNormalized LIKE '%' || ? || '%'
-                  OR searchTextNormalized LIKE '%' || ? || '%'
-                )
-              )
-            )
-          )
-          ORDER BY score DESC
-          LIMIT ?
-        ),
         combined AS (
-          SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, score, priority
-          FROM exact_results
+          SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, priority, bm25Score FROM exact_results
           UNION ALL
-          SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, score, priority
-          FROM fts_results
-          UNION ALL
-          SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, score, priority
-          FROM fts_relaxed_results
-          UNION ALL
-          SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, score, priority
-          FROM prefix_results
-          UNION ALL
-          SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, score, priority
-          FROM fuzzy_results
+          SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt, priority, bm25Score FROM fts_results
         ),
         ranked AS (
           SELECT
@@ -842,18 +623,24 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
             thumbnailUrl,
             isFavorite,
             lastWatchedAt,
-            score,
             priority,
+            bm25Score,
             ROW_NUMBER() OVER (
               PARTITION BY videoId
-              ORDER BY score DESC, priority ASC, COALESCE(lastWatchedAt, 0) DESC
+              ORDER BY priority ASC, COALESCE(bm25Score, 0.0) ASC, COALESCE(lastWatchedAt, 0) DESC
             ) AS rn
           FROM combined
         )
-        SELECT videoId, artist, track, thumbnailUrl, isFavorite, lastWatchedAt
+        SELECT
+          videoId,
+          artist,
+          track,
+          thumbnailUrl,
+          isFavorite,
+          lastWatchedAt
         FROM ranked
         WHERE rn = 1
-        ORDER BY score DESC, COALESCE(lastWatchedAt, 0) DESC
+        ORDER BY priority ASC, COALESCE(bm25Score, 0.0) ASC, COALESCE(lastWatchedAt, 0) DESC
         LIMIT ?
       `,
       args: [
@@ -863,49 +650,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         userIdArg,
         ftsQuery,
         ftsQuery,
-        perSourceLimit,
-        userIdArg,
-        relaxedFtsQuery,
-        relaxedFtsQuery,
-        relaxedFtsQuery,
-        perSourceLimit,
-        userIdArg,
-        prefixToken,
-        prefixToken,
-        prefixToken,
-        perSourceLimit,
-        userIdArg,
-        recentFallbackLimit,
-        FUZZY_MIN_CANDIDATES, // Threshold for candidate_pool to include recent_results
-        fuzzyEnabled,
-        FUZZY_MIN_CANDIDATES,
-        charPatternQuery,
-        charPatternQuery,
-        multiTokenFuzzyEnabled,
-        perSourceLimit,
-        normalizedQuery,
-        normalizedQuery,
-        normalizedQuery,
-        normalizedQuery,
-        exactVideoId,
-        exactVideoId,
-        userIdArg,
-        // fuzzy_results parameters
-        singleTokenFuzzyEnabled,
-        fuzzyEnabled,
-        jarowinThreshold,
-        damlevThreshold,
-        singleTokenFuzzyEnabled,
-        FUZZY_SINGLE_TOKEN_JAROWIN_THRESHOLD,
-        FUZZY_SINGLE_TOKEN_JAROWIN_THRESHOLD,
-        // Multi-token conditions
-        multiTokenFuzzyEnabled,
-        multiTokenJarowinThreshold,
-        multiTokenDamlevThreshold,
-        multiTokenFuzzyEnabled,
-        strongTokens[0] ?? '',
-        strongTokens[1] ?? strongTokens[0] ?? '',
-        perSourceLimit,
+        safeLimit * 2,
         safeLimit
       ]
     });

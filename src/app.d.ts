@@ -60,8 +60,6 @@ declare module '$env/static/private' {
   export const MICROSOFT_TENANT_ID: string;
   export const SPOTIFY_CLIENT_ID: string;
   export const SPOTIFY_CLIENT_SECRET: string;
-  export const DEEZER_CLIENT_ID: string;
-  export const DEEZER_CLIENT_SECRET: string;
   export const DATABASE_MODE: string;
   export const DATABASE_URL: string;
   export const DATABASE_AUTH_TOKEN: string;

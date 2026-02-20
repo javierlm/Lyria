@@ -1,5 +1,5 @@
 services:
-  db-fuzzy:
+  db:
     build:
       context: .
       dockerfile: docker/Dockerfile.db-service

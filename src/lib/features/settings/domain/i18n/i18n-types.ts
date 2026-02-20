@@ -657,6 +657,20 @@ type RootTranslation = {
      * P​r​o​v​i​d​e​r​s
      */
     providersSection: string;
+    providers: {
+      /**
+       * G​o​o​g​l​e
+       */
+      google: string;
+      /**
+       * M​i​c​r​o​s​o​f​t
+       */
+      microsoft: string;
+      /**
+       * S​p​o​t​i​f​y
+       */
+      spotify: string;
+    };
     /**
      * E​m​a​i​l​ ​a​n​d​ ​p​a​s​s​w​o​r​d
      */
@@ -678,7 +692,7 @@ type RootTranslation = {
      */
     createAccount: string;
     /**
-     * S​i​g​n​ ​i​n​ ​w​i​t​h​ ​e​m​a​i​l
+     * S​i​g​n​ ​i​n
      */
     signInWithEmail: string;
     /**
@@ -774,6 +788,14 @@ type RootTranslation = {
      * P​l​e​a​s​e​ ​t​r​y​ ​c​o​p​y​i​n​g​ ​t​h​e​ ​l​i​n​k​ ​m​a​n​u​a​l​l​y​.
      */
     urlCopyErrorMessage: string;
+    /**
+     * S​e​s​s​i​o​n​ ​s​t​a​r​t​e​d
+     */
+    signedIn: string;
+    /**
+     * Y​o​u​ ​a​r​e​ ​n​o​w​ ​s​i​g​n​e​d​ ​i​n​.
+     */
+    signedInMessage: string;
     /**
      * D​e​m​o​ ​m​o​d​e​ ​a​c​t​i​v​a​t​e​d
      */
@@ -1468,6 +1490,20 @@ export type TranslationFunctions = {
      * Providers
      */
     providersSection: () => LocalizedString;
+    providers: {
+      /**
+       * Google
+       */
+      google: () => LocalizedString;
+      /**
+       * Microsoft
+       */
+      microsoft: () => LocalizedString;
+      /**
+       * Spotify
+       */
+      spotify: () => LocalizedString;
+    };
     /**
      * Email and password
      */
@@ -1489,7 +1525,7 @@ export type TranslationFunctions = {
      */
     createAccount: () => LocalizedString;
     /**
-     * Sign in with email
+     * Sign in
      */
     signInWithEmail: () => LocalizedString;
     /**
@@ -1584,6 +1620,14 @@ export type TranslationFunctions = {
      * Please try copying the link manually.
      */
     urlCopyErrorMessage: () => LocalizedString;
+    /**
+     * Session started
+     */
+    signedIn: () => LocalizedString;
+    /**
+     * You are now signed in.
+     */
+    signedInMessage: () => LocalizedString;
     /**
      * Demo mode activated
      */

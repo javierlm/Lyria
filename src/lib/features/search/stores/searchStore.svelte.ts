@@ -39,8 +39,6 @@ export class SearchStore {
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly DEBOUNCE_DELAY = 300;
   private readonly MIN_SEARCH_LENGTH = 3;
-  private readonly SINGLE_TERM_FUZZY_MIN_LENGTH = 4;
-  private readonly SINGLE_TERM_FUZZY_MAX_DISTANCE = 1;
 
   private isValidSearch(query: string): boolean {
     return query.trim().length >= this.MIN_SEARCH_LENGTH;
@@ -69,87 +67,20 @@ export class SearchStore {
       .filter((token) => token.length > 0);
   }
 
-  private shouldUseSingleTermFuzzy(searchTerms: string[]): boolean {
-    if (searchTerms.length !== 1) {
-      return false;
-    }
-
-    const normalizedTerm = this.normalizeToken(searchTerms[0]);
-    return normalizedTerm.length >= this.SINGLE_TERM_FUZZY_MIN_LENGTH;
-  }
-
-  private levenshteinDistance(a: string, b: string, maxDistance: number): number {
-    if (a === b) {
-      return 0;
-    }
-
-    if (Math.abs(a.length - b.length) > maxDistance) {
-      return maxDistance + 1;
-    }
-
-    const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
-
-    for (let i = 1; i <= a.length; i++) {
-      let diagonal = previous[0];
-      previous[0] = i;
-
-      let left = i;
-      let smallestInRow = left;
-
-      for (let j = 1; j <= b.length; j++) {
-        const up = previous[j];
-        const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1;
-        const value = Math.min(up + 1, left + 1, diagonal + substitutionCost);
-
-        diagonal = up;
-        previous[j] = value;
-        left = value;
-
-        if (value < smallestInRow) {
-          smallestInRow = value;
-        }
-      }
-
-      if (smallestInRow > maxDistance) {
-        return maxDistance + 1;
-      }
-    }
-
-    return previous[b.length];
-  }
-
-  private isSingleTermFuzzyMatch(searchTerm: string, candidate: string): boolean {
-    if (candidate.includes(searchTerm)) {
-      return true;
-    }
-
-    return (
-      this.levenshteinDistance(searchTerm, candidate, this.SINGLE_TERM_FUZZY_MAX_DISTANCE) <=
-      this.SINGLE_TERM_FUZZY_MAX_DISTANCE
-    );
-  }
-
   private matchesSearch(
     video: Pick<VideoItem, 'artist' | 'track'>,
     searchTerms: string[]
   ): boolean {
-    const searchableText = this.buildSearchableText(video);
-
-    if (searchTerms.every((term) => searchableText.includes(term))) {
-      return true;
-    }
-
-    if (!this.shouldUseSingleTermFuzzy(searchTerms)) {
+    const normalizedTerms = searchTerms
+      .map((term) => this.normalizeToken(term))
+      .filter((term) => term.length > 0);
+    if (normalizedTerms.length === 0) {
       return false;
     }
 
-    const fuzzyTerm = this.normalizeToken(searchTerms[0]);
-    if (!fuzzyTerm) {
-      return false;
-    }
-
-    return this.tokenizeSearchableText(searchableText).some((token) =>
-      this.isSingleTermFuzzyMatch(fuzzyTerm, token)
+    const searchableTokens = this.tokenizeSearchableText(this.buildSearchableText(video));
+    return normalizedTerms.every((searchTerm) =>
+      searchableTokens.some((candidateToken) => candidateToken.startsWith(searchTerm))
     );
   }
 
@@ -290,9 +221,11 @@ export class SearchStore {
       return this.matchesSearch(localVideo, searchTerms);
     });
 
-    return [...enrichedResults, ...matchingLocalVideos].sort((a, b) =>
+    const trailingLocalFallback = matchingLocalVideos.sort((a, b) =>
       this.compareBySourceAndTimestamp(a, b)
     );
+
+    return [...enrichedResults, ...trailingLocalFallback];
   }
 
   triggerSearch() {
