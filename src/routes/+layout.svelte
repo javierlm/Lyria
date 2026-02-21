@@ -7,7 +7,7 @@
   import ReloadPrompt from '$lib/features/ui/components/ReloadPrompt.svelte';
   import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
   import AuthControls from '$lib/features/auth/components/AuthControls.svelte';
-  import { NotificationContainer } from '$lib/features/notification';
+  import { NotificationContainer, notify } from '$lib/features/notification';
   import LL from '$i18n/i18n-svelte';
   import { onMount } from 'svelte';
   import { demoStore } from '$lib/features/settings/stores/demoStore.svelte';
@@ -20,6 +20,8 @@
   import { onNavigate } from '$app/navigation';
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
 
+  const SIGN_IN_NOTIFICATION_FLAG = 'lyria:auth:show-signin-notification';
+
   let { data, children } = $props();
 
   $effect(() => {
@@ -31,6 +33,25 @@
       session: data.session,
       user: data.user
     });
+  });
+
+  $effect(() => {
+    if (typeof window === 'undefined' || !authStore.isAuthenticated) {
+      return;
+    }
+
+    const shouldNotify = window.sessionStorage.getItem(SIGN_IN_NOTIFICATION_FLAG) === '1';
+    if (!shouldNotify) {
+      return;
+    }
+
+    const notifications = $LL.notifications as typeof $LL.notifications & {
+      signedIn: () => string;
+      signedInMessage: () => string;
+    };
+
+    window.sessionStorage.removeItem(SIGN_IN_NOTIFICATION_FLAG);
+    notify.success(notifications.signedIn(), notifications.signedInMessage());
   });
 
   onMount(() => {

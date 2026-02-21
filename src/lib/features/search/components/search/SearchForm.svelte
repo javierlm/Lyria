@@ -22,6 +22,12 @@
   }
 
   function handleFocus() {
+    if (searchStore.searchValue.trim()) {
+      if (searchStore.filteredVideos.length > 0 && !searchStore.showRecentVideos) {
+        searchStore.showRecentVideos = true;
+      }
+      return;
+    }
     searchStore.loadRecentVideos();
   }
 

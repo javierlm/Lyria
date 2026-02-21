@@ -187,12 +187,17 @@ const es = {
     signIn: 'Iniciar sesion',
     signOut: 'Cerrar sesion',
     providersSection: 'Proveedores',
+    providers: {
+      google: 'Google',
+      microsoft: 'Microsoft',
+      spotify: 'Spotify'
+    },
     emailSection: 'Email y password',
     namePlaceholder: 'Nombre',
     emailPlaceholder: 'Email',
     passwordPlaceholder: 'Password',
     createAccount: 'Crear cuenta',
-    signInWithEmail: 'Entrar con email',
+    signInWithEmail: 'Iniciar sesión',
     createNewAccount: 'Crear cuenta nueva',
     alreadyHaveAccount: 'Ya tengo cuenta',
     errors: {
@@ -223,6 +228,8 @@ const es = {
     urlCopied: 'URL copiada',
     urlCopyError: 'No se pudo copiar la URL',
     urlCopyErrorMessage: 'Copia el enlace manualmente.',
+    signedIn: 'Sesion iniciada',
+    signedInMessage: 'Has iniciado sesion correctamente.',
     demoModeActivated: 'Modo demo activado',
     demoModeActivatedMessage:
       'Los videos de demo están disponibles. Para salir del modo demo, abre el menú y selecciona "Desactivar modo demo".',

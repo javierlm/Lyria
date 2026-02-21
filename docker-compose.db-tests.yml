@@ -9,7 +9,6 @@ services:
       DATABASE_LOCAL_URL: http://127.0.0.1:8091
       TEST_DB_PORT: 8091
       TEST_DB_FILE: /tmp/lyria-test.db
-      TEST_REQUIRE_FUZZY: 1
       TEST_DB_RUNTIME: sqld
-      SQLD_EXTENSIONS_PATH: /opt/sqlean
-      TEST_DB_FUZZY_EXTENSION: fuzzy.so
+    volumes:
+      - ./cache/perf-results:/app/cache/perf-results

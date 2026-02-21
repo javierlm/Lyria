@@ -4,19 +4,36 @@
   import { invalidateAll } from '$app/navigation';
   import { fade, fly } from 'svelte/transition';
   import X from 'phosphor-svelte/lib/X';
-  import UserCircle from 'phosphor-svelte/lib/UserCircle';
+  import UserCircleIcon from 'phosphor-svelte/lib/UserCircleIcon';
   import { portal } from '$lib/features/ui/actions/portal';
   import LL from '$i18n/i18n-svelte';
   import ProviderIcon from './ProviderIcon.svelte';
 
-  type ProviderId = 'google' | 'microsoft' | 'spotify' | 'deezer';
+  const SIGN_IN_NOTIFICATION_FLAG = 'lyria:auth:show-signin-notification';
 
-  const providers: Array<{ id: ProviderId; label: string }> = [
-    { id: 'google', label: 'Google' },
-    { id: 'microsoft', label: 'Microsoft' },
-    { id: 'spotify', label: 'Spotify' },
-    { id: 'deezer', label: 'Deezer' }
-  ];
+  type ProviderId = 'google' | 'microsoft' | 'spotify';
+
+  const providers: ProviderId[] = ['google', 'microsoft', 'spotify'];
+
+  function getProviderLabel(provider: ProviderId): string {
+    const authMessages = $LL.auth as typeof $LL.auth & {
+      providers: {
+        google: () => string;
+        microsoft: () => string;
+        spotify: () => string;
+      };
+    };
+
+    if (provider === 'google') {
+      return authMessages.providers.google();
+    }
+
+    if (provider === 'microsoft') {
+      return authMessages.providers.microsoft();
+    }
+
+    return authMessages.providers.spotify();
+  }
 
   let isPanelOpen = $state(false);
   let isLoading = $state(false);
@@ -56,20 +73,39 @@
     return `${window.location.pathname}${window.location.search}`;
   }
 
+  function setSignInNotificationFlag(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.sessionStorage.setItem(SIGN_IN_NOTIFICATION_FLAG, '1');
+  }
+
+  function clearSignInNotificationFlag(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.sessionStorage.removeItem(SIGN_IN_NOTIFICATION_FLAG);
+  }
+
   async function signInWithProvider(provider: ProviderId): Promise<void> {
     isLoading = true;
     statusMessage = '';
 
     try {
+      setSignInNotificationFlag();
       const result = await authClient.signIn.social({
         provider,
         callbackURL: resolveCallbackURL()
       });
 
       if (result?.error) {
+        clearSignInNotificationFlag();
         statusMessage = result.error.message || $LL.auth.errors.signInFailed();
       }
     } catch {
+      clearSignInNotificationFlag();
       statusMessage = $LL.auth.errors.signInFailed();
     } finally {
       isLoading = false;
@@ -91,6 +127,7 @@
     statusMessage = '';
 
     try {
+      setSignInNotificationFlag();
       const result = useSignUp
         ? await authClient.signUp.email({
             name: name.trim(),
@@ -105,6 +142,7 @@
           });
 
       if (result?.error) {
+        clearSignInNotificationFlag();
         statusMessage = result.error.message || $LL.auth.errors.authFailed();
         return;
       }
@@ -115,6 +153,7 @@
       name = '';
       await invalidateAll();
     } catch {
+      clearSignInNotificationFlag();
       statusMessage = $LL.auth.errors.authFailed();
     } finally {
       isLoading = false;
@@ -133,9 +172,34 @@
       }
 
       isPanelOpen = false;
-      await invalidateAll();
+      window.location.reload();
     } catch {
       statusMessage = $LL.auth.errors.signOutFailed();
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  async function linkMicrosoftAccount(): Promise<void> {
+    if (!authStore.isAuthenticated) {
+      statusMessage = $LL.auth.errors.authFailed();
+      return;
+    }
+
+    isLoading = true;
+    statusMessage = '';
+
+    try {
+      const result = await authClient.linkSocial({
+        provider: 'microsoft',
+        callbackURL: resolveCallbackURL()
+      });
+
+      if (result?.error) {
+        statusMessage = result.error.message || $LL.auth.errors.authFailed();
+      }
+    } catch {
+      statusMessage = $LL.auth.errors.authFailed();
     } finally {
       isLoading = false;
     }
@@ -146,13 +210,21 @@
 
 <div class="auth-controls">
   {#if authStore.isAuthenticated}
-    <div class="user-pill" title={authStore.user?.email ?? ''}>
-      <span class="user-name">
-        {authStore.user?.name ?? authStore.user?.email ?? $LL.auth.account()}
-      </span>
-      <button class="auth-btn secondary" onclick={signOut} disabled={isLoading}
-        >{$LL.auth.signOut()}</button
-      >
+    <div class="authenticated-controls">
+      <div class="user-pill" title={authStore.user?.email ?? ''}>
+        <span class="user-name">
+          {authStore.user?.name ?? authStore.user?.email ?? $LL.auth.account()}
+        </span>
+        <button class="auth-btn secondary" onclick={linkMicrosoftAccount} disabled={isLoading}
+          >{$LL.auth.providers.microsoft()}</button
+        >
+        <button class="auth-btn secondary" onclick={signOut} disabled={isLoading}
+          >{$LL.auth.signOut()}</button
+        >
+      </div>
+      {#if statusMessage}
+        <p class="status">{statusMessage}</p>
+      {/if}
     </div>
   {:else}
     <button class="auth-btn" onclick={() => (isPanelOpen = true)} disabled={isLoading}>
@@ -178,7 +250,7 @@
       <div class="modal-container" transition:fly={{ y: 20, duration: 220 }}>
         <div class="modal-header">
           <h2 class="modal-title">
-            <UserCircle size={20} weight="duotone" />
+            <UserCircleIcon size={32} weight="duotone" />
             {$LL.auth.signIn()}
           </h2>
           <button class="close-button" onclick={closePanel} aria-label={$LL.lyricSelector.close()}>
@@ -190,16 +262,16 @@
           <div class="panel-section">
             <p class="section-title">{$LL.auth.providersSection()}</p>
             <div class="provider-grid">
-              {#each providers as provider (provider.id)}
+              {#each providers as provider (provider)}
                 <button
                   class="provider-btn"
-                  onclick={() => signInWithProvider(provider.id)}
+                  onclick={() => signInWithProvider(provider)}
                   disabled={isLoading}
                 >
                   <span class="provider-icon">
-                    <ProviderIcon provider={provider.id} size={20} />
+                    <ProviderIcon {provider} size={20} />
                   </span>
-                  {provider.label}
+                  {getProviderLabel(provider)}
                 </button>
               {/each}
             </div>
@@ -294,6 +366,13 @@
   .auth-btn.secondary {
     font-weight: 500;
     border-radius: 999px;
+  }
+
+  .authenticated-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    align-items: flex-end;
   }
 
   .user-pill {
@@ -405,7 +484,7 @@
 
   .provider-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     gap: 0.5rem;
   }
 

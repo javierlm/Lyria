@@ -6,16 +6,11 @@ RUN apt-get update \
   && curl -sSfL https://get.tur.so/install.sh | bash \
   && ln -s /root/.turso/turso /usr/local/bin/turso \
   && ln -s /root/.turso/sqld /usr/local/bin/sqld \
-  && mkdir -p /opt/sqlean \
-  && curl -sSfL https://github.com/nalgeon/sqlean/releases/latest/download/sqlean-linux-x64.zip -o /tmp/sqlean.zip \
-  && unzip -j /tmp/sqlean.zip fuzzy.so -d /opt/sqlean \
-  && sha256sum /opt/sqlean/fuzzy.so | awk '{print $1 "  fuzzy.so"}' > /opt/sqlean/trusted.lst \
-  && rm -f /tmp/sqlean.zip \
   && rm -rf /var/lib/apt/lists/*
 
 FROM base AS dev-db
 
-CMD ["sqld", "--db-path", "/var/lib/sqld/dev.db", "--http-listen-addr", "0.0.0.0:8080", "--extensions-path", "/opt/sqlean", "--no-welcome"]
+CMD ["sqld", "--db-path", "/var/lib/sqld/dev.db", "--http-listen-addr", "0.0.0.0:8080", "--no-welcome"]
 
 FROM base AS db-tests
 
@@ -25,4 +20,4 @@ COPY . .
 
 RUN pnpm install --frozen-lockfile
 
-CMD ["pnpm", "run", "test:db:strict"]
+CMD ["pnpm", "run", "test:db"]

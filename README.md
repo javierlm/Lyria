@@ -22,13 +22,13 @@ Built with **Svelte 5** and **SvelteKit**, Lyria leverages the latest web techno
 
 - [Node.js](https://nodejs.org/) (v20 or higher recommended)
 - [pnpm](https://pnpm.io/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for local database with fuzzy search)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for local libSQL database)
 
-#### Optional: local fuzzy search with Docker (recommended)
+#### Optional: local libSQL database with Docker (recommended)
 
-If you want fuzzy search available while running the app locally, start a local `sqld` container with `fuzzy.so` preloaded as a trusted extension.
+If you want local database support while running the app, start a local `sqld` container.
 
-1. Start local fuzzy-enabled database:
+1. Start local database:
 
    ```powershell
    pnpm run db:dev
@@ -40,7 +40,7 @@ If you want fuzzy search available while running the app locally, start a local 
    pnpm run dev
    ```
 
-3. Stop fuzzy local database when done:
+3. Stop local database when done:
 
    ```powershell
    pnpm run db:dev:stop
@@ -94,6 +94,7 @@ If you want fuzzy search available while running the app locally, start a local 
     # Better Auth
     BETTER_AUTH_URL=http://localhost:5173
     BETTER_AUTH_BASE_URL=http://localhost:5173
+    BETTER_AUTH_PREVIEW_URL=
     BETTER_AUTH_SECRET=replace_with_a_minimum_32_char_secret
 
     # Social providers
@@ -104,8 +105,6 @@ If you want fuzzy search available while running the app locally, start a local 
     MICROSOFT_TENANT_ID=common
     SPOTIFY_CLIENT_ID=...
     SPOTIFY_CLIENT_SECRET=...
-    DEEZER_CLIENT_ID=...
-    DEEZER_CLIENT_SECRET=...
     ```
 
 ## 💻 Development
@@ -134,11 +133,10 @@ The application will be available at `http://localhost:5173`.
 - `pnpm run lint`: Lints the codebase.
 - `pnpm run format`: Formats the code using Prettier.
 - `pnpm run test:db`: Runs integration tests against an isolated local test database.
-- `pnpm run test:db:strict`: Runs database integration tests requiring fuzzy support.
 - `pnpm run test:db:watch`: Watches integration tests against an isolated local test database.
-- `pnpm run test:db:docker`: Runs strict database tests in Docker (app stays local).
-- `pnpm run db:dev`: Starts local `sqld` with SQLean fuzzy extension in Docker.
-- `pnpm run db:dev:stop`: Stops local fuzzy Docker database.
+- `pnpm run test:db:docker`: Runs database tests in Docker (app stays local).
+- `pnpm run db:dev`: Starts local `sqld` in Docker.
+- `pnpm run db:dev:stop`: Stops local Docker database.
 - `pnpm run db:generate`: Generates Drizzle migrations.
 - `pnpm run db:migrate`: Applies Drizzle migrations.
 - `pnpm run auth:generate`: Generates Better Auth schema artifacts to `src/lib/server/db/auth-schema.ts`.
@@ -146,17 +144,17 @@ The application will be available at `http://localhost:5173`.
 - `pnpm run typesafe-i18n`: Generates i18n types.
 - `pnpm run sync:cache`: Syncs translation cache from remote to local.
 
-> The app validates FTS5 and fuzzy (`fuzzy_translit`, `fuzzy_jarowin`, `fuzzy_damlev`) on startup. If those are missing, make sure the local Docker database is running (`pnpm run db:dev`).
+> The app validates FTS5 support on startup. If validation fails, make sure the local Docker database is running (`pnpm run db:dev`).
 
 ### Database tests with Docker
 
-You can keep running the app locally (`pnpm run dev`) and execute strict database tests in a reproducible Docker environment:
+You can keep running the app locally (`pnpm run dev`) and execute database tests in a reproducible Docker environment:
 
 ```sh
 pnpm run test:db:docker
 ```
 
-This command builds a test image, starts a temporary local `sqld` server with SQLean fuzzy extension, and runs integration tests with fuzzy support required.
+This command builds a test image, starts a temporary local `sqld` server, and runs integration tests in a reproducible environment.
 
 ## 📦 Building for Production
 
