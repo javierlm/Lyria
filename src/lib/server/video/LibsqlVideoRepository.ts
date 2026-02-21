@@ -151,7 +151,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     return artist === 'Unknown Artist' || track.startsWith('Video ');
   }
 
-  private async upsertVideo(metadata: VideoMetadata): Promise<void> {
+  async upsertVideo(metadata: VideoMetadata): Promise<void> {
     const artist = metadata.artist.trim() || 'Unknown Artist';
     const track = metadata.track.trim() || 'Unknown Track';
     const normalizedFields = buildNormalizedVideoFields(artist, track);

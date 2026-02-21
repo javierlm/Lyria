@@ -2,6 +2,7 @@ import type { SongOfTheDayStored, WikidataSong, LyricsCheckResult } from '../dom
 import { WikidataMusicService } from './WikidataMusicService';
 import { LrcLibCheckerService } from './LrcLibCheckerService';
 import { YouTubeValidationService } from './YouTubeValidationService';
+import { createLibsqlVideoRepository } from '$lib/server/video/LibsqlVideoRepository';
 
 interface CandidateSong {
   song: WikidataSong;
@@ -18,6 +19,20 @@ export class SongOfTheDaySelector {
     this.wikidataService = new WikidataMusicService();
     this.lrcLibService = new LrcLibCheckerService();
     this.youtubeValidator = new YouTubeValidationService();
+  }
+
+  private async saveToDatabase(song: WikidataSong): Promise<void> {
+    try {
+      const repository = createLibsqlVideoRepository();
+      await repository.upsertVideo({
+        videoId: song.videoId,
+        artist: song.artistName,
+        track: song.title,
+        thumbnailUrl: `https://img.youtube.com/vi/${song.videoId}/mqdefault.jpg`
+      });
+    } catch (error) {
+      console.error(`Failed to save video ${song.videoId} to database:`, error);
+    }
   }
 
   /**
@@ -56,7 +71,10 @@ export class SongOfTheDaySelector {
         continue;
       }
 
-      console.log(`✅ Video ${song.videoId} is valid, checking lyrics...`);
+      console.log(`✅ Video ${song.videoId} is valid, saving to database...`);
+      await this.saveToDatabase(song);
+
+      console.log(`🔍 Checking lyrics for "${song.title}"...`);
 
       // Video is valid, now check for lyrics
       const lyricsResult = await this.lrcLibService.checkLyrics(song.artistName, song.title);
