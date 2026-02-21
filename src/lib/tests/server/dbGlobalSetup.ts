@@ -6,10 +6,7 @@ import { createClient } from '@libsql/client';
 const TEST_DB_PORT = Number(process.env.TEST_DB_PORT ?? '8091');
 const TEST_DB_FILE = process.env.TEST_DB_FILE ?? 'local.test.db';
 const TEST_DB_URL = `http://127.0.0.1:${TEST_DB_PORT}`;
-const REQUIRE_FUZZY = process.env.TEST_REQUIRE_FUZZY === '1';
 const TEST_DB_RUNTIME = process.env.TEST_DB_RUNTIME ?? 'turso';
-const FUZZY_EXTENSION_NAME = process.env.TEST_DB_FUZZY_EXTENSION ?? 'fuzzy.so';
-const SQLD_EXTENSIONS_PATH = process.env.SQLD_EXTENSIONS_PATH;
 
 function cleanupTestDbFiles(dbFilePath: string): void {
   const suffixes = ['', '-wal', '-shm', '-journal'];
@@ -59,46 +56,6 @@ async function applyBaseMigration(url: string): Promise<void> {
   }
 }
 
-async function detectFuzzySupport(url: string): Promise<boolean> {
-  const client = createClient({ url });
-  const rows = await client.execute({
-    sql: `SELECT name FROM pragma_function_list WHERE name IN (?, ?, ?)`,
-    args: ['fuzzy_translit', 'fuzzy_jarowin', 'fuzzy_damlev']
-  });
-
-  const available = new Set(
-    rows.rows
-      .map((row) => {
-        const name = (row as { name?: unknown }).name;
-        return typeof name === 'string' ? name : null;
-      })
-      .filter((name): name is string => name !== null)
-  );
-
-  return (
-    available.has('fuzzy_translit') &&
-    available.has('fuzzy_jarowin') &&
-    available.has('fuzzy_damlev')
-  );
-}
-
-async function loadFuzzyExtensionIfNeeded(url: string): Promise<void> {
-  if (TEST_DB_RUNTIME !== 'sqld') {
-    return;
-  }
-
-  const client = createClient({ url });
-
-  try {
-    await client.execute({
-      sql: `SELECT load_extension(?)`,
-      args: [FUZZY_EXTENSION_NAME]
-    });
-  } catch {
-    // If extension is already loaded or load_extension is restricted, capability check will decide next.
-  }
-}
-
 export default async function setup(): Promise<() => Promise<void>> {
   const dbFilePath = resolve(TEST_DB_FILE);
 
@@ -117,8 +74,6 @@ export default async function setup(): Promise<() => Promise<void>> {
             TEST_DB_FILE,
             '--http-listen-addr',
             `0.0.0.0:${TEST_DB_PORT}`,
-            '--extensions-path',
-            SQLD_EXTENSIONS_PATH ?? '/opt/sqlean',
             '--no-welcome'
           ],
           {
@@ -146,17 +101,7 @@ export default async function setup(): Promise<() => Promise<void>> {
   databaseProcess.stderr?.on('data', () => {});
 
   await waitForDatabase(TEST_DB_URL);
-  await loadFuzzyExtensionIfNeeded(TEST_DB_URL);
   await applyBaseMigration(TEST_DB_URL);
-  const hasFuzzySupport = await detectFuzzySupport(TEST_DB_URL);
-  process.env.TEST_DB_HAS_FUZZY = hasFuzzySupport ? '1' : '0';
-
-  if (REQUIRE_FUZZY && !hasFuzzySupport) {
-    throw new Error(
-      '[test-db] Fuzzy functions are required but unavailable in test database. ' +
-        'Run non-strict tests with "pnpm run test:db" or provide a runtime with fuzzy support.'
-    );
-  }
 
   return async () => {
     if (!databaseProcess.killed) {
