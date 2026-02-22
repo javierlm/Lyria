@@ -6,6 +6,7 @@ export type NotificationType =
   | 'warning'
   | 'error'
   | 'pwa-update'
+  | 'progress'
   | 'favorite-added'
   | 'favorite-removed';
 export type NotificationPosition =

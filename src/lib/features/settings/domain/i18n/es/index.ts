@@ -235,6 +235,9 @@ const es = {
       'Hemos encontrado videos guardados en este navegador. Quieres importar los recientes y favoritos que falten en tu cuenta?',
     importNow: 'Importar',
     importLater: 'Ahora no',
+    importInProgress: 'Importando videos',
+    importInProgressMessage:
+      'Espera un momento mientras importamos tus recientes y favoritos locales.',
     importCompleted: 'Importacion completada',
     importCompletedMessage:
       'Se importaron correctamente los recientes y favoritos locales que faltaban en tu cuenta.',

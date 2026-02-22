@@ -22,12 +22,14 @@
     info: Info,
     warning: Warning,
     error: WarningCircle,
-    'pwa-update': ArrowClockwise
+    'pwa-update': ArrowClockwise,
+    progress: ArrowClockwise
   };
 
   const typeConfig = $derived(notificationRegistry.get(notification.type));
 
   const IconComponent = $derived(typeConfig?.icon ?? fallbackIcons[notification.type] ?? Info);
+  const isSpinningIcon = $derived(notification.type === 'progress');
 
   function closeNotification() {
     isClosing = true;
@@ -63,7 +65,7 @@
   aria-live="polite"
 >
   <div class="notification-content-wrapper">
-    <div class="notification-icon">
+    <div class="notification-icon" class:spinning-icon={isSpinningIcon}>
       <IconComponent weight="fill" />
     </div>
     <div class="notification-content">
@@ -211,6 +213,15 @@
       0 0 12px rgba(156, 163, 175, 0.1);
   }
 
+  .notification.notification-progress {
+    border-left-color: #2563eb;
+    background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+    box-shadow:
+      0 10px 30px rgba(37, 99, 235, 0.15),
+      0 0 0 1px rgba(37, 99, 235, 0.2),
+      0 0 12px rgba(37, 99, 235, 0.1);
+  }
+
   :global(html.dark-mode) .notification.notification-success {
     background: linear-gradient(135deg, #0d2818 0%, #1a2f23 100%);
     box-shadow:
@@ -271,6 +282,16 @@
     border-bottom: 1px solid rgba(156, 163, 175, 0.4);
   }
 
+  :global(html.dark-mode) .notification.notification-progress {
+    background: linear-gradient(135deg, #0f1f3d 0%, #1a2d52 100%);
+    box-shadow:
+      0 10px 30px rgba(37, 99, 235, 0.2),
+      0 0 8px rgba(37, 99, 235, 0.12);
+    border-right: 1px solid rgba(37, 99, 235, 0.4);
+    border-top: 1px solid rgba(37, 99, 235, 0.4);
+    border-bottom: 1px solid rgba(37, 99, 235, 0.4);
+  }
+
   .notification-content-wrapper {
     display: flex;
     align-items: flex-start;
@@ -312,6 +333,23 @@
 
   .notification.notification-favorite-removed .notification-icon {
     background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  }
+
+  .notification.notification-progress .notification-icon {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  }
+
+  .notification-icon.spinning-icon :global(svg) {
+    animation: iconSpin 0.9s linear infinite;
+  }
+
+  @keyframes iconSpin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .notification-icon :global(svg) {

@@ -157,6 +157,17 @@ class NotificationStore {
     });
   }
 
+  progress(
+    title: string,
+    message: string,
+    options?: Omit<NotificationCreateOptions, 'duration'>
+  ): string {
+    return this.create('progress', title, message, {
+      ...options,
+      duration: null
+    });
+  }
+
   persistent(
     type: NotificationType,
     title: string,
@@ -182,6 +193,7 @@ export const notify = {
   info: notificationStore.info.bind(notificationStore),
   warning: notificationStore.warning.bind(notificationStore),
   error: notificationStore.error.bind(notificationStore),
+  progress: notificationStore.progress.bind(notificationStore),
   favoriteAdded: notificationStore.favoriteAdded.bind(notificationStore),
   favoriteRemoved: notificationStore.favoriteRemoved.bind(notificationStore),
   persistent: notificationStore.persistent.bind(notificationStore)

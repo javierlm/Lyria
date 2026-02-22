@@ -813,6 +813,14 @@ type RootTranslation = {
      */
     importLater: string;
     /**
+     * I​m​p​o​r​t​i​n​g​ ​v​i​d​e​o​s
+     */
+    importInProgress: string;
+    /**
+     * P​l​e​a​s​e​ ​w​a​i​t​ ​w​h​i​l​e​ ​w​e​ ​i​m​p​o​r​t​ ​y​o​u​r​ ​l​o​c​a​l​ ​r​e​c​e​n​t​s​ ​a​n​d​ ​f​a​v​o​r​i​t​e​s​.
+     */
+    importInProgressMessage: string;
+    /**
      * I​m​p​o​r​t​ ​c​o​m​p​l​e​t​e​d
      */
     importCompleted: string;
@@ -1676,6 +1684,14 @@ export type TranslationFunctions = {
      * Not now
      */
     importLater: () => LocalizedString;
+    /**
+     * Importing videos
+     */
+    importInProgress: () => LocalizedString;
+    /**
+     * Please wait while we import your local recents and favorites.
+     */
+    importInProgressMessage: () => LocalizedString;
     /**
      * Import completed
      */

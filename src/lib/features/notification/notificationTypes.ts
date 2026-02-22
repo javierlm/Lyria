@@ -46,6 +46,13 @@ export const defaultNotificationTypes: NotificationTypeConfig[] = [
     styleClass: 'notification-info'
   },
   {
+    id: 'progress',
+    icon: ArrowClockwiseIcon,
+    defaultDuration: null,
+    defaultPosition: DEFAULT_NOTIFICATION_POSITION,
+    styleClass: 'notification-progress'
+  },
+  {
     id: 'favorite-added',
     icon: HeartIcon,
     defaultDuration: DEFAULT_NOTIFICATION_DURATION,

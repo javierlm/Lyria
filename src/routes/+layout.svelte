@@ -14,7 +14,7 @@
   import { authStore } from '$lib/features/auth/stores/authStore.svelte';
   import {
     getImportCandidateCounts,
-    importMissingVideosFromIndexedDB
+    importMissingVideosFromIndexedDB as importMissingVideosFromIndexedDBService
   } from '$lib/features/video/services/videoImportService';
   import { VideoImportPromptService } from '$lib/features/video/services/videoImportPromptService';
   import '@fontsource/inter/400.css';
@@ -94,7 +94,6 @@
   const videoImportPromptService = new VideoImportPromptService(
     {
       getImportCandidateCounts,
-      importMissingVideosFromIndexedDB,
       readFlag: readImportFlag,
       writeFlag: writeImportFlag,
       getNotifications: () => {
@@ -119,6 +118,23 @@
           importPartial: notifications.importPartial(),
           importPartialMessage: notifications.importPartialMessage()
         };
+      },
+      importMissingVideosFromIndexedDB: async () => {
+        const notifications = $LL.notifications as typeof $LL.notifications & {
+          importInProgress: () => string;
+          importInProgressMessage: () => string;
+        };
+
+        const notificationId = notify.progress(
+          notifications.importInProgress(),
+          notifications.importInProgressMessage()
+        );
+
+        try {
+          return await importMissingVideosFromIndexedDBService();
+        } finally {
+          notify.remove(notificationId);
+        }
       },
       loadRecentVideos: () => searchStore.loadRecentVideos(),
       notifyPersistent: ({ title, message, importLabel, laterLabel, onImport, onLater }) => {

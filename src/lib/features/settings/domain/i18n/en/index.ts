@@ -235,6 +235,8 @@ const en = {
       'We found videos stored in this browser. Import missing recents and favorites into your account?',
     importNow: 'Import',
     importLater: 'Not now',
+    importInProgress: 'Importing videos',
+    importInProgressMessage: 'Please wait while we import your local recents and favorites.',
     importCompleted: 'Import completed',
     importCompletedMessage: 'Your missing local recents and favorites were imported successfully.',
     importPartial: 'Import completed with warnings',
