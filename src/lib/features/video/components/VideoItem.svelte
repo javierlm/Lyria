@@ -85,7 +85,7 @@
         </div>
       {:else if video.source === 'catalog'}
         <div class="video-global-badge">
-          <span>Resultado global</span>
+          <span>{$LL.video.globalResult()}</span>
         </div>
       {:else if video.timestamp !== null && video.timestamp !== undefined}
         <div class="video-time-ago">

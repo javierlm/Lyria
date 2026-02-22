@@ -14,7 +14,8 @@ const en = {
     favorites: 'Favorites'
   },
   video: {
-    unplayed: 'Unplayed'
+    unplayed: 'Unplayed',
+    globalResult: 'Global result'
   },
   videoError: {
     title: 'Video Unavailable',

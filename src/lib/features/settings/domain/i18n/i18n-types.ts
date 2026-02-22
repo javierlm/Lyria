@@ -59,6 +59,10 @@ type RootTranslation = {
      * U​n​p​l​a​y​e​d
      */
     unplayed: string;
+    /**
+     * G​l​o​b​a​l​ ​r​e​s​u​l​t
+     */
+    globalResult: string;
   };
   videoError: {
     /**
@@ -950,6 +954,10 @@ export type TranslationFunctions = {
      * Unplayed
      */
     unplayed: () => LocalizedString;
+    /**
+     * Global result
+     */
+    globalResult: () => LocalizedString;
   };
   videoError: {
     /**
