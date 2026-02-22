@@ -1125,7 +1125,7 @@ async function loadDefaultCandidates(searchId: number) {
   playerState.candidates = candidates;
 }
 
-export async function performSearch(query: string) {
+export async function performSearch(query: string, signal?: AbortSignal) {
   const searchId = ++currentSearchId;
 
   if (!query.trim()) {
@@ -1137,7 +1137,7 @@ export async function performSearch(query: string) {
   if (!player) return;
 
   const duration = player.getDuration();
-  const candidates = await searchCandidates(query, '', duration);
+  const candidates = await searchCandidates(query, '', duration, signal);
 
   if (searchId !== currentSearchId) return;
 

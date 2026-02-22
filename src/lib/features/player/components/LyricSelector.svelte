@@ -22,8 +22,14 @@
   let loading = $state(false);
   let selecting = $state<number | null>(null);
   let searchTimeout: ReturnType<typeof setTimeout>;
+  let activeSearchController: AbortController | null = null;
   let searchId = 0;
   let initialLoadDone = false;
+
+  function abortActiveSearch() {
+    activeSearchController?.abort();
+    activeSearchController = null;
+  }
 
   $effect(() => {
     const query = playerState.searchQuery;
@@ -34,6 +40,7 @@
       }
 
       clearTimeout(searchTimeout);
+      abortActiveSearch();
 
       if (!query.trim()) {
         loading = false;
@@ -45,12 +52,23 @@
       loading = true;
 
       searchTimeout = setTimeout(async () => {
-        await performSearch(query);
+        const controller = new AbortController();
+        activeSearchController = controller;
+
+        await performSearch(query, controller.signal);
+
+        if (activeSearchController === controller) {
+          activeSearchController = null;
+        }
+
         if (currentId === searchId) {
           loading = false;
         }
       }, 500);
     } else {
+      clearTimeout(searchTimeout);
+      abortActiveSearch();
+      loading = false;
       initialLoadDone = false;
       searchId = 0;
     }

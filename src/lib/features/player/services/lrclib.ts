@@ -474,7 +474,8 @@ export async function getSyncedLyrics(
 export async function searchCandidates(
   track: string,
   artist: string,
-  duration: number
+  duration: number,
+  signal?: AbortSignal
 ): Promise<LRCLibResponse[]> {
   const japaneseCharRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/gu;
   const punctuationRegex = /\p{P}/gu;
@@ -495,12 +496,16 @@ export async function searchCandidates(
   const url = `${BASE_URL_SEARCH}?q=${encodeURIComponent(query)}&duration=${duration}`;
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal });
     if (!res.ok) return [];
 
     const data: LRCLibResponse[] = await res.json();
     return data;
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return [];
+    }
+
     console.error('Error searching candidates:', error);
     return [];
   }

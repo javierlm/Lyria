@@ -37,8 +37,30 @@ export class SearchStore {
   isKeyboardOpen = $state(false);
 
   private debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  private activeSearchController: AbortController | null = null;
+  private activeGhostController: AbortController | null = null;
+  private latestSearchRequestId = 0;
+  private latestGhostRequestId = 0;
   private readonly DEBOUNCE_DELAY = 300;
   private readonly MIN_SEARCH_LENGTH = 3;
+
+  private abortActiveSearch() {
+    this.activeSearchController?.abort();
+    this.activeSearchController = null;
+  }
+
+  private abortActiveGhostFetch() {
+    this.activeGhostController?.abort();
+    this.activeGhostController = null;
+    this.isFetchingGhost = false;
+  }
+
+  private invalidatePendingSearches() {
+    this.latestSearchRequestId += 1;
+    this.latestGhostRequestId += 1;
+    this.abortActiveSearch();
+    this.abortActiveGhostFetch();
+  }
 
   private isValidSearch(query: string): boolean {
     return query.trim().length >= this.MIN_SEARCH_LENGTH;
@@ -123,10 +145,14 @@ export class SearchStore {
     this.showSearchField = centered;
   }
 
-  async fetchVideoInfo(videoId: string): Promise<{ title: string; author: string } | null> {
+  async fetchVideoInfo(
+    videoId: string,
+    signal?: AbortSignal
+  ): Promise<{ title: string; author: string } | null> {
     try {
       const response = await fetch(
-        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+        { signal }
       );
       if (!response.ok) return null;
       const data = await response.json();
@@ -135,6 +161,10 @@ export class SearchStore {
         author: data.author_name || ''
       };
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return null;
+      }
+
       console.error('Failed to fetch video info:', error);
       return null;
     }
@@ -161,9 +191,11 @@ export class SearchStore {
     return baseVideos.filter((video) => this.matchesSearch(video, searchTerms));
   }
 
-  async searchGlobalVideos(query: string): Promise<VideoItem[]> {
+  async searchGlobalVideos(query: string, signal?: AbortSignal): Promise<VideoItem[]> {
     try {
-      const response = await fetch(`/api/search/videos?q=${encodeURIComponent(query)}&limit=30`);
+      const response = await fetch(`/api/search/videos?q=${encodeURIComponent(query)}&limit=30`, {
+        signal
+      });
       if (!response.ok) {
         return [];
       }
@@ -184,6 +216,10 @@ export class SearchStore {
         };
       });
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return [];
+      }
+
       console.error('Failed to search videos from API:', error);
       return [];
     }
@@ -233,6 +269,7 @@ export class SearchStore {
     this.ghostVideo = null;
 
     if (!this.isValidSearch(this.searchValue)) {
+      this.invalidatePendingSearches();
       this.filteredVideos = this.getBaseVideos();
       this.showRecentVideos = this.filteredVideos.length > 0;
       return;
@@ -240,7 +277,21 @@ export class SearchStore {
 
     this.debounceTimer = setTimeout(async () => {
       const trimmedQuery = this.searchValue.trim();
-      const globalResults = await this.searchGlobalVideos(trimmedQuery);
+      const requestId = this.latestSearchRequestId + 1;
+      this.latestSearchRequestId = requestId;
+
+      this.abortActiveSearch();
+      const searchController = new AbortController();
+      this.activeSearchController = searchController;
+
+      const globalResults = await this.searchGlobalVideos(trimmedQuery, searchController.signal);
+      if (requestId !== this.latestSearchRequestId) {
+        return;
+      }
+
+      if (this.activeSearchController === searchController) {
+        this.activeSearchController = null;
+      }
 
       // Enrich with local data (handles anonymous users with local favorites/recents)
       this.filteredVideos = this.enrichWithLocalData(globalResults, trimmedQuery);
@@ -249,10 +300,22 @@ export class SearchStore {
         this.filteredVideos = this.filteredVideos.filter((video) => video.isFavorite);
       }
 
-      const videoId = extractVideoId(this.searchValue);
+      const videoId = extractVideoId(trimmedQuery);
       if (videoId && this.filteredVideos.length === 0 && !this.isFetchingGhost) {
+        const ghostRequestId = this.latestGhostRequestId + 1;
+        this.latestGhostRequestId = ghostRequestId;
+
+        this.abortActiveGhostFetch();
+        const ghostController = new AbortController();
+        this.activeGhostController = ghostController;
+
         this.isFetchingGhost = true;
-        const videoInfo = await this.fetchVideoInfo(videoId);
+        const videoInfo = await this.fetchVideoInfo(videoId, ghostController.signal);
+
+        if (ghostRequestId !== this.latestGhostRequestId) {
+          return;
+        }
+
         if (videoInfo) {
           const { title, author } = videoInfo;
           const parts = title.split(/[-–—|]/);
@@ -276,6 +339,11 @@ export class SearchStore {
           };
           this.filteredVideos = [this.ghostVideo];
         }
+
+        if (this.activeGhostController === ghostController) {
+          this.activeGhostController = null;
+        }
+
         this.isFetchingGhost = false;
       }
 
@@ -366,6 +434,7 @@ export class SearchStore {
     this.ghostVideo = null;
     this.showOnlyFavorites = false;
     clearTimeout(this.debounceTimer);
+    this.invalidatePendingSearches();
   }
 }
 
