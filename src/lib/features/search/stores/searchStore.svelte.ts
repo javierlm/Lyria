@@ -1,4 +1,5 @@
 import { videoService } from '$lib/features/video/services/videoService';
+import { authStore } from '$lib/features/auth/stores/authStore.svelte';
 import { extractVideoId } from '$lib/shared/utils';
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
@@ -41,8 +42,17 @@ export class SearchStore {
   private activeGhostController: AbortController | null = null;
   private latestSearchRequestId = 0;
   private latestGhostRequestId = 0;
+  private readonly pendingRecentDeletions = new SvelteSet<string>();
   private readonly DEBOUNCE_DELAY = 300;
   private readonly MIN_SEARCH_LENGTH = 3;
+
+  private filterPendingRecentDeletions(videos: VideoItem[]): VideoItem[] {
+    if (this.pendingRecentDeletions.size === 0) {
+      return videos;
+    }
+
+    return videos.filter((video) => !this.pendingRecentDeletions.has(video.videoId));
+  }
 
   private abortActiveSearch() {
     this.activeSearchController?.abort();
@@ -178,7 +188,9 @@ export class SearchStore {
     const videoId = extractVideoId(query);
 
     if (videoId) {
-      return this.recentVideos.filter((video) => video.videoId === videoId);
+      return this.filterPendingRecentDeletions(
+        this.recentVideos.filter((video) => video.videoId === videoId)
+      );
     }
 
     const baseVideos = this.getBaseVideos();
@@ -188,7 +200,9 @@ export class SearchStore {
       return baseVideos;
     }
 
-    return baseVideos.filter((video) => this.matchesSearch(video, searchTerms));
+    return this.filterPendingRecentDeletions(
+      baseVideos.filter((video) => this.matchesSearch(video, searchTerms))
+    );
   }
 
   async searchGlobalVideos(query: string, signal?: AbortSignal): Promise<VideoItem[]> {
@@ -294,7 +308,9 @@ export class SearchStore {
       }
 
       // Enrich with local data (handles anonymous users with local favorites/recents)
-      this.filteredVideos = this.enrichWithLocalData(globalResults, trimmedQuery);
+      this.filteredVideos = this.filterPendingRecentDeletions(
+        this.enrichWithLocalData(globalResults, trimmedQuery)
+      );
 
       if (this.showOnlyFavorites) {
         this.filteredVideos = this.filteredVideos.filter((video) => video.isFavorite);
@@ -337,7 +353,7 @@ export class SearchStore {
             isGhost: true,
             source: 'ghost'
           };
-          this.filteredVideos = [this.ghostVideo];
+          this.filteredVideos = this.filterPendingRecentDeletions([this.ghostVideo]);
         }
 
         if (this.activeGhostController === ghostController) {
@@ -376,8 +392,8 @@ export class SearchStore {
       });
     });
 
-    this.recentVideos = Array.from(videoMap.values()).sort(
-      (a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0)
+    this.recentVideos = this.filterPendingRecentDeletions(
+      Array.from(videoMap.values()).sort((a, b) => (b.timestamp ?? 0) - (a.timestamp ?? 0))
     );
 
     if (this.searchValue.trim()) {
@@ -393,11 +409,41 @@ export class SearchStore {
   }
 
   async deleteRecentVideo(videoId: string) {
-    await videoService.deleteRecentVideo(videoId);
-    await this.loadRecentVideos();
+    if (this.pendingRecentDeletions.has(videoId)) {
+      return;
+    }
 
-    if (this.searchValue.trim()) {
-      this.filteredVideos = this.searchVideos(this.searchValue);
+    if (!authStore.isAuthenticated) {
+      await videoService.deleteRecentVideo(videoId);
+      await this.loadRecentVideos();
+
+      if (this.searchValue.trim()) {
+        this.filteredVideos = this.searchVideos(this.searchValue);
+      }
+
+      return;
+    }
+
+    const previousRecentVideos = [...this.recentVideos];
+    const previousFilteredVideos = [...this.filteredVideos];
+    const previousShowRecentVideos = this.showRecentVideos;
+
+    this.pendingRecentDeletions.add(videoId);
+    this.recentVideos = this.recentVideos.filter((video) => video.videoId !== videoId);
+    this.filteredVideos = this.filterPendingRecentDeletions(
+      this.searchValue.trim() ? this.searchVideos(this.searchValue) : this.getBaseVideos()
+    );
+    this.showRecentVideos = this.filteredVideos.length > 0 || this.ghostVideo !== null;
+
+    try {
+      await videoService.deleteRecentVideo(videoId);
+    } catch (error) {
+      this.recentVideos = previousRecentVideos;
+      this.filteredVideos = previousFilteredVideos;
+      this.showRecentVideos = previousShowRecentVideos;
+      throw error;
+    } finally {
+      this.pendingRecentDeletions.delete(videoId);
     }
   }
 
@@ -414,9 +460,11 @@ export class SearchStore {
   }
 
   getBaseVideos() {
-    return this.showOnlyFavorites
+    const baseVideos = this.showOnlyFavorites
       ? this.recentVideos.filter((v) => v.isFavorite)
       : this.recentVideos;
+
+    return this.filterPendingRecentDeletions(baseVideos);
   }
 
   toggleSearchField() {

@@ -110,9 +110,17 @@ export class ApiVideoRepository extends BaseVideoRepository {
   }
 
   async deleteRecentVideo(videoId: string): Promise<void> {
-    await this.request(`/api/videos/recent/${encodeURIComponent(videoId)}`, {
+    const response = await this.request(`/api/videos/recent/${encodeURIComponent(videoId)}`, {
       method: 'DELETE'
     });
+
+    if (!response) {
+      throw new Error('Request failed while deleting recent video');
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to delete recent video: ${response.status}`);
+    }
   }
 
   async addFavoriteVideo(

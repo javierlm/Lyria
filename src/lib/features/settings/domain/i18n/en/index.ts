@@ -225,6 +225,8 @@ const en = {
     removedFromFavorites: 'Removed from favorites',
     favoriteError: 'Could not update favorites',
     favoriteErrorMessage: 'Please try again later.',
+    recentDeleteError: 'Could not remove from recents',
+    recentDeleteErrorMessage: 'Please try again later.',
     urlCopied: 'URL copied',
     urlCopyError: 'Could not copy URL',
     urlCopyErrorMessage: 'Please try copying the link manually.',

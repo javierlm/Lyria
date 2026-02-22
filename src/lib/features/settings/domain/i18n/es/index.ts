@@ -225,6 +225,8 @@ const es = {
     removedFromFavorites: 'Eliminado de favoritos',
     favoriteError: 'No se pudo actualizar favoritos',
     favoriteErrorMessage: 'Inténtalo de nuevo más tarde.',
+    recentDeleteError: 'No se pudo quitar de recientes',
+    recentDeleteErrorMessage: 'Inténtalo de nuevo más tarde.',
     urlCopied: 'URL copiada',
     urlCopyError: 'No se pudo copiar la URL',
     urlCopyErrorMessage: 'Copia el enlace manualmente.',

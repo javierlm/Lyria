@@ -4,6 +4,7 @@
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
   import { keyboardStore } from '$lib/stores/keyboardStore.svelte';
   import { LL } from '$i18n/i18n-svelte';
+  import { notify } from '$lib/features/notification';
   import { isYouTubeUrl, extractVideoId } from '$lib/shared/utils';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -13,7 +14,6 @@
     const id = extractVideoId(url);
     if (id) {
       const newUrlString = `play?id=${encodeURIComponent(id)}`;
-      // eslint-disable-next-line svelte/no-navigation-without-resolve
       goto(newUrlString, { noScroll: true });
     }
   }
@@ -24,8 +24,15 @@
     searchStore.searchValue = '';
   }
 
-  function handleDeleteRecentVideo(event: CustomEvent<string>) {
-    searchStore.deleteRecentVideo(event.detail);
+  async function handleDeleteRecentVideo(event: CustomEvent<string>) {
+    try {
+      await searchStore.deleteRecentVideo(event.detail);
+    } catch {
+      notify.error(
+        $LL.notifications.recentDeleteError(),
+        $LL.notifications.recentDeleteErrorMessage()
+      );
+    }
   }
 
   let { inputElement = null }: { inputElement?: HTMLInputElement | null } = $props();

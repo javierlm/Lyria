@@ -777,6 +777,14 @@ type RootTranslation = {
      */
     favoriteErrorMessage: string;
     /**
+     * C​o​u​l​d​ ​n​o​t​ ​r​e​m​o​v​e​ ​f​r​o​m​ ​r​e​c​e​n​t​s
+     */
+    recentDeleteError: string;
+    /**
+     * P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​ ​l​a​t​e​r​.
+     */
+    recentDeleteErrorMessage: string;
+    /**
      * U​R​L​ ​c​o​p​i​e​d
      */
     urlCopied: string;
@@ -1648,6 +1656,14 @@ export type TranslationFunctions = {
      * Please try again later.
      */
     favoriteErrorMessage: () => LocalizedString;
+    /**
+     * Could not remove from recents
+     */
+    recentDeleteError: () => LocalizedString;
+    /**
+     * Please try again later.
+     */
+    recentDeleteErrorMessage: () => LocalizedString;
     /**
      * URL copied
      */
