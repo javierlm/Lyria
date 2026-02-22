@@ -6,8 +6,20 @@ import type {
   RecentVideo,
   RecentVideoInput
 } from '$lib/features/video/domain/IVideoRepository';
+import type {
+  FavoriteVideoImportInput,
+  RecentVideoImportInput,
+  VideoImportPayload,
+  VideoImportResult
+} from '$lib/features/video/services/videoImportTypes';
+import {
+  collectImportVideoIds,
+  computeMissingImports,
+  normalizeFavoriteImports,
+  normalizeRecentImports
+} from './videoImportRepository';
 import { extractVideoId, isValidYouTubeId } from '$lib/shared/utils';
-import { and, desc, eq, isNotNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 
 const MAX_RECENT_VIDEOS = 100;
 const DEFAULT_SEARCH_LIMIT = 30;
@@ -132,6 +144,11 @@ function toSearchResult(row: SearchRow): SearchVideoResult {
     isRecent: lastWatchedAt !== null,
     lastWatchedAt
   };
+}
+
+function toValidDate(timestamp: number): Date {
+  const normalized = Number.isFinite(timestamp) ? timestamp : Date.now();
+  return new Date(Math.max(0, normalized));
 }
 
 export class LibsqlVideoRepository extends BaseVideoRepository {
@@ -284,6 +301,205 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     return existing[0]?.videoId ?? null;
   }
 
+  private async trimRecentVideos(userId: string): Promise<void> {
+    await libsqlClient.execute({
+      sql: `
+        WITH ranked AS (
+          SELECT
+            id,
+            ROW_NUMBER() OVER (ORDER BY last_watched_at DESC) AS rn
+          FROM user_video_state
+          WHERE user_id = ? AND last_watched_at IS NOT NULL
+        )
+        UPDATE user_video_state
+        SET
+          last_watched_at = NULL,
+          updated_at = cast(unixepoch('subsecond') * 1000 as integer)
+        WHERE id IN (
+          SELECT id
+          FROM ranked
+          WHERE rn > ?
+        )
+      `,
+      args: [userId, MAX_RECENT_VIDEOS]
+    });
+  }
+
+  private async getExistingStateByVideoIds(
+    userId: string,
+    videoIds: string[]
+  ): Promise<{ existingRecentIds: Set<string>; existingFavoriteIds: Set<string> }> {
+    if (videoIds.length === 0) {
+      return {
+        existingRecentIds: new Set(),
+        existingFavoriteIds: new Set()
+      };
+    }
+
+    const existingStateRows = await db
+      .select({
+        videoId: userVideoState.videoId,
+        isFavorite: userVideoState.isFavorite,
+        lastWatchedAt: userVideoState.lastWatchedAt
+      })
+      .from(userVideoState)
+      .where(and(eq(userVideoState.userId, userId), inArray(userVideoState.videoId, videoIds)));
+
+    return {
+      existingRecentIds: new Set(
+        existingStateRows.filter((row) => row.lastWatchedAt !== null).map((row) => row.videoId)
+      ),
+      existingFavoriteIds: new Set(
+        existingStateRows.filter((row) => row.isFavorite === true).map((row) => row.videoId)
+      )
+    };
+  }
+
+  private async importRecentsBlock(
+    userId: string,
+    recents: RecentVideoImportInput[]
+  ): Promise<{ imported: number; failed: number }> {
+    if (recents.length === 0) {
+      return { imported: 0, failed: 0 };
+    }
+
+    const readyRecents: RecentVideoImportInput[] = [];
+    let failed = 0;
+
+    for (const recent of recents) {
+      try {
+        await this.createOrRefreshPlaceholderVideo({
+          videoId: recent.videoId,
+          artist: recent.artist,
+          track: recent.track,
+          thumbnailUrl: recent.thumbnailUrl
+        });
+        readyRecents.push(recent);
+      } catch {
+        failed += 1;
+      }
+    }
+
+    if (readyRecents.length === 0) {
+      return { imported: 0, failed };
+    }
+
+    try {
+      await db.transaction(async (tx) => {
+        for (const recent of readyRecents) {
+          const watchedAt = toValidDate(recent.timestamp);
+          const customNormalizedFields = buildNormalizedVideoFields(recent.artist, recent.track);
+
+          await tx
+            .insert(userVideoState)
+            .values({
+              userId,
+              videoId: recent.videoId,
+              lastWatchedAt: watchedAt,
+              recentRemovedAt: null,
+              customArtist: recent.artist,
+              customTrack: recent.track,
+              customArtistNormalized: customNormalizedFields.artistNormalized,
+              customTrackNormalized: customNormalizedFields.trackNormalized,
+              customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
+              customMetadataAt: watchedAt
+            })
+            .onConflictDoUpdate({
+              target: [userVideoState.userId, userVideoState.videoId],
+              set: {
+                lastWatchedAt: watchedAt,
+                recentRemovedAt: null,
+                customArtist: recent.artist,
+                customTrack: recent.track,
+                customArtistNormalized: customNormalizedFields.artistNormalized,
+                customTrackNormalized: customNormalizedFields.trackNormalized,
+                customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
+                customMetadataAt: watchedAt
+              }
+            });
+        }
+      });
+    } catch {
+      return {
+        imported: 0,
+        failed: failed + readyRecents.length
+      };
+    }
+
+    await this.trimRecentVideos(userId);
+
+    return {
+      imported: readyRecents.length,
+      failed
+    };
+  }
+
+  private async importFavoritesBlock(
+    userId: string,
+    favorites: FavoriteVideoImportInput[]
+  ): Promise<{ imported: number; failed: number }> {
+    if (favorites.length === 0) {
+      return { imported: 0, failed: 0 };
+    }
+
+    const readyFavorites: FavoriteVideoImportInput[] = [];
+    let failed = 0;
+
+    for (const favorite of favorites) {
+      try {
+        await this.upsertVideo({
+          videoId: favorite.videoId,
+          artist: favorite.artist,
+          track: favorite.track,
+          thumbnailUrl: favorite.thumbnailUrl
+        });
+        readyFavorites.push(favorite);
+      } catch {
+        failed += 1;
+      }
+    }
+
+    if (readyFavorites.length === 0) {
+      return { imported: 0, failed };
+    }
+
+    try {
+      await db.transaction(async (tx) => {
+        for (const favorite of readyFavorites) {
+          const addedAt = toValidDate(favorite.addedAt);
+
+          await tx
+            .insert(userVideoState)
+            .values({
+              userId,
+              videoId: favorite.videoId,
+              isFavorite: true,
+              favoriteAddedAt: addedAt,
+              favoriteRemovedAt: null
+            })
+            .onConflictDoUpdate({
+              target: [userVideoState.userId, userVideoState.videoId],
+              set: {
+                isFavorite: true,
+                favoriteAddedAt: addedAt,
+                favoriteRemovedAt: null
+              }
+            });
+        }
+      });
+    } catch {
+      return {
+        imported: 0,
+        failed: failed + readyFavorites.length
+      };
+    }
+
+    return {
+      imported: readyFavorites.length,
+      failed
+    };
+  }
+
   async addRecentVideo(video: RecentVideoInput): Promise<void> {
     const userId = this.requireUserId();
 
@@ -325,27 +541,46 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         }
       });
 
-    await libsqlClient.execute({
-      sql: `
-        WITH ranked AS (
-          SELECT
-            id,
-            ROW_NUMBER() OVER (ORDER BY last_watched_at DESC) AS rn
-          FROM user_video_state
-          WHERE user_id = ? AND last_watched_at IS NOT NULL
-        )
-        UPDATE user_video_state
-        SET
-          last_watched_at = NULL,
-          updated_at = cast(unixepoch('subsecond') * 1000 as integer)
-        WHERE id IN (
-          SELECT id
-          FROM ranked
-          WHERE rn > ?
-        )
-      `,
-      args: [userId, MAX_RECENT_VIDEOS]
-    });
+    await this.trimRecentVideos(userId);
+  }
+
+  async importVideos(payload: VideoImportPayload): Promise<VideoImportResult> {
+    const userId = this.requireUserId();
+
+    const recents = normalizeRecentImports(payload.recents);
+    const favorites = normalizeFavoriteImports(payload.favorites);
+    const allVideoIds = collectImportVideoIds(recents, favorites);
+
+    if (allVideoIds.length === 0) {
+      return {
+        importedRecents: 0,
+        importedFavorites: 0,
+        skippedExisting: 0,
+        failed: 0
+      };
+    }
+
+    const { existingRecentIds, existingFavoriteIds } = await this.getExistingStateByVideoIds(
+      userId,
+      allVideoIds
+    );
+
+    const { missingRecents, missingFavorites, skippedExisting } = computeMissingImports(
+      recents,
+      favorites,
+      existingRecentIds,
+      existingFavoriteIds
+    );
+
+    const recentBlockResult = await this.importRecentsBlock(userId, missingRecents);
+    const favoriteBlockResult = await this.importFavoritesBlock(userId, missingFavorites);
+
+    return {
+      importedRecents: recentBlockResult.imported,
+      importedFavorites: favoriteBlockResult.imported,
+      skippedExisting,
+      failed: recentBlockResult.failed + favoriteBlockResult.failed
+    };
   }
 
   async getRecentVideos(): Promise<RecentVideo[]> {

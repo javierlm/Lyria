@@ -797,6 +797,38 @@ type RootTranslation = {
      */
     signedInMessage: string;
     /**
+     * I​m​p​o​r​t​ ​y​o​u​r​ ​l​o​c​a​l​ ​v​i​d​e​o​s​?
+     */
+    importFromDevice: string;
+    /**
+     * W​e​ ​f​o​u​n​d​ ​v​i​d​e​o​s​ ​s​t​o​r​e​d​ ​i​n​ ​t​h​i​s​ ​b​r​o​w​s​e​r​.​ ​I​m​p​o​r​t​ ​m​i​s​s​i​n​g​ ​r​e​c​e​n​t​s​ ​a​n​d​ ​f​a​v​o​r​i​t​e​s​ ​i​n​t​o​ ​y​o​u​r​ ​a​c​c​o​u​n​t​?
+     */
+    importFromDeviceMessage: string;
+    /**
+     * I​m​p​o​r​t
+     */
+    importNow: string;
+    /**
+     * N​o​t​ ​n​o​w
+     */
+    importLater: string;
+    /**
+     * I​m​p​o​r​t​ ​c​o​m​p​l​e​t​e​d
+     */
+    importCompleted: string;
+    /**
+     * Y​o​u​r​ ​m​i​s​s​i​n​g​ ​l​o​c​a​l​ ​r​e​c​e​n​t​s​ ​a​n​d​ ​f​a​v​o​r​i​t​e​s​ ​w​e​r​e​ ​i​m​p​o​r​t​e​d​ ​s​u​c​c​e​s​s​f​u​l​l​y​.
+     */
+    importCompletedMessage: string;
+    /**
+     * I​m​p​o​r​t​ ​c​o​m​p​l​e​t​e​d​ ​w​i​t​h​ ​w​a​r​n​i​n​g​s
+     */
+    importPartial: string;
+    /**
+     * S​o​m​e​ ​v​i​d​e​o​s​ ​c​o​u​l​d​ ​n​o​t​ ​b​e​ ​i​m​p​o​r​t​e​d​ ​r​i​g​h​t​ ​n​o​w​.​ ​Y​o​u​ ​c​a​n​ ​c​o​n​t​i​n​u​e​ ​u​s​i​n​g​ ​t​h​e​ ​a​p​p​ ​a​n​d​ ​t​r​y​ ​a​g​a​i​n​ ​l​a​t​e​r​.
+     */
+    importPartialMessage: string;
+    /**
      * D​e​m​o​ ​m​o​d​e​ ​a​c​t​i​v​a​t​e​d
      */
     demoModeActivated: string;
@@ -1628,6 +1660,38 @@ export type TranslationFunctions = {
      * You are now signed in.
      */
     signedInMessage: () => LocalizedString;
+    /**
+     * Import your local videos?
+     */
+    importFromDevice: () => LocalizedString;
+    /**
+     * We found videos stored in this browser. Import missing recents and favorites into your account?
+     */
+    importFromDeviceMessage: () => LocalizedString;
+    /**
+     * Import
+     */
+    importNow: () => LocalizedString;
+    /**
+     * Not now
+     */
+    importLater: () => LocalizedString;
+    /**
+     * Import completed
+     */
+    importCompleted: () => LocalizedString;
+    /**
+     * Your missing local recents and favorites were imported successfully.
+     */
+    importCompletedMessage: () => LocalizedString;
+    /**
+     * Import completed with warnings
+     */
+    importPartial: () => LocalizedString;
+    /**
+     * Some videos could not be imported right now. You can continue using the app and try again later.
+     */
+    importPartialMessage: () => LocalizedString;
     /**
      * Demo mode activated
      */

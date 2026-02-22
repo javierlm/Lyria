@@ -230,6 +230,16 @@ const en = {
     urlCopyErrorMessage: 'Please try copying the link manually.',
     signedIn: 'Session started',
     signedInMessage: 'You are now signed in.',
+    importFromDevice: 'Import your local videos?',
+    importFromDeviceMessage:
+      'We found videos stored in this browser. Import missing recents and favorites into your account?',
+    importNow: 'Import',
+    importLater: 'Not now',
+    importCompleted: 'Import completed',
+    importCompletedMessage: 'Your missing local recents and favorites were imported successfully.',
+    importPartial: 'Import completed with warnings',
+    importPartialMessage:
+      'Some videos could not be imported right now. You can continue using the app and try again later.',
     demoModeActivated: 'Demo mode activated',
     demoModeActivatedMessage:
       'Demo videos are now available. To exit demo mode, open the menu and select "Disable demo mode".',

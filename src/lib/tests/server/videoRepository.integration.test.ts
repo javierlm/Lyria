@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createLibsqlVideoRepository } from '$lib/server/video';
 import { db } from '$lib/server/db/client';
 import { userVideoState, videos } from '$lib/server/db/schema';
@@ -405,5 +405,117 @@ describe('LibsqlVideoRepository integration', () => {
     expect(videoAfterSecondPreference?.updatedAt?.getTime()).toBe(
       videoAfterFirstPreference?.updatedAt?.getTime()
     );
+  });
+
+  it('rolls back recents block when its transaction fails and still imports favorites block', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+    const originalTransaction = db.transaction.bind(db);
+    const transactionSpy = vi.spyOn(db, 'transaction');
+    let callCount = 0;
+
+    transactionSpy.mockImplementation(async (...args: any[]) => {
+      callCount += 1;
+      if (callCount === 1) {
+        throw new Error('recents tx failed');
+      }
+
+      return originalTransaction(...(args as [any]));
+    });
+
+    try {
+      const result = await repository.importVideos({
+        recents: [
+          {
+            videoId: 'rollbackRecentA',
+            artist: 'Artist A',
+            track: 'Track A',
+            timestamp: 1700000000000
+          },
+          {
+            videoId: 'rollbackRecentB',
+            artist: 'Artist B',
+            track: 'Track B',
+            timestamp: 1700000001000
+          }
+        ],
+        favorites: [
+          {
+            videoId: 'rollbackFavoriteA',
+            artist: 'Fav Artist',
+            track: 'Fav Track',
+            addedAt: 1700000002000
+          }
+        ]
+      });
+
+      expect(result.importedRecents).toBe(0);
+      expect(result.importedFavorites).toBe(1);
+      expect(result.failed).toBe(2);
+
+      const recents = await repository.getRecentVideos();
+      expect(recents).toHaveLength(0);
+
+      const favorites = await repository.getFavoriteVideos();
+      expect(favorites).toHaveLength(1);
+      expect(favorites[0]?.videoId).toBe('rollbackFavoriteA');
+    } finally {
+      transactionSpy.mockRestore();
+    }
+  });
+
+  it('rolls back favorites block when its transaction fails and keeps recents block imported', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+    const originalTransaction = db.transaction.bind(db);
+    const transactionSpy = vi.spyOn(db, 'transaction');
+
+    let callCount = 0;
+    transactionSpy.mockImplementation(async (...args: any[]) => {
+      callCount += 1;
+      if (callCount === 2) {
+        throw new Error('favorites tx failed');
+      }
+
+      return originalTransaction(...(args as [any]));
+    });
+
+    try {
+      const result = await repository.importVideos({
+        recents: [
+          {
+            videoId: 'rollbackRecentC',
+            artist: 'Artist C',
+            track: 'Track C',
+            timestamp: 1700000003000
+          }
+        ],
+        favorites: [
+          {
+            videoId: 'rollbackFavoriteB',
+            artist: 'Fav Artist B',
+            track: 'Fav Track B',
+            addedAt: 1700000004000
+          },
+          {
+            videoId: 'rollbackFavoriteC',
+            artist: 'Fav Artist C',
+            track: 'Fav Track C',
+            addedAt: 1700000005000
+          }
+        ]
+      });
+
+      expect(result.importedRecents).toBe(1);
+      expect(result.importedFavorites).toBe(0);
+      expect(result.failed).toBe(2);
+
+      const recents = await repository.getRecentVideos();
+      expect(recents).toHaveLength(1);
+      expect(recents[0]?.videoId).toBe('rollbackRecentC');
+
+      const favorites = await repository.getFavoriteVideos();
+      expect(favorites).toHaveLength(0);
+    } finally {
+      transactionSpy.mockRestore();
+    }
   });
 });

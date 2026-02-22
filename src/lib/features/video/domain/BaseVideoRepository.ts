@@ -17,7 +17,10 @@ export abstract class BaseVideoRepository implements IVideoRepository {
   abstract addRecentVideo(video: RecentVideoInput): Promise<void>;
   abstract getRecentVideos(): Promise<RecentVideo[]>;
   abstract deleteRecentVideo(videoId: string): Promise<void>;
-  abstract addFavoriteVideo(videoId: string): Promise<void>;
+  abstract addFavoriteVideo(
+    videoId: string,
+    metadata?: { artist?: string; track?: string; thumbnailUrl?: string }
+  ): Promise<void>;
   abstract removeFavoriteVideo(videoId: string): Promise<void>;
   abstract getFavoriteVideos(): Promise<FavoriteVideo[]>;
   abstract isFavorite(videoId: string): Promise<boolean>;

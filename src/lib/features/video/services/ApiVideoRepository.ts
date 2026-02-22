@@ -1,6 +1,7 @@
 import { BaseVideoRepository } from '../domain/BaseVideoRepository';
 import type { FavoriteVideo, RecentVideo, RecentVideoInput } from '../domain/IVideoRepository';
 import { extractVideoId } from '$lib/shared/utils';
+import type { VideoImportPayload, VideoImportResult } from './videoImportTypes';
 
 async function parseJsonSafely<T>(response: Response, fallback: T): Promise<T> {
   try {
@@ -114,11 +115,14 @@ export class ApiVideoRepository extends BaseVideoRepository {
     });
   }
 
-  async addFavoriteVideo(videoId: string): Promise<void> {
+  async addFavoriteVideo(
+    videoId: string,
+    metadata?: { artist?: string; track?: string; thumbnailUrl?: string }
+  ): Promise<void> {
     await this.request(`/api/videos/favorites/${encodeURIComponent(videoId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify(metadata ?? {})
     });
   }
 
@@ -146,6 +150,30 @@ export class ApiVideoRepository extends BaseVideoRepository {
 
     const payload = await parseJsonSafely<{ isFavorite?: boolean }>(response, {});
     return payload.isFavorite === true;
+  }
+
+  async importVideos(payload: VideoImportPayload): Promise<VideoImportResult> {
+    const response = await this.request('/api/videos/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response?.ok) {
+      return {
+        importedRecents: 0,
+        importedFavorites: 0,
+        skippedExisting: 0,
+        failed: payload.recents.length + payload.favorites.length
+      };
+    }
+
+    return await parseJsonSafely<VideoImportResult>(response, {
+      importedRecents: 0,
+      importedFavorites: 0,
+      skippedExisting: 0,
+      failed: payload.recents.length + payload.favorites.length
+    });
   }
 }
 

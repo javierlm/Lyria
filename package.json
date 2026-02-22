@@ -26,7 +26,8 @@
     "db:migrate": "drizzle-kit migrate",
     "auth:generate": "pnpm exec better-auth generate --config ./auth.ts --output ./src/lib/server/db/auth-schema.ts --yes",
     "auth:migrate": "pnpm run db:migrate",
-    "typesafe-i18n": "typesafe-i18n",
+    "typesafe-i18n": "typesafe-i18n --no-watch",
+    "typesafe-i18n:watch": "typesafe-i18n",
     "sync:cache": "tsx --env-file=.env.local scripts/sync-translation-cache.ts"
   },
   "devDependencies": {

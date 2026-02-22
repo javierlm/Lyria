@@ -12,6 +12,11 @@
   import { onMount } from 'svelte';
   import { demoStore } from '$lib/features/settings/stores/demoStore.svelte';
   import { authStore } from '$lib/features/auth/stores/authStore.svelte';
+  import {
+    getImportCandidateCounts,
+    importMissingVideosFromIndexedDB
+  } from '$lib/features/video/services/videoImportService';
+  import { VideoImportPromptService } from '$lib/features/video/services/videoImportPromptService';
   import '@fontsource/inter/400.css';
   import '@fontsource/inter/500.css';
   import '@fontsource/inter/600.css';
@@ -21,6 +26,10 @@
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
 
   const SIGN_IN_NOTIFICATION_FLAG = 'lyria:auth:show-signin-notification';
+  const IMPORT_DONE_PREFIX = 'lyria:import:done:';
+  const IMPORT_SKIPPED_PREFIX = 'lyria:import:skipped:';
+
+  let previousAuthUserId = $state<string | null>(null);
 
   let { data, children } = $props();
 
@@ -52,6 +61,108 @@
 
     window.sessionStorage.removeItem(SIGN_IN_NOTIFICATION_FLAG);
     notify.success(notifications.signedIn(), notifications.signedInMessage());
+  });
+
+  function getImportFlagKey(prefix: string, userId: string): string {
+    return `${prefix}${userId}`;
+  }
+
+  function readImportFlag(key: string): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    try {
+      return window.localStorage.getItem(key) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  function writeImportFlag(key: string): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(key, '1');
+    } catch {
+      // Best effort only
+    }
+  }
+
+  const videoImportPromptService = new VideoImportPromptService(
+    {
+      getImportCandidateCounts,
+      importMissingVideosFromIndexedDB,
+      readFlag: readImportFlag,
+      writeFlag: writeImportFlag,
+      getNotifications: () => {
+        const notifications = $LL.notifications as typeof $LL.notifications & {
+          importFromDevice: () => string;
+          importFromDeviceMessage: () => string;
+          importNow: () => string;
+          importLater: () => string;
+          importCompleted: () => string;
+          importCompletedMessage: () => string;
+          importPartial: () => string;
+          importPartialMessage: () => string;
+        };
+
+        return {
+          importFromDevice: notifications.importFromDevice(),
+          importFromDeviceMessage: notifications.importFromDeviceMessage(),
+          importNow: notifications.importNow(),
+          importLater: notifications.importLater(),
+          importCompleted: notifications.importCompleted(),
+          importCompletedMessage: notifications.importCompletedMessage(),
+          importPartial: notifications.importPartial(),
+          importPartialMessage: notifications.importPartialMessage()
+        };
+      },
+      loadRecentVideos: () => searchStore.loadRecentVideos(),
+      notifyPersistent: ({ title, message, importLabel, laterLabel, onImport, onLater }) => {
+        notify.persistent('info', title, message, {
+          actions: [
+            {
+              label: importLabel,
+              variant: 'primary',
+              onClick: onImport
+            },
+            {
+              label: laterLabel,
+              variant: 'secondary',
+              onClick: onLater
+            }
+          ]
+        });
+      },
+      notifySuccess: (title, message) => {
+        notify.success(title, message);
+      },
+      notifyWarning: (title, message) => {
+        notify.warning(title, message);
+      },
+      onError: (error) => {
+        console.warn('[video-import] Could not prepare import prompt:', error);
+      }
+    },
+    IMPORT_DONE_PREFIX,
+    IMPORT_SKIPPED_PREFIX
+  );
+
+  $effect(() => {
+    const currentUserId = authStore.user?.id ?? null;
+    const hasAuthTransition = previousAuthUserId !== currentUserId;
+    const shouldPrompt = hasAuthTransition && currentUserId !== null;
+
+    previousAuthUserId = currentUserId;
+
+    if (!shouldPrompt) {
+      return;
+    }
+
+    void videoImportPromptService.maybeOfferVideoImport(currentUserId);
   });
 
   onMount(() => {

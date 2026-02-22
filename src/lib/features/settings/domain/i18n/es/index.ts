@@ -230,6 +230,17 @@ const es = {
     urlCopyErrorMessage: 'Copia el enlace manualmente.',
     signedIn: 'Sesion iniciada',
     signedInMessage: 'Has iniciado sesion correctamente.',
+    importFromDevice: 'Importar videos locales?',
+    importFromDeviceMessage:
+      'Hemos encontrado videos guardados en este navegador. Quieres importar los recientes y favoritos que falten en tu cuenta?',
+    importNow: 'Importar',
+    importLater: 'Ahora no',
+    importCompleted: 'Importacion completada',
+    importCompletedMessage:
+      'Se importaron correctamente los recientes y favoritos locales que faltaban en tu cuenta.',
+    importPartial: 'Importacion completada con avisos',
+    importPartialMessage:
+      'Algunos videos no pudieron importarse por ahora. Puedes seguir usando la app e intentarlo de nuevo mas tarde.',
     demoModeActivated: 'Modo demo activado',
     demoModeActivatedMessage:
       'Los videos de demo están disponibles. Para salir del modo demo, abre el menú y selecciona "Desactivar modo demo".',

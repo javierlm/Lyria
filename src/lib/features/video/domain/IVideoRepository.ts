@@ -26,7 +26,10 @@ export interface IVideoRepository {
   getRecentVideos(): Promise<RecentVideo[]>;
   deleteRecentVideo(videoId: string): Promise<void>;
 
-  addFavoriteVideo(video: string): Promise<void>;
+  addFavoriteVideo(
+    video: string,
+    metadata?: { artist?: string; track?: string; thumbnailUrl?: string }
+  ): Promise<void>;
   removeFavoriteVideo(videoId: string): Promise<void>;
   getFavoriteVideos(): Promise<FavoriteVideo[]>;
   isFavorite(videoId: string): Promise<boolean>;
