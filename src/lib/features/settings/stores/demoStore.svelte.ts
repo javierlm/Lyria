@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { videoService, setUseDemoRepository } from '$lib/features/video/services/videoService';
+import { indexedDBDemoVideoRepository } from '$lib/features/video/services/indexedDBDemo';
 import demoVideos from '$lib/features/video/data/demoVideos';
 
 const STORAGE_KEY = 'demo-mode';
@@ -46,9 +47,9 @@ function createDemoStore() {
 
   async function initializeDemoVideos(): Promise<void> {
     console.log('[demoStore] Starting to add', demoVideos.length, 'demo videos');
-    for (let i = 0; i < demoVideos.length; i++) {
-      const video = demoVideos[i];
-      await videoService.addRecentVideo(video);
+    for (const element of demoVideos) {
+      const video = element;
+      await indexedDBDemoVideoRepository.seedRecentVideo(video);
     }
     console.log('[demoStore] All demo videos added');
   }

@@ -1,9 +1,12 @@
-export interface RecentVideo {
+export interface RecentVideoInput {
   videoId: string;
   artist: string;
   track: string;
-  timestamp: number;
   thumbnailUrl?: string;
+}
+
+export interface RecentVideo extends RecentVideoInput {
+  timestamp: number;
 }
 
 export interface FavoriteVideo extends RecentVideo {
@@ -19,7 +22,7 @@ export interface IVideoRepository {
     metadata?: { artist?: string; track?: string }
   ): Promise<void>;
   getVideoLyricId(videoUrl: string): Promise<number | null>;
-  addRecentVideo(video: RecentVideo): Promise<void>;
+  addRecentVideo(video: RecentVideoInput): Promise<void>;
   getRecentVideos(): Promise<RecentVideo[]>;
   deleteRecentVideo(videoId: string): Promise<void>;
 

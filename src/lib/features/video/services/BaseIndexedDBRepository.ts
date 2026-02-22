@@ -1,5 +1,5 @@
 import { BaseVideoRepository } from '../domain/BaseVideoRepository';
-import type { RecentVideo, FavoriteVideo } from '../domain/IVideoRepository';
+import type { RecentVideo, RecentVideoInput, FavoriteVideo } from '../domain/IVideoRepository';
 import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 
 const VIDEO_DELAYS_STORE = 'videoDelays';
@@ -163,21 +163,28 @@ export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
     });
   }
 
-  async addRecentVideo(video: RecentVideo): Promise<void> {
+  protected async persistRecentVideo(video: RecentVideoInput, timestamp: number): Promise<void> {
     const db = await this.openDB();
     const transaction = db.transaction([RECENT_VIDEOS_STORE], 'readwrite');
     const store = transaction.objectStore(RECENT_VIDEOS_STORE);
+    const recentVideo: RecentVideo = {
+      videoId: video.videoId,
+      artist: video.artist,
+      track: video.track,
+      thumbnailUrl: video.thumbnailUrl,
+      timestamp
+    };
 
     return new Promise((resolve, reject) => {
       const getRequest = store.get(video.videoId);
       getRequest.onsuccess = () => {
         const existingVideo = getRequest.result;
         if (existingVideo) {
-          existingVideo.timestamp = video.timestamp;
-          existingVideo.thumbnailUrl = video.thumbnailUrl;
+          existingVideo.timestamp = recentVideo.timestamp;
+          existingVideo.thumbnailUrl = recentVideo.thumbnailUrl;
           store.put(existingVideo);
         } else {
-          store.put(video);
+          store.put(recentVideo);
         }
       };
       getRequest.onerror = (event) => {
@@ -209,6 +216,10 @@ export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
       transaction.onerror = (event) =>
         reject('Error adding/updating recent video: ' + (event.target as IDBTransaction).error);
     });
+  }
+
+  async addRecentVideo(video: RecentVideoInput): Promise<void> {
+    return this.persistRecentVideo(video, Date.now());
   }
 
   async getRecentVideos(): Promise<RecentVideo[]> {

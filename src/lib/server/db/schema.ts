@@ -16,7 +16,6 @@ export const videos = sqliteTable(
       .notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => new Date())
       .notNull()
   },
   (table) => [
@@ -53,7 +52,6 @@ export const userVideoState = sqliteTable(
       .notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-      .$onUpdate(() => new Date())
       .notNull()
   },
   (table) => [

@@ -1,5 +1,5 @@
 import { BaseVideoRepository } from '../domain/BaseVideoRepository';
-import type { FavoriteVideo, RecentVideo } from '../domain/IVideoRepository';
+import type { FavoriteVideo, RecentVideo, RecentVideoInput } from '../domain/IVideoRepository';
 import { extractVideoId } from '$lib/shared/utils';
 
 async function parseJsonSafely<T>(response: Response, fallback: T): Promise<T> {
@@ -90,7 +90,7 @@ export class ApiVideoRepository extends BaseVideoRepository {
     return payload.lyricId ?? null;
   }
 
-  async addRecentVideo(video: RecentVideo): Promise<void> {
+  async addRecentVideo(video: RecentVideoInput): Promise<void> {
     await this.request('/api/videos/recent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -13,7 +13,6 @@ describe('Global search integration', () => {
       videoId: '5anLPw0Efmo',
       artist: 'Metallica',
       track: 'Enter Sandman',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/5anLPw0Efmo/mqdefault.jpg'
     });
 
@@ -21,7 +20,6 @@ describe('Global search integration', () => {
       videoId: 'hTWKbfoikeg',
       artist: 'Nirvana',
       track: 'Smells Like Teen Spirit',
-      timestamp: Date.now() - 1000,
       thumbnailUrl: 'https://img.youtube.com/vi/hTWKbfoikeg/mqdefault.jpg'
     });
 
@@ -29,7 +27,6 @@ describe('Global search integration', () => {
       videoId: 'kXYiU_JCYtU',
       artist: 'Linkin Park',
       track: 'Numb',
-      timestamp: Date.now() - 2000,
       thumbnailUrl: 'https://img.youtube.com/vi/kXYiU_JCYtU/mqdefault.jpg'
     });
 
@@ -37,7 +34,6 @@ describe('Global search integration', () => {
       videoId: 'pRpeEdMmmQ0',
       artist: 'Shakira',
       track: 'Waka Waka',
-      timestamp: Date.now() - 3000,
       thumbnailUrl: 'https://img.youtube.com/vi/pRpeEdMmmQ0/mqdefault.jpg'
     });
 
@@ -45,7 +41,6 @@ describe('Global search integration', () => {
       videoId: 'IHgFJEJgUrg',
       artist: 'Bullet for My Valentine',
       track: "Tears Don't Fall",
-      timestamp: Date.now() - 4000,
       thumbnailUrl: 'https://img.youtube.com/vi/IHgFJEJgUrg/mqdefault.jpg'
     });
 
@@ -53,7 +48,6 @@ describe('Global search integration', () => {
       videoId: '8fQx-mtQhL4',
       artist: 'Mary J. Blige',
       track: 'Family Affair',
-      timestamp: Date.now() - 5000,
       thumbnailUrl: 'https://img.youtube.com/vi/8fQx-mtQhL4/mqdefault.jpg'
     });
 
@@ -61,7 +55,6 @@ describe('Global search integration', () => {
       videoId: 'SXXN2mQ4Gk0',
       artist: 'Linkin Park',
       track: 'The Emptiness Machine',
-      timestamp: Date.now() - 6000,
       thumbnailUrl: 'https://img.youtube.com/vi/SXXN2mQ4Gk0/mqdefault.jpg'
     });
 
@@ -69,7 +62,6 @@ describe('Global search integration', () => {
       videoId: 'Qf0yWQzz0gM',
       artist: 'Machine Head',
       track: 'Davidian',
-      timestamp: Date.now() - 7000,
       thumbnailUrl: 'https://img.youtube.com/vi/Qf0yWQzz0gM/mqdefault.jpg'
     });
 
@@ -77,7 +69,6 @@ describe('Global search integration', () => {
       videoId: 'v9lTn8Qw2Xp',
       artist: 'Beyond The Black',
       track: 'Rising High',
-      timestamp: Date.now() - 8000,
       thumbnailUrl: 'https://img.youtube.com/vi/v9lTn8Qw2Xp/mqdefault.jpg'
     });
 
@@ -85,7 +76,6 @@ describe('Global search integration', () => {
       videoId: 'w6Kf7uVq1Lm',
       artist: 'Arch Enemy',
       track: 'The Watcher',
-      timestamp: Date.now() - 9000,
       thumbnailUrl: 'https://img.youtube.com/vi/w6Kf7uVq1Lm/mqdefault.jpg'
     });
 
@@ -93,7 +83,6 @@ describe('Global search integration', () => {
       videoId: 'r4Pz8tYk2Qa',
       artist: 'Visions of Atlantis',
       track: 'Master the Hurricane',
-      timestamp: Date.now() - 10000,
       thumbnailUrl: 'https://img.youtube.com/vi/r4Pz8tYk2Qa/mqdefault.jpg'
     });
 
@@ -101,7 +90,6 @@ describe('Global search integration', () => {
       videoId: 'm8Qw3nXz6Bc',
       artist: 'Linkin Park',
       track: 'The Emptiness Machine Official Music Video',
-      timestamp: Date.now() - 11000,
       thumbnailUrl: 'https://img.youtube.com/vi/m8Qw3nXz6Bc/mqdefault.jpg'
     });
 

@@ -843,7 +843,6 @@ async function addCurrentVideoToRecents(videoId: string) {
       videoId,
       artist: playerState.artist,
       track: playerState.track,
-      timestamp: Date.now(),
       thumbnailUrl
     });
   }

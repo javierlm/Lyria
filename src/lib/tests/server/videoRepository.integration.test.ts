@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createLibsqlVideoRepository } from '$lib/server/video';
 import { db } from '$lib/server/db/client';
-import { userVideoState } from '$lib/server/db/schema';
+import { userVideoState, videos } from '$lib/server/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { clearTestDatabase } from './dbTestUtils';
 
@@ -19,7 +19,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'dQw4w9WgXcQ',
       artist: 'Rick Astley',
       track: 'Never Gonna Give You Up',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg'
     });
 
@@ -36,7 +35,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'dQw4w9WgXcQ',
       artist: 'Rick Astley',
       track: 'Never Gonna Give You Up',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg'
     });
 
@@ -66,7 +64,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: '3JWTaaS7LdU',
       artist: 'Adele',
       track: 'Rolling in the Deep',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/3JWTaaS7LdU/mqdefault.jpg'
     });
 
@@ -170,7 +167,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'dQw4w9WgXcQ',
       artist: 'Original Artist',
       track: 'Original Track',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg'
     });
 
@@ -194,7 +190,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'dQw4w9WgXcQ',
       artist: 'Canonical Artist',
       track: 'Canonical Track',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg'
     });
 
@@ -213,7 +208,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'dQw4w9WgXcQ',
       artist: 'Original Artist',
       track: 'Original Track',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg'
     });
 
@@ -242,7 +236,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'sharedVideo',
       artist: 'UserA Artist',
       track: 'UserA Track',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/sharedVideo/mqdefault.jpg'
     });
 
@@ -250,7 +243,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'sharedVideo',
       artist: 'UserB Artist',
       track: 'UserB Track',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/sharedVideo/mqdefault.jpg'
     });
 
@@ -271,7 +263,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'sharedVideo2',
       artist: 'Canonical Artist',
       track: 'Canonical Track',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/sharedVideo2/mqdefault.jpg'
     });
 
@@ -279,7 +270,6 @@ describe('LibsqlVideoRepository integration', () => {
       videoId: 'sharedVideo2',
       artist: 'Canonical Artist',
       track: 'Canonical Track',
-      timestamp: Date.now(),
       thumbnailUrl: 'https://img.youtube.com/vi/sharedVideo2/mqdefault.jpg'
     });
 
@@ -300,5 +290,120 @@ describe('LibsqlVideoRepository integration', () => {
     expect(recentsA[0]?.track).toBe('UserA Custom Track');
     expect(recentsB[0]?.artist).toBe('UserB Custom Artist');
     expect(recentsB[0]?.track).toBe('UserB Custom Track');
+  });
+
+  it('does not touch canonical video updatedAt when only updating recents', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+
+    await repository.addRecentVideo({
+      videoId: 'immutableCanonical1',
+      artist: 'Canonical Artist',
+      track: 'Canonical Track',
+      thumbnailUrl: 'https://img.youtube.com/vi/immutableCanonical1/mqdefault.jpg'
+    });
+
+    const [videoBefore] = await db
+      .select({ updatedAt: videos.updatedAt })
+      .from(videos)
+      .where(eq(videos.videoId, 'immutableCanonical1'))
+      .limit(1);
+
+    expect(videoBefore?.updatedAt).toBeTruthy();
+
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 5));
+
+    await repository.addRecentVideo({
+      videoId: 'immutableCanonical1',
+      artist: 'Canonical Artist',
+      track: 'Canonical Track',
+      thumbnailUrl: 'https://img.youtube.com/vi/immutableCanonical1/mqdefault.jpg'
+    });
+
+    const [videoAfter] = await db
+      .select({ updatedAt: videos.updatedAt })
+      .from(videos)
+      .where(eq(videos.videoId, 'immutableCanonical1'))
+      .limit(1);
+
+    expect(videoAfter?.updatedAt?.getTime()).toBe(videoBefore?.updatedAt?.getTime());
+  });
+
+  it('does not touch canonical video updatedAt when updating user preferences', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+
+    await repository.addRecentVideo({
+      videoId: 'immutableCanonical2',
+      artist: 'Canonical Artist',
+      track: 'Canonical Track',
+      thumbnailUrl: 'https://img.youtube.com/vi/immutableCanonical2/mqdefault.jpg'
+    });
+
+    const [videoBefore] = await db
+      .select({ updatedAt: videos.updatedAt })
+      .from(videos)
+      .where(eq(videos.videoId, 'immutableCanonical2'))
+      .limit(1);
+
+    expect(videoBefore?.updatedAt).toBeTruthy();
+
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 5));
+
+    await repository.setVideoDelay('immutableCanonical2', 250);
+    await repository.setVideoLyricId('immutableCanonical2', 42, {
+      artist: 'User Custom Artist',
+      track: 'User Custom Track'
+    });
+
+    const [videoAfter] = await db
+      .select({ updatedAt: videos.updatedAt })
+      .from(videos)
+      .where(eq(videos.videoId, 'immutableCanonical2'))
+      .limit(1);
+
+    expect(videoAfter?.updatedAt?.getTime()).toBe(videoBefore?.updatedAt?.getTime());
+  });
+
+  it('creates canonical video once from preferences without touching it on later preference changes', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+    const videoId = 'a1b2c3d4e5F';
+
+    await repository.setVideoDelay(videoId, 120);
+
+    const [videoAfterFirstPreference] = await db
+      .select({
+        artist: videos.artist,
+        track: videos.track,
+        updatedAt: videos.updatedAt
+      })
+      .from(videos)
+      .where(eq(videos.videoId, videoId))
+      .limit(1);
+
+    expect(videoAfterFirstPreference).toBeDefined();
+    expect(videoAfterFirstPreference?.artist).toBe('Unknown Artist');
+    expect(videoAfterFirstPreference?.track).toBe(`Video ${videoId}`);
+
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 5));
+
+    await repository.setVideoLyricId(videoId, 77, {
+      artist: 'Personalized Artist',
+      track: 'Personalized Track'
+    });
+
+    const [videoAfterSecondPreference] = await db
+      .select({
+        artist: videos.artist,
+        track: videos.track,
+        updatedAt: videos.updatedAt
+      })
+      .from(videos)
+      .where(eq(videos.videoId, videoId))
+      .limit(1);
+
+    expect(videoAfterSecondPreference?.artist).toBe('Unknown Artist');
+    expect(videoAfterSecondPreference?.track).toBe(`Video ${videoId}`);
+    expect(videoAfterSecondPreference?.updatedAt?.getTime()).toBe(
+      videoAfterFirstPreference?.updatedAt?.getTime()
+    );
   });
 });

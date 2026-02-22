@@ -1,7 +1,11 @@
 import { db, libsqlClient } from '$lib/server/db/client';
 import { userVideoState, videos } from '$lib/server/db/schema';
 import { BaseVideoRepository } from '$lib/features/video/domain/BaseVideoRepository';
-import type { FavoriteVideo, RecentVideo } from '$lib/features/video/domain/IVideoRepository';
+import type {
+  FavoriteVideo,
+  RecentVideo,
+  RecentVideoInput
+} from '$lib/features/video/domain/IVideoRepository';
 import { extractVideoId, isValidYouTubeId } from '$lib/shared/utils';
 import { and, desc, eq, isNotNull } from 'drizzle-orm';
 
@@ -151,6 +155,51 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     return artist === 'Unknown Artist' || track.startsWith('Video ');
   }
 
+  private async createOrRefreshPlaceholderVideo(metadata: VideoMetadata): Promise<void> {
+    const artist = metadata.artist.trim() || 'Unknown Artist';
+    const track = metadata.track.trim() || 'Unknown Track';
+    const normalizedFields = buildNormalizedVideoFields(artist, track);
+
+    const existing = await db
+      .select({ artist: videos.artist, track: videos.track })
+      .from(videos)
+      .where(eq(videos.videoId, metadata.videoId))
+      .limit(1);
+
+    if (existing.length === 0) {
+      await db
+        .insert(videos)
+        .values({
+          videoId: metadata.videoId,
+          artist,
+          track,
+          thumbnailUrl: metadata.thumbnailUrl,
+          artistNormalized: normalizedFields.artistNormalized,
+          trackNormalized: normalizedFields.trackNormalized,
+          searchTextNormalized: normalizedFields.searchTextNormalized
+        })
+        .onConflictDoNothing({ target: videos.videoId });
+
+      return;
+    }
+
+    if (!this.isPlaceholderValue(existing[0].artist, existing[0].track)) {
+      return;
+    }
+
+    await db
+      .update(videos)
+      .set({
+        artist,
+        track,
+        thumbnailUrl: metadata.thumbnailUrl,
+        artistNormalized: normalizedFields.artistNormalized,
+        trackNormalized: normalizedFields.trackNormalized,
+        searchTextNormalized: normalizedFields.searchTextNormalized
+      })
+      .where(eq(videos.videoId, metadata.videoId));
+  }
+
   async upsertVideo(metadata: VideoMetadata): Promise<void> {
     const artist = metadata.artist.trim() || 'Unknown Artist';
     const track = metadata.track.trim() || 'Unknown Track';
@@ -177,8 +226,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         thumbnailUrl: metadata.thumbnailUrl,
         artistNormalized: normalizedFields.artistNormalized,
         trackNormalized: normalizedFields.trackNormalized,
-        searchTextNormalized: normalizedFields.searchTextNormalized,
-        updatedAt: new Date()
+        searchTextNormalized: normalizedFields.searchTextNormalized
       })
       .onConflictDoUpdate({
         target: videos.videoId,
@@ -189,33 +237,31 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
               thumbnailUrl: metadata.thumbnailUrl,
               artistNormalized: normalizedFields.artistNormalized,
               trackNormalized: normalizedFields.trackNormalized,
-              searchTextNormalized: normalizedFields.searchTextNormalized,
-              updatedAt: new Date()
+              searchTextNormalized: normalizedFields.searchTextNormalized
             }
           : {
-              thumbnailUrl: metadata.thumbnailUrl,
-              updatedAt: new Date()
+              thumbnailUrl: metadata.thumbnailUrl
             }
       });
   }
 
   private async ensureVideoExists(videoId: string): Promise<void> {
-    const existing = await db
-      .select({ videoId: videos.videoId })
-      .from(videos)
-      .where(eq(videos.videoId, videoId))
-      .limit(1);
+    const artist = 'Unknown Artist';
+    const track = `Video ${videoId}`;
+    const normalizedFields = buildNormalizedVideoFields(artist, track);
 
-    if (existing.length > 0) {
-      return;
-    }
-
-    await this.upsertVideo({
-      videoId,
-      artist: 'Unknown Artist',
-      track: `Video ${videoId}`,
-      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
-    });
+    await db
+      .insert(videos)
+      .values({
+        videoId,
+        artist,
+        track,
+        thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+        artistNormalized: normalizedFields.artistNormalized,
+        trackNormalized: normalizedFields.trackNormalized,
+        searchTextNormalized: normalizedFields.searchTextNormalized
+      })
+      .onConflictDoNothing({ target: videos.videoId });
   }
 
   private async resolveExistingVideoId(videoInput: string): Promise<string | null> {
@@ -238,17 +284,17 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     return existing[0]?.videoId ?? null;
   }
 
-  async addRecentVideo(video: RecentVideo): Promise<void> {
+  async addRecentVideo(video: RecentVideoInput): Promise<void> {
     const userId = this.requireUserId();
 
-    await this.upsertVideo({
+    await this.createOrRefreshPlaceholderVideo({
       videoId: video.videoId,
       artist: video.artist,
       track: video.track,
       thumbnailUrl: video.thumbnailUrl
     });
 
-    const watchedAt = new Date(video.timestamp || Date.now());
+    const watchedAt = new Date();
     const customNormalizedFields = buildNormalizedVideoFields(video.artist, video.track);
 
     await db
@@ -263,8 +309,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         customArtistNormalized: customNormalizedFields.artistNormalized,
         customTrackNormalized: customNormalizedFields.trackNormalized,
         customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
-        customMetadataAt: watchedAt,
-        updatedAt: new Date()
+        customMetadataAt: watchedAt
       })
       .onConflictDoUpdate({
         target: [userVideoState.userId, userVideoState.videoId],
@@ -276,8 +321,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
           customArtistNormalized: customNormalizedFields.artistNormalized,
           customTrackNormalized: customNormalizedFields.trackNormalized,
           customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
-          customMetadataAt: watchedAt,
-          updatedAt: new Date()
+          customMetadataAt: watchedAt
         }
       });
 
@@ -340,8 +384,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
       .update(userVideoState)
       .set({
         lastWatchedAt: null,
-        recentRemovedAt: now,
-        updatedAt: now
+        recentRemovedAt: now
       })
       .where(and(eq(userVideoState.userId, userId), eq(userVideoState.videoId, videoId)));
   }
@@ -364,16 +407,14 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         videoId,
         isFavorite: true,
         favoriteAddedAt: now,
-        favoriteRemovedAt: null,
-        updatedAt: now
+        favoriteRemovedAt: null
       })
       .onConflictDoUpdate({
         target: [userVideoState.userId, userVideoState.videoId],
         set: {
           isFavorite: true,
           favoriteAddedAt: now,
-          favoriteRemovedAt: null,
-          updatedAt: now
+          favoriteRemovedAt: null
         }
       });
   }
@@ -387,8 +428,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
       .set({
         isFavorite: false,
         favoriteAddedAt: null,
-        favoriteRemovedAt: now,
-        updatedAt: now
+        favoriteRemovedAt: now
       })
       .where(and(eq(userVideoState.userId, userId), eq(userVideoState.videoId, videoId)));
   }
@@ -453,14 +493,12 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
       .values({
         userId,
         videoId,
-        delayMs: delay,
-        updatedAt: new Date()
+        delayMs: delay
       })
       .onConflictDoUpdate({
         target: [userVideoState.userId, userVideoState.videoId],
         set: {
-          delayMs: delay,
-          updatedAt: new Date()
+          delayMs: delay
         }
       });
   }
@@ -522,8 +560,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         userId,
         videoId,
         manualLyricId: lyricId,
-        ...(customFields ?? {}),
-        updatedAt: new Date()
+        ...(customFields ?? {})
       })
       .onConflictDoUpdate({
         target: [userVideoState.userId, userVideoState.videoId],
@@ -538,8 +575,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
                 customSearchTextNormalized: null,
                 customMetadataAt: null
               }
-            : (customFields ?? {})),
-          updatedAt: new Date()
+            : (customFields ?? {}))
         }
       });
   }
