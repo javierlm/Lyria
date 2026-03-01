@@ -372,4 +372,60 @@ describe('SearchStore - enrichWithLocalData', () => {
       expect(enriched[0].timestamp).toBe(5000);
     });
   });
+
+  describe('Ghost result merging', () => {
+    it('should append ghost results that are not in base results', () => {
+      const baseResults: VideoItem[] = [
+        {
+          videoId: 'base-1',
+          artist: 'Linkin Park',
+          track: 'Numb',
+          source: 'catalog'
+        }
+      ];
+
+      const ghostResults: VideoItem[] = [
+        {
+          videoId: 'ghost-1',
+          artist: 'Linkin Park',
+          track: 'In the End',
+          isGhost: true,
+          source: 'ghost'
+        }
+      ];
+
+      const merged = (store as any).mergeGhostResults(baseResults, ghostResults);
+
+      expect(merged).toHaveLength(2);
+      expect(merged[0]?.videoId).toBe('base-1');
+      expect(merged[1]?.videoId).toBe('ghost-1');
+    });
+
+    it('should not duplicate entries when ghost video already exists in base results', () => {
+      const baseResults: VideoItem[] = [
+        {
+          videoId: 'dup-1',
+          artist: 'Linkin Park',
+          track: 'Numb',
+          source: 'catalog'
+        }
+      ];
+
+      const ghostResults: VideoItem[] = [
+        {
+          videoId: 'dup-1',
+          artist: 'Linkin Park',
+          track: 'Numb',
+          isGhost: true,
+          source: 'ghost'
+        }
+      ];
+
+      const merged = (store as any).mergeGhostResults(baseResults, ghostResults);
+
+      expect(merged).toHaveLength(1);
+      expect(merged[0]?.videoId).toBe('dup-1');
+      expect(merged[0]?.source).toBe('catalog');
+    });
+  });
 });

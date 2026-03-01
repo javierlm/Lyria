@@ -21,7 +21,27 @@
     }
   }
 
+  function pinViewportForIOSKeyboard(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (!document.documentElement.classList.contains('ios-safe-area')) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+
+    setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, 120);
+  }
+
   function handleFocus() {
+    pinViewportForIOSKeyboard();
+
     if (searchStore.searchValue.trim()) {
       if (searchStore.filteredVideos.length > 0 && !searchStore.showRecentVideos) {
         searchStore.showRecentVideos = true;
@@ -39,7 +59,6 @@
     const id = extractVideoId(url);
     if (id) {
       const newUrlString = `play?id=${encodeURIComponent(id)}`;
-      // eslint-disable-next-line svelte/no-navigation-without-resolve
       goto(newUrlString, { noScroll: true });
     }
   }
@@ -90,6 +109,7 @@
     border-radius: 0.75rem;
     box-shadow: 0 4px 10px var(--button-shadow-color);
     width: 100%;
+    min-width: 0;
     box-sizing: border-box;
   }
 
@@ -100,6 +120,7 @@
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     flex-grow: 1;
+    min-width: 0;
     font-size: 1rem;
     transition: all 0.3s ease;
   }
@@ -171,5 +192,9 @@
     .search-button-text {
       display: none;
     }
+  }
+
+  :global(html.ios-safe-area) input[type='text'] {
+    font-size: 16px;
   }
 </style>

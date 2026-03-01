@@ -180,6 +180,10 @@
     margin-top: -0.5rem;
   }
 
+  :global(html.ios-safe-area) .search-screen.keyboard-open .search-wrapper {
+    margin-top: 0;
+  }
+
   /* Desktop: Position absolutely to the right */
   .song-of-day-wrapper {
     display: flex;
@@ -202,11 +206,22 @@
       padding-bottom: 1rem;
     }
 
+    :global(html.ios-safe-area) .search-screen:not(.keyboard-open) {
+      padding-top: 0.25rem;
+    }
+
     .search-screen.keyboard-open {
       height: auto;
       min-height: 0;
       padding-top: 0.25rem;
       padding-bottom: 0.5rem;
+    }
+
+    :global(html.ios-safe-area) .search-screen.keyboard-open {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 5.75rem);
+      padding-bottom: 0.9rem;
     }
 
     .center-block {
@@ -216,6 +231,10 @@
 
     .search-screen.keyboard-open .center-block {
       gap: 0;
+    }
+
+    :global(html.ios-safe-area) .search-screen.keyboard-open .center-block {
+      gap: 0.5rem;
     }
 
     /* Mobile: Reset positioning */
@@ -255,6 +274,12 @@
       margin-top: -1rem;
       margin-bottom: 0;
     }
+
+    :global(html.ios-safe-area) .search-screen.keyboard-open .logo-container {
+      transform: scale(0.52);
+      margin-top: 0;
+      margin-bottom: 0.25rem;
+    }
   }
 
   @media (max-width: 600px) {
@@ -267,6 +292,12 @@
       transform: scale(0.3);
       margin-top: -1rem;
       margin-bottom: 0;
+    }
+
+    :global(html.ios-safe-area) .search-screen.keyboard-open .logo-container {
+      transform: scale(0.44);
+      margin-top: 0;
+      margin-bottom: 0.2rem;
     }
 
     .song-of-day-wrapper {

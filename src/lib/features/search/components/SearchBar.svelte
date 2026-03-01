@@ -26,7 +26,13 @@
       }
 
       const handleClickOutside = (event: MouseEvent) => {
-        if (!centered && searchContainerRef && !searchContainerRef.contains(event.target as Node)) {
+        const eventPath = typeof event.composedPath === 'function' ? event.composedPath() : [];
+        const clickedInside =
+          searchContainerRef &&
+          (eventPath.includes(searchContainerRef) ||
+            searchContainerRef.contains(event.target as Node));
+
+        if (!centered && searchContainerRef && !clickedInside) {
           if (searchStore.showRecentVideos) {
             searchStore.showRecentVideos = false;
             closeTimeout = setTimeout(() => {
@@ -109,6 +115,14 @@
     width: auto;
     gap: 1rem;
     transition: opacity 0.3s ease;
+  }
+
+  :global(html.ios-safe-area) .search-container {
+    top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  }
+
+  :global(html.ios-safe-area) .search-container:not(.centered) .search-icon-button {
+    margin-top: 0;
   }
 
   .search-container.fullscreen {

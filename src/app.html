@@ -21,7 +21,15 @@
         const theme = localStorage.getItem('theme-preference') || 'system';
         const isDark =
           theme === 'dark' ||
-          (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          (theme === 'system' && globalThis.matchMedia('(prefers-color-scheme: dark)').matches);
+        const isIOS =
+          /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        if (isIOS) {
+          document.documentElement.classList.add('ios-safe-area');
+        }
+
         if (isDark) {
           document.documentElement.classList.add('dark-mode');
         }

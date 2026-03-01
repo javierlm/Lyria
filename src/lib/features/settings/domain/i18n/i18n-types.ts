@@ -30,6 +30,26 @@ type RootTranslation = {
      */
     loadVideo: string;
     /**
+     * L​o​a​d​ ​m​o​r​e​ ​r​e​s​u​l​t​s
+     */
+    loadMoreResults: string;
+    /**
+     * L​o​a​d​i​n​g​.​.​.
+     */
+    loadingMoreResults: string;
+    /**
+     * C​o​u​l​d​ ​n​o​t​ ​l​o​a​d​ ​m​o​r​e​ ​r​e​s​u​l​t​s
+     */
+    loadMoreErrorTitle: string;
+    /**
+     * P​l​e​a​s​e​ ​t​r​y​ ​a​g​a​i​n​ ​i​n​ ​a​ ​f​e​w​ ​s​e​c​o​n​d​s
+     */
+    loadMoreErrorMessage: string;
+    /**
+     * Y​o​u​ ​m​i​g​h​t​ ​a​l​s​o​ ​l​i​k​e
+     */
+    alsoInterested: string;
+    /**
      * T​h​i​s​ ​v​i​d​e​o​ ​i​s​ ​n​o​t​ ​i​n​ ​y​o​u​r​ ​h​i​s​t​o​r​y
      */
     notInHistory: string;
@@ -924,6 +944,26 @@ export type TranslationFunctions = {
      * Load Video
      */
     loadVideo: () => LocalizedString;
+    /**
+     * Load more results
+     */
+    loadMoreResults: () => LocalizedString;
+    /**
+     * Loading...
+     */
+    loadingMoreResults: () => LocalizedString;
+    /**
+     * Could not load more results
+     */
+    loadMoreErrorTitle: () => LocalizedString;
+    /**
+     * Please try again in a few seconds
+     */
+    loadMoreErrorMessage: () => LocalizedString;
+    /**
+     * You might also like
+     */
+    alsoInterested: () => LocalizedString;
     /**
      * This video is not in your history
      */

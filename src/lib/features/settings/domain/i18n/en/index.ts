@@ -6,6 +6,11 @@ const en = {
   search: {
     placeholder: 'Search by artist or song in your recents, or paste a YouTube URL',
     loadVideo: 'Load Video',
+    loadMoreResults: 'Load more results',
+    loadingMoreResults: 'Loading...',
+    loadMoreErrorTitle: 'Could not load more results',
+    loadMoreErrorMessage: 'Please try again in a few seconds',
+    alsoInterested: 'You might also like',
     notInHistory: 'This video is not in your history',
     pressEnterToLoad: 'Press Enter to load it',
     noResults: 'No results found',

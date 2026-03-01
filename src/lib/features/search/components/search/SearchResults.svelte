@@ -35,6 +35,16 @@
     }
   }
 
+  async function handleLoadMoreGhost(event: MouseEvent): Promise<void> {
+    event.stopPropagation();
+
+    try {
+      await searchStore.loadMoreGhostResults();
+    } catch {
+      notify.error($LL.search.loadMoreErrorTitle(), $LL.search.loadMoreErrorMessage());
+    }
+  }
+
   let { inputElement = null }: { inputElement?: HTMLInputElement | null } = $props();
 
   let dropdownMaxHeight: string | null = $state(null);
@@ -58,6 +68,9 @@
 
   // Use CSS mode for PWA or Firefox mobile
   let useCSSMode = $derived(isPWA || isFirefoxMobile);
+  let firstGhostIndex = $derived(
+    searchStore.filteredVideos.findIndex((video) => video.source === 'ghost')
+  );
 
   // Main calculation function - browser only (not PWA or Firefox)
   function calculateMaxHeight() {
@@ -167,6 +180,12 @@
     transition:fade={{ duration: 150 }}
   >
     {#each searchStore.filteredVideos as video, index (video.videoId)}
+      {#if firstGhostIndex > 0 && index === firstGhostIndex}
+        <div class="results-divider">
+          <span class="results-divider-label">{$LL.search.alsoInterested()}</span>
+        </div>
+      {/if}
+
       <RecentVideoItem
         {video}
         isFavorite={video.isFavorite}
@@ -176,6 +195,20 @@
         on:delete={handleDeleteRecentVideo}
       />
     {/each}
+
+    {#if searchStore.canLoadMoreGhost && !searchStore.showOnlyFavorites}
+      <div class="load-more-wrapper">
+        <button
+          class="load-more-button"
+          onclick={(event) => void handleLoadMoreGhost(event)}
+          disabled={searchStore.isLoadingMoreGhost}
+        >
+          {searchStore.isLoadingMoreGhost
+            ? $LL.search.loadingMoreResults()
+            : $LL.search.loadMoreResults()}
+        </button>
+      </div>
+    {/if}
   </div>
 {:else if searchStore.searchValue.trim() && searchStore.filteredVideos.length === 0}
   <div
@@ -258,6 +291,97 @@
     background-color: var(--primary-color);
     border-radius: 10px;
     border: 2px solid var(--card-background);
+  }
+
+  .results-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 1rem 0.9rem 0.7rem;
+    margin-top: 0.2rem;
+    color: var(--text-secondary);
+    position: relative;
+  }
+
+  .results-divider::before,
+  .results-divider::after {
+    content: '';
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      rgba(var(--primary-color-rgb, 120, 120, 120), 0.05),
+      rgba(var(--primary-color-rgb, 120, 120, 120), 0.28),
+      rgba(var(--primary-color-rgb, 120, 120, 120), 0.05)
+    );
+    flex: 1;
+  }
+
+  .results-divider-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.32rem 0.72rem;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--primary-color-rgb, 120, 120, 120), 0.28);
+    background: linear-gradient(
+      180deg,
+      rgba(var(--primary-color-rgb, 120, 120, 120), 0.16),
+      rgba(var(--primary-color-rgb, 120, 120, 120), 0.08)
+    );
+    color: var(--text-color);
+    font-size: 0.73rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  .results-divider-label::before {
+    content: '';
+    width: 0.35rem;
+    height: 0.35rem;
+    border-radius: 50%;
+    background: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb, 120, 120, 120), 0.2);
+  }
+
+  .load-more-wrapper {
+    padding: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--card-background);
+    position: sticky;
+    bottom: 0;
+  }
+
+  :global(html.ios-safe-area) .recent-videos-dropdown {
+    scroll-padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+  }
+
+  :global(html.ios-safe-area) .load-more-wrapper {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .load-more-button {
+    width: 100%;
+    border: 1px solid var(--primary-color);
+    background: transparent;
+    color: var(--primary-color);
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .load-more-button:hover:not(:disabled) {
+    background: rgba(var(--primary-color-rgb), 0.08);
+  }
+
+  .load-more-button:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 
   @media (max-width: 768px) {

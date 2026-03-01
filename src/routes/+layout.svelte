@@ -241,6 +241,7 @@
     --theme-transition-duration: 0.5s;
     --theme-transition-timing: ease-in-out;
     --top-control-height: 40px;
+    --top-controls-safe-offset: 12px;
   }
 
   :global(html) {
@@ -291,7 +292,7 @@
     flex-direction: column;
     min-height: 100%;
     position: relative;
-    padding-top: max(env(safe-area-inset-top, 0px), 0px);
+    padding-top: 0;
     padding-bottom: env(safe-area-inset-bottom);
     box-sizing: border-box;
   }
@@ -302,30 +303,24 @@
     align-items: center;
     padding: 1rem;
     gap: 0.5rem;
-    position: fixed;
-    top: max(env(safe-area-inset-top, 0px), 16px);
-    left: 0;
     z-index: 50;
-    -webkit-transform: translateZ(0);
-    transform: translateZ(0);
   }
 
-  @supports not (env(safe-area-inset-top: 1px)) {
+  :global(html.ios-safe-area) .container {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  :global(html.ios-safe-area) .top-controls {
+    top: max(env(safe-area-inset-top, 0px), var(--top-controls-safe-offset));
+  }
+
+  @supports not (top: env(safe-area-inset-top)) {
     .top-controls {
-      top: 16px;
+      top: var(--top-controls-safe-offset);
     }
-  }
 
-  @media (max-width: 768px) and (display-mode: standalone) {
-    .top-controls {
-      top: 16px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .top-controls {
-      position: absolute;
-      top: 0;
+    .container {
+      padding-top: 0;
     }
   }
 
