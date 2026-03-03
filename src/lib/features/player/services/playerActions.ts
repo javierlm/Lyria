@@ -52,6 +52,7 @@ let lastBufferSync = 0;
 let videoLoadTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let currentSearchId = 0;
 let currentVideoLoadId = 0;
+let stopPlayerSizeSync: (() => void) | null = null;
 
 function loadYouTubeAPI() {
   return new Promise<void>((resolve) => {
@@ -326,12 +327,80 @@ function startVideoLoadTimeout() {
 }
 
 function destroyExistingPlayer() {
+  stopPlayerSizeSync?.();
+  stopPlayerSizeSync = null;
+
   const oldPlayer = getPlayer();
   if (oldPlayer) {
     oldPlayer.destroy();
     setPlayer(null);
     console.log('Destroyed old player.');
   }
+}
+
+function startPlayerSizeSync(player: YT.Player) {
+  stopPlayerSizeSync?.();
+
+  const iframe = player.getIframe();
+  const playerContainer = iframe?.closest('.player-container') as HTMLElement | null;
+  const fallbackContainer = iframe?.parentElement as HTMLElement | null;
+  const sizeContainer = playerContainer || fallbackContainer;
+
+  if (!sizeContainer) {
+    stopPlayerSizeSync = null;
+    return;
+  }
+
+  let rafId: number | null = null;
+
+  const syncSize = () => {
+    rafId = null;
+    const { width, height } = sizeContainer.getBoundingClientRect();
+    const nextWidth = Math.round(width);
+    const nextHeight = Math.round(height);
+
+    if (nextWidth > 0 && nextHeight > 0) {
+      player.setSize(nextWidth, nextHeight);
+    }
+  };
+
+  const scheduleSync = () => {
+    if (rafId !== null) return;
+    rafId = requestAnimationFrame(syncSize);
+  };
+
+  const resizeObserver = new ResizeObserver(() => {
+    scheduleSync();
+  });
+
+  resizeObserver.observe(sizeContainer);
+  window.addEventListener('resize', scheduleSync);
+  window.addEventListener('orientationchange', scheduleSync);
+  document.addEventListener('fullscreenchange', scheduleSync);
+  document.addEventListener('webkitfullscreenchange', scheduleSync);
+  document.addEventListener('mozfullscreenchange', scheduleSync);
+  document.addEventListener('MSFullscreenChange', scheduleSync);
+
+  scheduleSync();
+
+  stopPlayerSizeSync = () => {
+    resizeObserver.disconnect();
+    window.removeEventListener('resize', scheduleSync);
+    window.removeEventListener('orientationchange', scheduleSync);
+    document.removeEventListener('fullscreenchange', scheduleSync);
+    document.removeEventListener('webkitfullscreenchange', scheduleSync);
+    document.removeEventListener('mozfullscreenchange', scheduleSync);
+    document.removeEventListener('MSFullscreenChange', scheduleSync);
+
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  };
+}
+
+function handlePlaybackQualityChange(event: YT.OnPlaybackQualityChangeEvent) {
+  console.debug(`[YouTube] Playback quality changed to: ${event.data}`);
 }
 
 function resetPlayerState() {
@@ -394,15 +463,14 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
       playsinline: 1,
       fs: 0,
       rel: 0,
-      modestbranding: 1,
       controls: 0,
       disablekb: 1,
-      showinfo: 0,
       origin: globalThis.location.origin
     },
     events: {
       onReady: (event) => handlePlayerReady(event, videoId, loadId),
       onError: (event) => handlePlayerError(event),
+      onPlaybackQualityChange: (event) => handlePlaybackQualityChange(event),
       onStateChange: (event) => {
         const prevIsPlaying = playerState.isPlaying;
         playerState.isPlaying = event.data === YT.PlayerState.PLAYING;
@@ -874,6 +942,8 @@ async function handlePlayerReady(event: YT.PlayerEvent, videoId: string, loadId:
     iframe.style.transformOrigin = 'center';
     iframe.style.background = 'black';
   }
+
+  startPlayerSizeSync(player);
 
   await fetchAndProcessLyrics(player, loadId);
   if (loadId !== currentVideoLoadId) return;

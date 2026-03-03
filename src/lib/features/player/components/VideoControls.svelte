@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
   import IconPlay from 'phosphor-svelte/lib/Play';
   import IconPause from 'phosphor-svelte/lib/Pause';
   import SpeakerHigh from 'phosphor-svelte/lib/SpeakerHigh';
@@ -20,7 +19,18 @@
     unMute
   } from '$lib/features/player/services/playerActions';
 
-  const dispatch = createEventDispatcher();
+  interface Props {
+    onToggleFullscreen?: () => void;
+    onSeekInteractionStart?: () => void;
+    onSeekInteractionEnd?: () => void;
+  }
+
+  let { onToggleFullscreen, onSeekInteractionStart, onSeekInteractionEnd }: Props = $props();
+  const LANDSCAPE_TOUCH_FULLSCREEN_QUERY =
+    '(max-width: 768px) and (orientation: landscape) and (pointer: coarse)';
+
+  let seekBarElement: HTMLInputElement | null = null;
+  let isSeekInteractionActive = $state(false);
 
   function togglePlayPause() {
     if (playerState.isPlaying) {
@@ -59,8 +69,106 @@
   }
 
   function toggleFullscreen() {
-    dispatch('toggleFullscreen');
+    onToggleFullscreen?.();
   }
+
+  function isFullscreenTouchGestureGuardActive(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return playerState.isFullscreen && window.matchMedia(LANDSCAPE_TOUCH_FULLSCREEN_QUERY).matches;
+  }
+
+  function stopControlEvent(event: Event) {
+    event.stopPropagation();
+  }
+
+  function notifySeekInteractionStart() {
+    if (isSeekInteractionActive) {
+      return;
+    }
+
+    isSeekInteractionActive = true;
+    onSeekInteractionStart?.();
+  }
+
+  function notifySeekInteractionEnd() {
+    if (!isSeekInteractionActive) {
+      return;
+    }
+
+    isSeekInteractionActive = false;
+    onSeekInteractionEnd?.();
+  }
+
+  function handleSeekPointerDown(event: PointerEvent): void {
+    stopControlEvent(event);
+    notifySeekInteractionStart();
+
+    if (!isFullscreenTouchGestureGuardActive() || event.pointerType !== 'touch') {
+      return;
+    }
+
+    const target = event.currentTarget as HTMLElement | null;
+    if (!target) {
+      return;
+    }
+
+    target.setPointerCapture(event.pointerId);
+  }
+
+  function handleSeekPointerUp(event: PointerEvent): void {
+    stopControlEvent(event);
+    notifySeekInteractionEnd();
+
+    if (event.pointerType !== 'touch') {
+      return;
+    }
+
+    const target = event.currentTarget as HTMLElement | null;
+    if (!target || !target.hasPointerCapture(event.pointerId)) {
+      return;
+    }
+
+    target.releasePointerCapture(event.pointerId);
+  }
+
+  function handleSeekTouchGuard(event: TouchEvent): void {
+    stopControlEvent(event);
+
+    if (!isFullscreenTouchGestureGuardActive() || !event.cancelable) {
+      return;
+    }
+
+    event.preventDefault();
+  }
+
+  function handleSeekTouchStart(event: TouchEvent): void {
+    stopControlEvent(event);
+    notifySeekInteractionStart();
+  }
+
+  function handleSeekTouchEnd(event: TouchEvent): void {
+    stopControlEvent(event);
+    notifySeekInteractionEnd();
+  }
+
+  $effect(() => {
+    const seekBar = seekBarElement;
+
+    if (!seekBar) {
+      return;
+    }
+
+    seekBar.addEventListener('touchstart', handleSeekTouchGuard, { passive: false });
+    seekBar.addEventListener('touchmove', handleSeekTouchGuard, { passive: false });
+
+    return () => {
+      seekBar.removeEventListener('touchstart', handleSeekTouchGuard);
+      seekBar.removeEventListener('touchmove', handleSeekTouchGuard);
+    };
+  });
 
   function formatTime(seconds: number): string {
     if (isNaN(seconds) || seconds === null || seconds === undefined) {
@@ -89,12 +197,20 @@
 
   <div class="time-display">{formatTime(playerState.currentTime)}</div>
   <input
+    bind:this={seekBarElement}
     type="range"
     min="0"
     max={playerState.duration}
     value={playerState.currentTime}
     step="0.1"
     oninput={handleSeek}
+    onpointerdown={handleSeekPointerDown}
+    onpointermove={stopControlEvent}
+    onpointerup={handleSeekPointerUp}
+    onpointercancel={handleSeekPointerUp}
+    ontouchstart={handleSeekTouchStart}
+    ontouchend={handleSeekTouchEnd}
+    ontouchcancel={handleSeekTouchEnd}
     class="seek-bar"
     style="--progress: {(playerState.currentTime / playerState.duration) * 100 ||
       0}%; --buffered: {(playerState.buffered / playerState.duration) * 100 || 0}%;"
@@ -361,7 +477,7 @@
       display: none;
     }
 
-    .player-container.fullscreen .subtitles-controls {
+    :global(.player-container.fullscreen) .subtitles-controls {
       display: flex;
     }
 
@@ -381,6 +497,21 @@
 
     .seek-bar {
       margin: 0 5px;
+    }
+  }
+
+  @media (max-width: 768px) and (orientation: landscape) and (pointer: coarse) {
+    :global(.player-container.fullscreen) .controls-container {
+      padding-top: 10px;
+      padding-bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 10px));
+      padding-left: max(22px, calc(env(safe-area-inset-left, 0px) + 14px));
+      padding-right: max(22px, calc(env(safe-area-inset-right, 0px) + 14px));
+    }
+
+    :global(.player-container.fullscreen) .seek-bar {
+      margin-left: 12px;
+      margin-right: 12px;
+      touch-action: none;
     }
   }
 </style>

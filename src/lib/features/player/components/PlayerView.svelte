@@ -19,6 +19,7 @@
   let hideControlsTimeout: ReturnType<typeof setTimeout> | undefined;
   let currentLoadedVideoId: string | null = null;
   let isTouch = $state(false);
+  let isSeekInteracting = $state(false);
 
   let currentLine = $derived(
     playerState.currentLineIndex >= 0
@@ -40,15 +41,26 @@
 
   const HIDE_DELAY = 3000;
 
-  function resetHideControlsTimer() {
+  function clearHideControlsTimer() {
     if (hideControlsTimeout) {
       clearTimeout(hideControlsTimeout);
       hideControlsTimeout = undefined;
     }
+  }
+
+  function resetHideControlsTimer() {
+    clearHideControlsTimer();
+
+    if (isSeekInteracting) {
+      return;
+    }
+
     // Hide controls automatically if video is playing
     if (playerState.isPlaying) {
       hideControlsTimeout = setTimeout(() => {
-        showControls = false;
+        if (!isSeekInteracting) {
+          showControls = false;
+        }
         hideControlsTimeout = undefined;
       }, HIDE_DELAY);
     }
@@ -59,16 +71,29 @@
     resetHideControlsTimer();
   }
 
+  function handleSeekInteractionStart() {
+    isSeekInteracting = true;
+    showControls = true;
+    clearHideControlsTimer();
+  }
+
+  function handleSeekInteractionEnd() {
+    if (!isSeekInteracting) {
+      return;
+    }
+
+    isSeekInteracting = false;
+    showControls = true;
+    resetHideControlsTimer();
+  }
+
   function handleContainerClick(e: MouseEvent | TouchEvent) {
     if (isTouch) {
       // Mobile devices
       e.preventDefault();
       if (showControls) {
         showControls = false;
-        if (hideControlsTimeout) {
-          clearTimeout(hideControlsTimeout);
-          hideControlsTimeout = undefined;
-        }
+        clearHideControlsTimer();
       } else {
         showControlsAndResetTimer();
       }
@@ -93,7 +118,7 @@
   });
 
   $effect(() => {
-    if (playerState.isPlaying && showControls) {
+    if (playerState.isPlaying && showControls && !isSeekInteracting) {
       resetHideControlsTimer();
     }
   });
@@ -120,9 +145,7 @@
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-      if (hideControlsTimeout) {
-        clearTimeout(hideControlsTimeout);
-      }
+      clearHideControlsTimer();
     };
   });
 
@@ -209,17 +232,13 @@
     onmouseenter={(e) => {
       if (!isTouch) {
         e.stopPropagation();
-        if (hideControlsTimeout) {
-          clearTimeout(hideControlsTimeout);
-        }
+        clearHideControlsTimer();
       }
     }}
     onmousemove={(e) => {
       if (!isTouch) {
         e.stopPropagation();
-        if (hideControlsTimeout) {
-          clearTimeout(hideControlsTimeout);
-        }
+        clearHideControlsTimer();
       }
     }}
     onmouseleave={(e) => {
@@ -229,7 +248,11 @@
       }
     }}
   >
-    <VideoControls on:toggleFullscreen={handleToggleFullscreen} />
+    <VideoControls
+      onToggleFullscreen={handleToggleFullscreen}
+      onSeekInteractionStart={handleSeekInteractionStart}
+      onSeekInteractionEnd={handleSeekInteractionEnd}
+    />
   </div>
 
   {#if playerState.isLoadingVideo && !playerState.videoError}
@@ -367,6 +390,16 @@
     }
     .subtitle-line.translated {
       font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 768px) and (orientation: landscape) and (pointer: coarse) {
+    .player-container.fullscreen {
+      overscroll-behavior: none;
+    }
+
+    .player-container.fullscreen .video-controls-wrapper {
+      bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 8px));
     }
   }
 
