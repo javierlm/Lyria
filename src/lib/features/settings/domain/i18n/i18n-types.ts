@@ -22,7 +22,7 @@ type RootTranslation = {
   appName: string;
   search: {
     /**
-     * S​e​a​r​c​h​ ​b​y​ ​a​r​t​i​s​t​ ​o​r​ ​s​o​n​g​ ​i​n​ ​y​o​u​r​ ​r​e​c​e​n​t​s​,​ ​o​r​ ​p​a​s​t​e​ ​a​ ​Y​o​u​T​u​b​e​ ​U​R​L
+     * S​e​a​r​c​h​ ​b​y​ ​a​r​t​i​s​t​ ​o​r​ ​s​o​n​g​,​ ​o​r​ ​p​a​s​t​e​ ​a​ ​Y​o​u​T​u​b​e​ ​U​R​L
      */
     placeholder: string;
     /**
@@ -937,7 +937,7 @@ export type TranslationFunctions = {
   appName: () => LocalizedString;
   search: {
     /**
-     * Search by artist or song in your recents, or paste a YouTube URL
+     * Search by artist or song, or paste a YouTube URL
      */
     placeholder: () => LocalizedString;
     /**

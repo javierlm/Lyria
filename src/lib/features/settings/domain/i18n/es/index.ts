@@ -4,7 +4,7 @@ const es = {
   appName: 'Lyria',
   // Search
   search: {
-    placeholder: 'Busca por artista o canción en tus recientes, o pega una URL de YouTube',
+    placeholder: 'Busca por artista o canción, o pega una URL de YouTube',
     loadVideo: 'Cargar Video',
     loadMoreResults: 'Cargar mas resultados',
     loadingMoreResults: 'Cargando...',

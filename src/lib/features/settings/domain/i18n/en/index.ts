@@ -4,7 +4,7 @@ const en = {
   appName: 'Lyria',
   // Search
   search: {
-    placeholder: 'Search by artist or song in your recents, or paste a YouTube URL',
+    placeholder: 'Search by artist or song, or paste a YouTube URL',
     loadVideo: 'Load Video',
     loadMoreResults: 'Load more results',
     loadingMoreResults: 'Loading...',
