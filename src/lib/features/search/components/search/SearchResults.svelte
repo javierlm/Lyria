@@ -7,14 +7,14 @@
   import { notify } from '$lib/features/notification';
   import { isYouTubeUrl, extractVideoId } from '$lib/shared/utils';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
   import { tick } from 'svelte';
 
   function loadVideoFromUrl(url: string) {
     const id = extractVideoId(url);
     if (id) {
-      const newUrlString = `play?id=${encodeURIComponent(id)}`;
-      goto(newUrlString, { noScroll: true });
+      goto(`${resolve('/play')}?id=${encodeURIComponent(id)}`, { noScroll: true });
     }
   }
 
@@ -50,6 +50,7 @@
   let dropdownMaxHeight: string | null = $state(null);
   let dropdownElement: HTMLDivElement = $state() as HTMLDivElement;
   let isMobile = $state(false);
+  let lastSearchKey = '';
 
   // Use keyboard state from shared store
   let isKeyboardOpen = $derived(keyboardStore.isOpen);
@@ -68,6 +69,10 @@
 
   // Use CSS mode for PWA or Firefox mobile
   let useCSSMode = $derived(isPWA || isFirefoxMobile);
+  let hasSearchQuery = $derived(searchStore.searchValue.trim().length > 0);
+  let isLoadingAdditionalResults = $derived(
+    searchStore.isFetchingGhost && hasSearchQuery && !searchStore.showOnlyFavorites
+  );
   let firstGhostIndex = $derived(
     searchStore.filteredVideos.findIndex((video) => video.source === 'ghost')
   );
@@ -167,6 +172,17 @@
       });
     }
   });
+
+  // Reset scroll when the query changes to avoid sticky footer glitches
+  $effect(() => {
+    const searchKey = searchStore.searchValue.trim().toLowerCase();
+    if (searchKey !== lastSearchKey) {
+      lastSearchKey = searchKey;
+      if (dropdownElement) {
+        dropdownElement.scrollTop = 0;
+      }
+    }
+  });
 </script>
 
 {#if searchStore.showRecentVideos && searchStore.filteredVideos.length > 0}
@@ -196,6 +212,13 @@
       />
     {/each}
 
+    {#if isLoadingAdditionalResults}
+      <div class="loading-additional" role="status" aria-live="polite">
+        <span class="loading-dot" aria-hidden="true"></span>
+        <span>{$LL.search.loadingMoreResults()}</span>
+      </div>
+    {/if}
+
     {#if searchStore.canLoadMoreGhost && !searchStore.showOnlyFavorites}
       <div class="load-more-wrapper">
         <button
@@ -224,6 +247,9 @@
       {#if searchStore.showOnlyFavorites}
         <p>No se encontraron favoritos</p>
         <p class="hint">Intenta con otros términos de búsqueda</p>
+      {:else if isLoadingAdditionalResults}
+        <p>{$LL.search.loadingMoreResults()}</p>
+        <p class="hint">{$LL.search.alsoInterested()}</p>
       {:else if isYouTubeUrl(searchStore.searchValue)}
         <p>{$LL.search.notInHistory()}</p>
         <p class="hint">{$LL.search.pressEnterToLoad()}</p>
@@ -350,8 +376,47 @@
     padding: 0.75rem;
     border-top: 1px solid var(--border-color);
     background: var(--card-background);
-    position: sticky;
-    bottom: 0;
+    position: static;
+  }
+
+  .loading-additional {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.8rem 0.75rem;
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    border-top: 1px solid var(--border-color);
+    background: linear-gradient(
+      180deg,
+      rgba(var(--primary-color-rgb, 120, 120, 120), 0.04),
+      rgba(var(--primary-color-rgb, 120, 120, 120), 0.01)
+    );
+  }
+
+  .loading-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--primary-color);
+    animation: pulse 1s ease-in-out infinite;
+    box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb), 0.35);
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(0.8);
+      box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb), 0.35);
+    }
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 10px rgba(var(--primary-color-rgb), 0);
+    }
+    100% {
+      transform: scale(0.8);
+      box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb), 0);
+    }
   }
 
   :global(html.ios-safe-area) .recent-videos-dropdown {
