@@ -83,8 +83,9 @@ export const POST: RequestHandler = async ({ request }) => {
     // Only cache if actual translation occurred (not same language)
     if (!translatedResponse.isSameLanguage) {
       // Don't cache request-specific metadata
-      const { isSameLanguage, percentageOfDetectedLanguages, ...cacheableData } =
-        translatedResponse;
+      const cacheableData = { ...translatedResponse };
+      delete cacheableData.isSameLanguage;
+      delete cacheableData.percentageOfDetectedLanguages;
       await cacheProvider.set(cacheKey, cacheableData);
     }
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { page } from '$app/state';
 
   let { isPlayerView = false } = $props();
@@ -21,7 +22,7 @@
     }
 
     if (page.url.pathname !== '/') {
-      goto('/');
+      goto(resolve('/'));
     }
   };
 
@@ -41,7 +42,7 @@
   });
 </script>
 
-<a href="/" onclick={handleLogoClick} class="logo-anchor">
+<a href={resolve('/')} onclick={handleLogoClick} class="logo-anchor">
   <div class="container" bind:this={container}>
     <div
       class="lyria-logo"

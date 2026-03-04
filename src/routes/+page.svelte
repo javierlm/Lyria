@@ -3,7 +3,6 @@
   import HomeView from '$lib/features/home/components/HomeView.svelte';
   import { demoStore } from '$lib/features/settings/stores/demoStore.svelte';
   import { notify } from '$lib/features/notification';
-  import { replaceState } from '$app/navigation';
   import LL from '$i18n/i18n-svelte';
 
   let { data } = $props();
@@ -21,7 +20,7 @@
 
       const url = new URL(window.location.href);
       url.searchParams.delete('demo');
-      replaceState(url, {});
+      globalThis.history.replaceState(globalThis.history.state, '', url);
     }
   });
 </script>

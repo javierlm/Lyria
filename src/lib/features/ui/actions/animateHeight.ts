@@ -24,7 +24,7 @@ export function animateHeight(
 
         node.style.overflow = 'hidden';
         node.style.height = `${currentHeight}px`;
-        node.offsetHeight;
+        node.getBoundingClientRect();
         node.style.height = `${newHeight}px`;
 
         const transitionEnd = () => {

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { slide, fade } from 'svelte/transition';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
   import {
     loadVideo,
@@ -107,6 +108,27 @@
     }
   }
 
+  function handleContainerKeydown(e: KeyboardEvent) {
+    if (e.target !== playerContainer) {
+      return;
+    }
+
+    if (e.key !== 'Enter' && e.key !== ' ') {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (playerState.isPlaying) {
+      pause();
+    } else {
+      play();
+    }
+
+    showControlsAndResetTimer();
+  }
+
   $effect(() => {
     if (playerState.videoId && playerState.videoId !== currentLoadedVideoId) {
       loadVideo(playerState.videoId, 'player', playerState.timingOffset);
@@ -126,12 +148,19 @@
   onMount(() => {
     isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+    type FullscreenDocument = Document & {
+      webkitFullscreenElement?: Element;
+      mozFullScreenElement?: Element;
+      msFullscreenElement?: Element;
+    };
+
     const handleFullscreenChange = () => {
+      const fullscreenDocument = document as FullscreenDocument;
       playerState.isFullscreen = !!(
-        document.fullscreenElement ||
-        (document as any).webkitFullscreenElement ||
-        (document as any).mozFullScreenElement ||
-        (document as any).msFullscreenElement
+        fullscreenDocument.fullscreenElement ||
+        fullscreenDocument.webkitFullscreenElement ||
+        fullscreenDocument.mozFullScreenElement ||
+        fullscreenDocument.msFullscreenElement
       );
     };
 
@@ -158,7 +187,9 @@
   bind:this={playerContainer}
   class="player-container"
   class:fullscreen={playerState.isFullscreen}
-  role="region"
+  role="button"
+  aria-label="Toggle playback"
+  tabindex="0"
   style:view-transition-name="video-{playerState.videoId}"
   onmouseenter={(e) => {
     if (!isTouch) {
@@ -190,6 +221,7 @@
       handleContainerClick(e);
     }
   }}
+  onkeydown={handleContainerKeydown}
   ontouchend={(e) => {
     const target = e.target as HTMLElement;
     if (
@@ -227,21 +259,22 @@
   <div
     class="video-controls-wrapper"
     class:show={showControls}
-    onclick={(e) => e.stopPropagation()}
-    ontouchstart={(e) => e.stopPropagation()}
-    onmouseenter={(e) => {
+    role="group"
+    aria-label="Video controls"
+    onpointerdown={(e) => e.stopPropagation()}
+    onpointerenter={(e) => {
       if (!isTouch) {
         e.stopPropagation();
         clearHideControlsTimer();
       }
     }}
-    onmousemove={(e) => {
+    onpointermove={(e) => {
       if (!isTouch) {
         e.stopPropagation();
         clearHideControlsTimer();
       }
     }}
-    onmouseleave={(e) => {
+    onpointerleave={(e) => {
       if (!isTouch) {
         e.stopPropagation();
         resetHideControlsTimer();
@@ -275,7 +308,7 @@
             {$LL.videoError.genericError()}
           {/if}
         </p>
-        <button class="error-button" onclick={() => goto('/')}>
+        <button class="error-button" onclick={() => goto(resolve('/'))}>
           {$LL.videoError.goBack()}
         </button>
       </div>

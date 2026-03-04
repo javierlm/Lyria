@@ -413,13 +413,13 @@ describe('LibsqlVideoRepository integration', () => {
     const transactionSpy = vi.spyOn(db, 'transaction');
     let callCount = 0;
 
-    transactionSpy.mockImplementation(async (...args: any[]) => {
+    transactionSpy.mockImplementation(async (...args: Parameters<typeof originalTransaction>) => {
       callCount += 1;
       if (callCount === 1) {
         throw new Error('recents tx failed');
       }
 
-      return originalTransaction(...(args as [any]));
+      return originalTransaction(...args);
     });
 
     try {
@@ -469,13 +469,13 @@ describe('LibsqlVideoRepository integration', () => {
     const transactionSpy = vi.spyOn(db, 'transaction');
 
     let callCount = 0;
-    transactionSpy.mockImplementation(async (...args: any[]) => {
+    transactionSpy.mockImplementation(async (...args: Parameters<typeof originalTransaction>) => {
       callCount += 1;
       if (callCount === 2) {
         throw new Error('favorites tx failed');
       }
 
-      return originalTransaction(...(args as [any]));
+      return originalTransaction(...args);
     });
 
     try {

@@ -1,12 +1,32 @@
 type ModelStatus = 'ready' | 'downloading' | 'unavailable' | 'error' | 'checking';
 
+type DownloadProgressEvent = Event & {
+  loaded: number;
+  total: number;
+};
+
+type TranslatorCreateOptions = {
+  sourceLanguage: string;
+  targetLanguage: string;
+  monitor?: (monitor: EventTarget) => void;
+};
+
+type TranslatorInstance = {
+  translate: (text: string) => Promise<string>;
+};
+
+type TranslatorGlobal = {
+  create: (options: TranslatorCreateOptions) => Promise<TranslatorInstance>;
+  availability?: (options: { sourceLanguage: string; targetLanguage: string }) => Promise<string>;
+};
+
+type LanguageDetectorGlobal = {
+  create: (options?: { monitor?: (monitor: EventTarget) => void }) => Promise<unknown>;
+};
+
 type TranslatorAPI = {
   type: 'window.ai' | 'global' | 'legacy';
-  create: (options: {
-    sourceLanguage: string;
-    targetLanguage: string;
-    monitor?: any;
-  }) => Promise<any>;
+  create: (options: TranslatorCreateOptions) => Promise<TranslatorInstance>;
 };
 
 type LanguageStatus = 'readily' | 'after-download' | 'no';
@@ -21,6 +41,19 @@ class TranslationStore {
   private readonly availabilityCache = new Map<string, LanguageStatus>();
   private translatorAPI: TranslatorAPI | null = null;
 
+  private getGlobalTranslator(): TranslatorGlobal | undefined {
+    return (globalThis as unknown as { Translator?: TranslatorGlobal }).Translator;
+  }
+
+  private getGlobalLanguageDetector(): LanguageDetectorGlobal | undefined {
+    return (globalThis as unknown as { LanguageDetector?: LanguageDetectorGlobal })
+      .LanguageDetector;
+  }
+
+  private isDownloadProgressEvent(event: Event): event is DownloadProgressEvent {
+    return 'loaded' in event && 'total' in event;
+  }
+
   constructor() {
     this.initialize();
   }
@@ -34,10 +67,17 @@ class TranslationStore {
         type: 'window.ai',
         create: (opts) => window.ai!.translator!.create(opts)
       };
-    } else if ('Translator' in self) {
+    } else if ('Translator' in globalThis) {
+      const translatorGlobal = this.getGlobalTranslator();
       this.translatorAPI = {
         type: 'global',
-        create: (opts) => (self as any).Translator.create(opts)
+        create: (opts) => {
+          if (!translatorGlobal) {
+            throw new Error('Translator API is not available.');
+          }
+
+          return translatorGlobal.create(opts);
+        }
       };
     } else if (window.translation) {
       this.translatorAPI = {
@@ -98,9 +138,13 @@ class TranslationStore {
       const api = this.getTranslatorAPI();
       if (!api) return;
 
-      const monitor = (m: any) => {
-        m.addEventListener('downloadprogress', (e: any) => {
-          this.updateDownloadProgress(e.loaded, e.total);
+      const monitor = (monitorTarget: EventTarget) => {
+        monitorTarget.addEventListener('downloadprogress', (event: Event) => {
+          if (!this.isDownloadProgressEvent(event)) {
+            return;
+          }
+
+          this.updateDownloadProgress(event.loaded, event.total);
         });
       };
 
@@ -110,7 +154,7 @@ class TranslationStore {
       if (window.ai?.languageDetector) {
         await window.ai.languageDetector.create({ monitor });
       } else if ('LanguageDetector' in self) {
-        await (self as any).LanguageDetector.create({ monitor });
+        await this.getGlobalLanguageDetector()?.create({ monitor });
       }
 
       this.modelStatus = 'ready';
@@ -166,9 +210,9 @@ class TranslationStore {
 
       // Try the new global Translator API first (using capabilities)
       if ('Translator' in globalThis) {
-        const TranslatorClass = (self as any).Translator;
-        if (typeof TranslatorClass.availability === 'function') {
-          availability = await TranslatorClass.availability({
+        const translatorGlobal = this.getGlobalTranslator();
+        if (typeof translatorGlobal?.availability === 'function') {
+          availability = await translatorGlobal.availability({
             sourceLanguage: src,
             targetLanguage: tgt
           });

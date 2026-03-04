@@ -13,6 +13,7 @@
       timestamp?: number | null;
       isGhost?: boolean;
       source?: 'user-recent' | 'user-favorite' | 'catalog' | 'ghost';
+      ghostProvider?: 'wikidata' | 'discogs';
     };
     isFavorite?: boolean;
     priority?: boolean;
@@ -30,7 +31,6 @@
   const deleteThreshold = -80;
 
   let isTouchDevice = $state(false);
-  let isMobile = $state(false);
 
   onMount(() => {
     // Detect touch capability
@@ -38,13 +38,11 @@
     // Also consider mobile screen sizes as touch devices
     const isSmallScreen = window.innerWidth <= 768;
     isTouchDevice = hasTouch || isSmallScreen;
-    isMobile = isSmallScreen;
 
     // Update on resize
     const handleResize = () => {
       const smallScreen = window.innerWidth <= 768;
       isTouchDevice = hasTouch || smallScreen;
-      isMobile = smallScreen;
     };
 
     window.addEventListener('resize', handleResize);
@@ -87,15 +85,13 @@
   <div class="swipe-content" style="transform: translateX({translateX}px)">
     <button class="recent-video-item" onclick={handleSelect} tabindex="0">
       <VideoItem {video} {isFavorite} isGhost={video.isGhost} {priority}>
-        {#snippet children()}
-          {#if !video.isGhost && canDelete}
-            <div class="desktop-delete-action">
-              <button class="delete-button" onclick={handleDelete} aria-label="Delete video">
-                <IconX size="20" weight="bold" />
-              </button>
-            </div>
-          {/if}
-        {/snippet}
+        {#if !video.isGhost && canDelete}
+          <div class="desktop-delete-action">
+            <button class="delete-button" onclick={handleDelete} aria-label="Delete video">
+              <IconX size="20" weight="bold" />
+            </button>
+          </div>
+        {/if}
       </VideoItem>
     </button>
   </div>

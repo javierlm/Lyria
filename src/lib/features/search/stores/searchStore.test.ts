@@ -2,6 +2,15 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { SearchStore } from './searchStore.svelte';
 import type { VideoItem } from './searchStore.svelte';
 
+type SearchStoreTestAccess = {
+  enrichWithLocalData(globalResults: VideoItem[], query: string): VideoItem[];
+  mergeGhostResults(baseResults: VideoItem[], ghostResults: VideoItem[]): VideoItem[];
+};
+
+function getTestAccess(store: SearchStore): SearchStoreTestAccess {
+  return store as unknown as SearchStoreTestAccess;
+}
+
 describe('SearchStore - enrichWithLocalData', () => {
   let store: SearchStore;
 
@@ -53,7 +62,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'metallica');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'metallica');
 
       expect(enriched).toHaveLength(1);
       expect(enriched[0].source).toBe('user-favorite');
@@ -76,7 +85,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'nirvana');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'nirvana');
 
       expect(enriched).toHaveLength(1);
       expect(enriched[0].source).toBe('user-recent');
@@ -109,7 +118,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'muse');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'muse');
 
       expect(enriched).toHaveLength(1);
       expect(enriched[0].source).toBe('user-recent');
@@ -131,7 +140,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'zeppelin');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'zeppelin');
 
       expect(enriched).toHaveLength(1);
       expect(enriched[0].source).toBe('catalog');
@@ -154,7 +163,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'linkin');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'linkin');
 
       // Should have global result + local matching video
       expect(enriched).toHaveLength(2);
@@ -175,7 +184,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         source: 'user-recent'
       });
 
-      const enriched = (store as any).enrichWithLocalData([], 'utopa');
+      const enriched = getTestAccess(store).enrichWithLocalData([], 'utopa');
 
       expect(enriched.some((v: VideoItem) => v.videoId === 'local-utopia-1')).toBe(true);
     });
@@ -210,7 +219,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'test');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'test');
 
       expect(enriched[0].source).toBe('user-favorite');
       expect(enriched[1].source).toBe('user-recent');
@@ -256,7 +265,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'test');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'test');
 
       const recents = enriched.filter((v: VideoItem) => v.source === 'user-recent');
       expect(recents[0].videoId).toBe('local-recent-2'); // timestamp 3000
@@ -282,7 +291,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'metallica');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'metallica');
 
       // Should show as favorite based on local data
       expect(enriched[0].source).toBe('user-favorite');
@@ -302,7 +311,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'nirvana');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'nirvana');
 
       expect(enriched[0].source).toBe('user-recent');
       expect(enriched[0].timestamp).toBe(2000);
@@ -313,7 +322,7 @@ describe('SearchStore - enrichWithLocalData', () => {
     it('should handle empty global results with local matches', () => {
       const globalResults: VideoItem[] = [];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'linkin');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'linkin');
 
       expect(enriched.length).toBeGreaterThan(0);
       expect(enriched.some((v: VideoItem) => v.videoId === 'local-recent-2')).toBe(true);
@@ -331,7 +340,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'zeppelin');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'zeppelin');
 
       expect(enriched).toHaveLength(1);
       expect(enriched[0].videoId).toBe('global-1');
@@ -365,7 +374,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const enriched = (store as any).enrichWithLocalData(globalResults, 'queen');
+      const enriched = getTestAccess(store).enrichWithLocalData(globalResults, 'queen');
 
       expect(enriched[0].source).toBe('user-favorite');
       expect(enriched[0].isFavorite).toBe(true);
@@ -394,7 +403,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const merged = (store as any).mergeGhostResults(baseResults, ghostResults);
+      const merged = getTestAccess(store).mergeGhostResults(baseResults, ghostResults);
 
       expect(merged).toHaveLength(2);
       expect(merged[0]?.videoId).toBe('base-1');
@@ -421,7 +430,7 @@ describe('SearchStore - enrichWithLocalData', () => {
         }
       ];
 
-      const merged = (store as any).mergeGhostResults(baseResults, ghostResults);
+      const merged = getTestAccess(store).mergeGhostResults(baseResults, ghostResults);
 
       expect(merged).toHaveLength(1);
       expect(merged[0]?.videoId).toBe('dup-1');

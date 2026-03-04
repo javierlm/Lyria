@@ -14,6 +14,7 @@
       timestamp?: number | null;
       isGhost?: boolean;
       source?: 'user-recent' | 'user-favorite' | 'catalog' | 'ghost';
+      ghostProvider?: 'wikidata' | 'discogs';
     };
     isFavorite?: boolean;
     isGhost?: boolean;
@@ -83,6 +84,11 @@
         <div class="video-new-badge">
           <span>{$LL.video.unplayed()}</span>
         </div>
+        {#if video.ghostProvider}
+          <div class="video-provider-badge" title="Ghost provider">
+            <span>{video.ghostProvider === 'discogs' ? 'Discogs' : 'Wikidata'}</span>
+          </div>
+        {/if}
       {:else if video.source === 'catalog'}
         <div class="video-global-badge">
           <span>{$LL.video.globalResult()}</span>
@@ -218,6 +224,20 @@
     font-weight: 600;
     background: rgba(var(--primary-color-rgb), 0.12);
     color: var(--text-color);
+  }
+
+  .video-provider-badge {
+    display: flex;
+    align-items: center;
+    padding: 0.2rem 0.45rem;
+    border-radius: 0.25rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: rgba(var(--primary-color-rgb), 0.08);
+    color: var(--text-color);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.18);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
   .video-actions {

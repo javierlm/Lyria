@@ -42,8 +42,7 @@ export class LibreTranslateTranslator implements TranslationProvider {
   async translate(
     sourceLanguage: string,
     targetLanguage: string | undefined,
-    text: string[],
-    context?: string
+    text: string[]
   ): Promise<TranslationResponse> {
     const body: {
       q: string[];

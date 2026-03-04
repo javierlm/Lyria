@@ -41,15 +41,15 @@ export interface WikidataGhostSearchPage {
 function normalizeExactMatchValue(value: string): string {
   return value
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replaceAll(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .replaceAll(/[^a-z0-9\s]/g, ' ')
+    .replaceAll(/\s+/g, ' ')
     .trim();
 }
 
 function escapeSparqlString(value: string): string {
-  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return value.replaceAll('\\', '\\\\').replaceAll('"', String.raw`\"`);
 }
 
 function isQid(value: string): boolean {
@@ -97,7 +97,8 @@ export class WikidataGhostSearchService {
         timestamp: null,
         isFavorite: false,
         isGhost: true,
-        source: 'ghost'
+        source: 'ghost',
+        ghostProvider: 'wikidata'
       });
     }
 

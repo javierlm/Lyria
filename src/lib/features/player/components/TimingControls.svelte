@@ -1,7 +1,6 @@
 <script lang="ts">
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
   import { adjustTiming, syncTimingToFirstLine } from '$lib/features/player/services/playerActions';
-  import { replaceState } from '$app/navigation';
   import MinusCircle from 'phosphor-svelte/lib/MinusCircle';
   import PlusCircle from 'phosphor-svelte/lib/PlusCircle';
   import ArrowsClockwise from 'phosphor-svelte/lib/ArrowsClockwise';
@@ -24,7 +23,7 @@
     } else {
       newUrl.searchParams.set('offset', offset.toString());
     }
-    replaceState(newUrl, {});
+    globalThis.history.replaceState(globalThis.history.state, '', newUrl);
   }, 300);
 
   $effect(() => {

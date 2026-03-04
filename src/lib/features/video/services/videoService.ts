@@ -24,7 +24,7 @@ export function setUseDemoRepository(useDemo: boolean) {
 }
 
 const videoServiceHandler: ProxyHandler<IVideoRepository> = {
-  get(_target, prop, _receiver) {
+  get(_target, prop) {
     if (prop === 'close') {
       return () => {
         indexedDBVideoRepository.close();

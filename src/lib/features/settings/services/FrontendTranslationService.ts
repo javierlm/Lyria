@@ -3,12 +3,22 @@ import { translationStore } from '../stores/translationStore.svelte';
 import type { TranslationResponse } from '../domain/TranslationProvider';
 
 class FrontendTranslationService {
-  private chromeProvider: ChromeAITranslationProvider;
+  private readonly chromeProvider: ChromeAITranslationProvider;
+
+  private isDownloadProgressEvent(
+    event: Event
+  ): event is Event & { loaded: number; total: number } {
+    return 'loaded' in event && 'total' in event;
+  }
 
   constructor() {
     this.chromeProvider = new ChromeAITranslationProvider((monitor) => {
-      monitor.addEventListener('downloadprogress', (e: any) => {
-        translationStore.updateDownloadProgress(e.loaded, e.total);
+      monitor.addEventListener('downloadprogress', (event: Event) => {
+        if (!this.isDownloadProgressEvent(event)) {
+          return;
+        }
+
+        translationStore.updateDownloadProgress(event.loaded, event.total);
       });
     });
   }

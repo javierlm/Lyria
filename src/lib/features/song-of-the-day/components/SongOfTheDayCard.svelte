@@ -4,6 +4,7 @@
   import type { Snippet } from 'svelte';
   import LL from '$i18n/i18n-svelte';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { songOfTheDayStore } from '../stores/songOfTheDayStore.svelte';
 
   interface Props {
@@ -38,14 +39,15 @@
 
     event.preventDefault();
     songOfTheDayStore.saveOfficialData(song);
-    goto(`/play?id=${song.videoId}`);
+    // eslint-disable-next-line svelte/no-navigation-without-resolve
+    goto(`${resolve('/play')}?id=${encodeURIComponent(song.videoId)}`);
   }
 </script>
 
 {#if loading}
   {@render skeleton?.()}
 {:else if song}
-  <a href="/play?id={song.videoId}" class="song-of-day-card" onclick={handleClick}>
+  <a href={resolve('/play')} class="song-of-day-card" onclick={handleClick}>
     <div class="thumbnail">
       <img src="https://img.youtube.com/vi/{song.videoId}/mqdefault.jpg" alt={song.track} />
     </div>

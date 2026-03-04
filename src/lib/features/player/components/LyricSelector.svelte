@@ -180,17 +180,17 @@
     use:portal
     class="modal-overlay"
     transition:fade={{ duration: 200 }}
-    onclick={close}
+    onclick={(event) => {
+      if (event.target === event.currentTarget) {
+        close();
+      }
+    }}
     onkeydown={handleKeydown}
     role="dialog"
     aria-modal="true"
     tabindex="0"
   >
-    <div
-      class="modal-container"
-      onclick={(e) => e.stopPropagation()}
-      transition:fly={{ y: 20, duration: 300 }}
-    >
+    <div class="modal-container" transition:fly={{ y: 20, duration: 300 }}>
       <div class="modal-header">
         <h2 class="modal-title">
           <MusicNotes size={20} />

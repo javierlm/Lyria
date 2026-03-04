@@ -6,6 +6,7 @@
   import { slide } from 'svelte/transition';
   import { isYouTubeUrl, extractVideoId } from '$lib/shared/utils';
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
 
   let {
     centered = false,
@@ -58,8 +59,8 @@
   function loadVideoFromUrl(url: string) {
     const id = extractVideoId(url);
     if (id) {
-      const newUrlString = `play?id=${encodeURIComponent(id)}`;
-      goto(newUrlString, { noScroll: true });
+      // eslint-disable-next-line svelte/no-navigation-without-resolve
+      goto(`${resolve('/play')}?id=${encodeURIComponent(id)}`, { noScroll: true });
     }
   }
 
@@ -82,7 +83,7 @@
   }
 </script>
 
-<form onsubmit={handleSubmit} transition:slide={{ duration: 300 }}>
+<form onsubmit={handleSubmit} class:centered transition:slide={{ duration: 300 }}>
   <input
     bind:this={inputRef}
     type="text"

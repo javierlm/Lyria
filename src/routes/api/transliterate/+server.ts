@@ -99,7 +99,7 @@ async function transliterateLines(lines: SyncedLine[], language: string): Promis
     case 'sr':
     case 'mk':
       // Use iuliia for Cyrillic languages (better quality)
-      return await transliterateCyrillic(lines, normalizedLang);
+      return await transliterateCyrillic(lines);
     case 'ar':
     case 'he':
     case 'th':
@@ -207,7 +207,7 @@ async function transliterateGreek(lines: SyncedLine[]): Promise<SyncedLine[]> {
   }));
 }
 
-async function transliterateCyrillic(lines: SyncedLine[], _lang: string): Promise<SyncedLine[]> {
+async function transliterateCyrillic(lines: SyncedLine[]): Promise<SyncedLine[]> {
   const iuliia = await import('iuliia');
 
   // Use Wikipedia schema (works well for all Cyrillic languages)

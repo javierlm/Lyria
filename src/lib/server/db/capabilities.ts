@@ -14,7 +14,8 @@ async function verifyFts5Support(): Promise<void> {
     }
   } catch (error) {
     throw new Error(
-      `[db] FTS5 extension is not available. Ensure the local Docker DB is running (pnpm run db:dev) or use a compatible Turso/libSQL backend. Details: ${String(error)}`
+      `[db] FTS5 extension is not available. Ensure the local Docker DB is running (pnpm run db:dev) or use a compatible Turso/libSQL backend. Details: ${String(error)}`,
+      { cause: error }
     );
   }
 }

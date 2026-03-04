@@ -4,7 +4,6 @@ import {
   containsNonLatinCharacters,
   detectScript
 } from '$lib/features/player/services/transliterationService';
-import type { SyncedLine } from '$lib/features/player/services/lrclib';
 
 // Import the function from playerActions (we'll test it indirectly)
 function detectScriptFromText(text: string): string | undefined {

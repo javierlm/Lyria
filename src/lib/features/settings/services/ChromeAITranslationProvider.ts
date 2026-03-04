@@ -39,7 +39,47 @@ declare global {
 }
 
 export class ChromeAITranslationProvider implements TranslationProvider {
-  private monitorCallback?: (monitor: EventTarget) => void;
+  private readonly monitorCallback?: (monitor: EventTarget) => void;
+
+  private getGlobalTranslator():
+    | {
+        create(options: {
+          sourceLanguage: string;
+          targetLanguage: string;
+          monitor?: (monitor: EventTarget) => void;
+        }): Promise<{ translate(text: string): Promise<string> }>;
+      }
+    | undefined {
+    return (
+      globalThis as unknown as {
+        Translator?: {
+          create(options: {
+            sourceLanguage: string;
+            targetLanguage: string;
+            monitor?: (monitor: EventTarget) => void;
+          }): Promise<{ translate(text: string): Promise<string> }>;
+        };
+      }
+    ).Translator;
+  }
+
+  private getGlobalLanguageDetector():
+    | {
+        create(options?: { monitor?: (monitor: EventTarget) => void }): Promise<{
+          detect(text: string): Promise<Array<{ detectedLanguage: string; confidence: number }>>;
+        }>;
+      }
+    | undefined {
+    return (
+      self as unknown as {
+        LanguageDetector?: {
+          create(options?: { monitor?: (monitor: EventTarget) => void }): Promise<{
+            detect(text: string): Promise<Array<{ detectedLanguage: string; confidence: number }>>;
+          }>;
+        };
+      }
+    ).LanguageDetector;
+  }
 
   constructor(monitorCallback?: (monitor: EventTarget) => void) {
     this.monitorCallback = monitorCallback;
@@ -54,12 +94,15 @@ export class ChromeAITranslationProvider implements TranslationProvider {
       });
     }
 
-    if ('Translator' in self) {
-      return (self as any).Translator.create({
-        sourceLanguage: source,
-        targetLanguage: target,
-        monitor: this.monitorCallback
-      });
+    if ('Translator' in globalThis) {
+      const translator = this.getGlobalTranslator();
+      if (translator) {
+        return translator.create({
+          sourceLanguage: source,
+          targetLanguage: target,
+          monitor: this.monitorCallback
+        });
+      }
     }
 
     if (window.translation) {
@@ -118,12 +161,19 @@ export class ChromeAITranslationProvider implements TranslationProvider {
     if (!sampleText) return undefined;
 
     try {
-      let detector;
+      let detector:
+        | {
+            detect(text: string): Promise<Array<{ detectedLanguage: string; confidence: number }>>;
+          }
+        | undefined;
 
       if (window.ai?.languageDetector) {
         detector = await window.ai.languageDetector.create({ monitor: this.monitorCallback });
       } else if ('LanguageDetector' in self) {
-        detector = await (self as any).LanguageDetector.create({ monitor: this.monitorCallback });
+        const languageDetector = this.getGlobalLanguageDetector();
+        if (languageDetector) {
+          detector = await languageDetector.create({ monitor: this.monitorCallback });
+        }
       }
 
       if (detector) {

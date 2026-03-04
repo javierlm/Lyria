@@ -49,7 +49,7 @@ export async function transliterateLyrics(
     };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
-      throw new Error('Transliteration cancelled');
+      throw new Error('Transliteration cancelled', { cause: error });
     }
 
     console.error('Error transliterating lyrics:', error);

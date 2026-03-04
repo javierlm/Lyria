@@ -22,7 +22,7 @@ import {
   isValidYouTubeId
 } from '$lib/shared/utils';
 import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
-import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 import { get } from 'svelte/store';
 import { notify, notificationStore } from '$lib/features/notification';
 import LL from '$i18n/i18n-svelte';
@@ -61,7 +61,7 @@ function loadYouTubeAPI() {
     }
     const tag = document.createElement('script');
     tag.src = 'https://www.youtube.com/iframe_api';
-    window.onYouTubeIframeAPIReady = () => resolve();
+    (globalThis as Window & typeof globalThis).onYouTubeIframeAPIReady = () => resolve();
     tag.tabIndex = -1;
     document.body.appendChild(tag);
   });
@@ -110,14 +110,14 @@ export async function translateLyrics(targetLang: string) {
       playerState.percentageOfDetectedLanguages = percentageOfDetectedLanguages;
 
       // Use backend's isSameLanguage flag if available, otherwise use old logic
-      if (isSameLanguage !== undefined) {
-        playerState.showTranslatedSubtitle = !isSameLanguage;
-      } else {
+      if (isSameLanguage === undefined) {
         updateTranslatedSubtitleVisibility(
           targetLang,
           detectedSourceLanguage,
           percentageOfDetectedLanguages
         );
+      } else {
+        playerState.showTranslatedSubtitle = !isSameLanguage;
       }
     } else {
       console.warn('Mismatch in line count between original and translated lyrics');
@@ -375,7 +375,7 @@ function startPlayerSizeSync(player: YT.Player) {
 
   resizeObserver.observe(sizeContainer);
   window.addEventListener('resize', scheduleSync);
-  window.addEventListener('orientationchange', scheduleSync);
+  globalThis.addEventListener('orientationchange', scheduleSync);
   document.addEventListener('fullscreenchange', scheduleSync);
   document.addEventListener('webkitfullscreenchange', scheduleSync);
   document.addEventListener('mozfullscreenchange', scheduleSync);
@@ -386,7 +386,7 @@ function startPlayerSizeSync(player: YT.Player) {
   stopPlayerSizeSync = () => {
     resizeObserver.disconnect();
     window.removeEventListener('resize', scheduleSync);
-    window.removeEventListener('orientationchange', scheduleSync);
+    globalThis.removeEventListener('orientationchange', scheduleSync);
     document.removeEventListener('fullscreenchange', scheduleSync);
     document.removeEventListener('webkitfullscreenchange', scheduleSync);
     document.removeEventListener('mozfullscreenchange', scheduleSync);
@@ -457,7 +457,7 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
   await loadAndApplyVideoDelay(videoId);
   if (loadId !== currentVideoLoadId) return;
 
-  new YT.Player(elementId, {
+  const player = new YT.Player(elementId, {
     videoId,
     playerVars: {
       playsinline: 1,
@@ -502,6 +502,11 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
       }
     }
   });
+
+  if (loadId !== currentVideoLoadId) {
+    player.destroy();
+    return;
+  }
 
   // Start timeout to handle cases where YouTube doesn't fire onError
   startVideoLoadTimeout();
@@ -1102,9 +1107,11 @@ export function syncTimingToFirstLine() {
 export async function selectLyric(id: number) {
   playerState.manualLyricId = id;
   // Update URL
-  const url = new URL(globalThis.location.href);
-  url.searchParams.set('lyricId', id.toString());
-  goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
+  const searchParams = new URLSearchParams(globalThis.location.search);
+  searchParams.set('lyricId', id.toString());
+  const query = searchParams.toString();
+  const nextUrl = query ? `${resolve('/play')}?${query}` : resolve('/play');
+  globalThis.history.replaceState(globalThis.history.state, '', nextUrl);
 
   // Load new lyric first to get metadata
   playerState.lyricsState = LyricsStates.Loading;
@@ -1150,9 +1157,11 @@ export async function selectLyric(id: number) {
 export async function clearManualLyric() {
   playerState.manualLyricId = null;
   // Update URL
-  const url = new URL(globalThis.location.href);
-  url.searchParams.delete('lyricId');
-  goto(url.toString(), { replaceState: true, noScroll: true, keepFocus: true });
+  const searchParams = new URLSearchParams(globalThis.location.search);
+  searchParams.delete('lyricId');
+  const query = searchParams.toString();
+  const nextUrl = query ? `${resolve('/play')}?${query}` : resolve('/play');
+  globalThis.history.replaceState(globalThis.history.state, '', nextUrl);
 
   // Clear the persisted lyric ID selection
   if (playerState.videoId) {

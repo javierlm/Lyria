@@ -6,7 +6,7 @@
   import LL from '$i18n/i18n-svelte';
 
   let phrase = $derived.by(() => {
-    playerState.videoId;
+    const currentVideoId = playerState.videoId;
 
     if (!$LL || !$LL.loadingPhrases) {
       return 'Loading...';
@@ -19,7 +19,9 @@
       return $LL.controls.loading();
     }
 
-    const randomFunc = phraseFuncs[Math.floor(Math.random() * phraseFuncs.length)];
+    const randomBaseIndex = Math.floor(Math.random() * phraseFuncs.length);
+    const randomOffset = currentVideoId ? currentVideoId.length % phraseFuncs.length : 0;
+    const randomFunc = phraseFuncs[(randomBaseIndex + randomOffset) % phraseFuncs.length];
     return randomFunc();
   });
   let showPlayButton = $state(false);

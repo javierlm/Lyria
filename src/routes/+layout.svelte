@@ -63,10 +63,6 @@
     notify.success(notifications.signedIn(), notifications.signedInMessage());
   });
 
-  function getImportFlagKey(prefix: string, userId: string): string {
-    return `${prefix}${userId}`;
-  }
-
   function readImportFlag(key: string): boolean {
     if (typeof window === 'undefined') {
       return false;
