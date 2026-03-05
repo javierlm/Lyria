@@ -777,6 +777,14 @@ type RootTranslation = {
      */
     unsyncedLyricsHorizontalMode: string;
     /**
+     * L​y​r​i​c​s​ ​v​i​d​e​o​ ​d​e​t​e​c​t​e​d
+     */
+    lyricVideoDetected: string;
+    /**
+     * T​h​i​s​ ​v​i​d​e​o​ ​p​r​o​b​a​b​l​y​ ​a​l​r​e​a​d​y​ ​i​n​c​l​u​d​e​s​ ​l​y​r​i​c​s​ ​o​n​ ​s​c​r​e​e​n​,​ ​s​o​ ​t​h​e​ ​o​r​i​g​i​n​a​l​ ​s​y​n​c​e​d​ ​s​u​b​t​i​t​l​e​s​ ​h​a​v​e​ ​b​e​e​n​ ​h​i​d​d​e​n​ ​a​u​t​o​m​a​t​i​c​a​l​l​y​.
+     */
+    lyricVideoDetectedMessage: string;
+    /**
      * T​r​a​n​s​l​a​t​i​o​n​ ​f​a​i​l​e​d
      */
     translationFailed: string;
@@ -1680,6 +1688,14 @@ export type TranslationFunctions = {
      * The lyrics for this song are not synced. Horizontal mode has been automatically activated to make reading easier.
      */
     unsyncedLyricsHorizontalMode: () => LocalizedString;
+    /**
+     * Lyrics video detected
+     */
+    lyricVideoDetected: () => LocalizedString;
+    /**
+     * This video probably already includes lyrics on screen, so the original synced subtitles have been hidden automatically.
+     */
+    lyricVideoDetectedMessage: () => LocalizedString;
     /**
      * Translation failed
      */

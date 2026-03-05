@@ -225,6 +225,9 @@ const es = {
     horizontalModeAutoActivated: 'Modo horizontal activado',
     unsyncedLyricsHorizontalMode:
       'La letra de esta canción no está sincronizada. Se ha activado automáticamente el modo horizontal para facilitar su lectura.',
+    lyricVideoDetected: 'Video con letra detectado',
+    lyricVideoDetectedMessage:
+      'Este video probablemente ya muestra la letra en pantalla, asi que los subtitulos sincronizados originales se han ocultado automaticamente.',
     translationFailed: 'Error en la traducción',
     translationFailedMessage: 'No se pudieron traducir las letras. Inténtalo más tarde.',
     addedToFavorites: 'Añadido a favoritos',

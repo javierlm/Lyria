@@ -22,7 +22,8 @@
 
   let copied = $state(false);
   let isFavorite = $state(false);
-  let notifiedHorizontalModeForVideo = $state<string | null>(null);
+  let notifiedHorizontalModeForVideo: string | null = null;
+  let notifiedLyricVideoForVideo: string | null = null;
 
   const showHorizontalLayout = $derived(
     playerState.lyricsState === 'found' &&
@@ -55,7 +56,21 @@
       );
     }
   });
-
+  $effect(() => {
+    if (
+      playerState.videoId &&
+      playerState.lyricsState === 'found' &&
+      playerState.isLyricVideo &&
+      !playerState.showOriginalSubtitle &&
+      notifiedLyricVideoForVideo !== playerState.videoId
+    ) {
+      notifiedLyricVideoForVideo = playerState.videoId;
+      notify.info(
+        $LL.notifications.lyricVideoDetected(),
+        $LL.notifications.lyricVideoDetectedMessage()
+      );
+    }
+  });
   async function checkFavoriteStatus(videoId: string) {
     isFavorite = await videoService.isFavorite(videoId);
   }

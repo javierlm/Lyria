@@ -225,6 +225,9 @@ const en = {
     horizontalModeAutoActivated: 'Horizontal mode activated',
     unsyncedLyricsHorizontalMode:
       'The lyrics for this song are not synced. Horizontal mode has been automatically activated to make reading easier.',
+    lyricVideoDetected: 'Lyrics video detected',
+    lyricVideoDetectedMessage:
+      'This video probably already includes lyrics on screen, so the original synced subtitles have been hidden automatically.',
     translationFailed: 'Translation failed',
     translationFailedMessage: 'Could not translate the lyrics. Please try again later.',
     addedToFavorites: 'Added to favorites',
