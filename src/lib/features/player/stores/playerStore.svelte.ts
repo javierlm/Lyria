@@ -12,6 +12,32 @@ export type LyricsState = (typeof LyricsStates)[keyof typeof LyricsStates];
 
 type OriginalSubtitlePreference = 'show' | 'hide' | null;
 
+const DEFAULT_VOLUME = 100;
+const VOLUME_STORAGE_KEY = 'lyria_volume';
+const MUTED_STORAGE_KEY = 'lyria_muted';
+
+function getStoredVolume(): number {
+  if (globalThis.window === undefined) {
+    return DEFAULT_VOLUME;
+  }
+
+  const storedVolume = Number.parseInt(localStorage.getItem(VOLUME_STORAGE_KEY) || '', 10);
+
+  if (Number.isNaN(storedVolume)) {
+    return DEFAULT_VOLUME;
+  }
+
+  return Math.max(0, Math.min(100, storedVolume));
+}
+
+function getStoredMuted(): boolean {
+  if (globalThis.window === undefined) {
+    return false;
+  }
+
+  return localStorage.getItem(MUTED_STORAGE_KEY) === 'true';
+}
+
 // This holds the reactive state of the player UI.
 // Components will bind to this state to stay in sync.
 export const playerState = $state({
@@ -21,11 +47,8 @@ export const playerState = $state({
   isPlaying: false,
   duration: 0,
   currentTime: 0,
-  volume:
-    globalThis.window === undefined
-      ? 100
-      : Number.parseInt(localStorage.getItem('lyria_volume') || '100', 10),
-  isMuted: false,
+  volume: getStoredVolume(),
+  isMuted: getStoredMuted(),
   lines: [] as SyncedLine[],
   translatedLines: [] as SyncedLine[],
   currentLineIndex: -1,

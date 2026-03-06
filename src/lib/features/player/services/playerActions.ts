@@ -906,7 +906,12 @@ async function checkAndSetupTransliteration(language: string, videoId: string) {
 function initializePlayerProperties(player: YT.Player) {
   playerState.duration = player.getDuration();
   player.setVolume(playerState.volume);
-  playerState.isMuted = player.isMuted();
+
+  if (playerState.isMuted) {
+    player.mute();
+  } else {
+    player.unMute();
+  }
 }
 
 async function addCurrentVideoToRecents(videoId: string) {
@@ -1008,6 +1013,10 @@ export function mute() {
   if (player) {
     player.mute();
     playerState.isMuted = true;
+
+    if (globalThis.window !== undefined) {
+      localStorage.setItem('lyria_muted', 'true');
+    }
   }
 }
 
@@ -1016,6 +1025,10 @@ export function unMute() {
   if (player) {
     player.unMute();
     playerState.isMuted = false;
+
+    if (globalThis.window !== undefined) {
+      localStorage.setItem('lyria_muted', 'false');
+    }
   }
 }
 
