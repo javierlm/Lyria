@@ -11,7 +11,9 @@ import {
   getPlayer,
   setPlayer,
   playerState,
-  LyricsStates
+  LyricsStates,
+  setOriginalSubtitleAutoHide,
+  setOriginalSubtitlePreference
 } from '$lib/features/player/stores/playerStore.svelte';
 
 import {
@@ -421,6 +423,7 @@ function resetPlayerState() {
   playerState.isPlaying = false;
   playerState.detectedSourceLanguage = undefined;
   playerState.percentageOfDetectedLanguages = undefined;
+  setOriginalSubtitleAutoHide(false);
   playerState.showTranslatedSubtitle = true;
   playerState.manualLyricId = null;
   playerState.searchQuery = '';
@@ -769,12 +772,9 @@ async function tryInvertedParameters(
 }
 
 function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
-  // Detect lyric video and set initial visibility
   const isLyricVideo = isLyricVideoTitle(videoData.title);
   playerState.isLyricVideo = isLyricVideo;
-  if (isLyricVideo) {
-    playerState.showOriginalSubtitle = false;
-  }
+  setOriginalSubtitleAutoHide(isLyricVideo);
 
   // Update artist and track
   if (result.found && result.artistName && result.trackName) {
@@ -1174,6 +1174,10 @@ export async function clearManualLyric() {
   if (player) {
     await fetchAndProcessLyrics(player);
   }
+}
+
+export function toggleOriginalSubtitleVisibility() {
+  setOriginalSubtitlePreference(!playerState.showOriginalSubtitle);
 }
 
 export async function ensureCandidatesLoaded() {

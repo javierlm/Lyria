@@ -16,6 +16,7 @@
     seekTo,
     setVolume,
     mute,
+    toggleOriginalSubtitleVisibility,
     unMute
   } from '$lib/features/player/services/playerActions';
 
@@ -250,7 +251,7 @@
       class="subtitles-btn"
       onclick={() => {
         if (playerState.lyricsAreSynced) {
-          playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
+          toggleOriginalSubtitleVisibility();
         }
       }}
       disabled={!playerState.lyricsAreSynced}

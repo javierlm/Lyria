@@ -1,6 +1,9 @@
 <script lang="ts">
   import { LyricsStates, playerState } from '$lib/features/player/stores/playerStore.svelte';
-  import { seekTo } from '$lib/features/player/services/playerActions';
+  import {
+    seekTo,
+    toggleOriginalSubtitleVisibility
+  } from '$lib/features/player/services/playerActions';
   import { fade } from 'svelte/transition';
   import FileTextIcon from 'phosphor-svelte/lib/FileTextIcon';
   import TranslateIcon from 'phosphor-svelte/lib/TranslateIcon';
@@ -395,7 +398,7 @@
       <button
         class="toggle-visibility"
         onclick={() => {
-          playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
+          toggleOriginalSubtitleVisibility();
         }}
         disabled={!playerState.lyricsAreSynced}
         aria-label={playerState.showOriginalSubtitle

@@ -10,6 +10,8 @@ export const LyricsStates = {
 
 export type LyricsState = (typeof LyricsStates)[keyof typeof LyricsStates];
 
+type OriginalSubtitlePreference = 'show' | 'hide' | null;
+
 // This holds the reactive state of the player UI.
 // Components will bind to this state to stay in sync.
 export const playerState = $state({
@@ -36,6 +38,8 @@ export const playerState = $state({
   id: 0,
   isSeeking: false,
   showOriginalSubtitle: true,
+  originalSubtitlePreference: null as OriginalSubtitlePreference,
+  autoHideOriginalSubtitle: false,
   showTranslatedSubtitle: true,
   detectedSourceLanguage: undefined as string | undefined,
   percentageOfDetectedLanguages: undefined as number | undefined,
@@ -64,4 +68,36 @@ export function getPlayer(): YT.Player | null {
 
 export function setPlayer(player: YT.Player | null) {
   playerInstance = player;
+}
+
+function syncOriginalSubtitleVisibility() {
+  if (playerState.originalSubtitlePreference === 'show') {
+    playerState.showOriginalSubtitle = true;
+    return;
+  }
+
+  if (playerState.originalSubtitlePreference === 'hide') {
+    playerState.showOriginalSubtitle = false;
+    return;
+  }
+
+  playerState.showOriginalSubtitle = !playerState.autoHideOriginalSubtitle;
+}
+
+function getOriginalSubtitlePreference(value: boolean | null): OriginalSubtitlePreference {
+  if (value === null) {
+    return null;
+  }
+
+  return value ? 'show' : 'hide';
+}
+
+export function setOriginalSubtitlePreference(value: boolean | null) {
+  playerState.originalSubtitlePreference = getOriginalSubtitlePreference(value);
+  syncOriginalSubtitleVisibility();
+}
+
+export function setOriginalSubtitleAutoHide(value: boolean) {
+  playerState.autoHideOriginalSubtitle = value;
+  syncOriginalSubtitleVisibility();
 }
