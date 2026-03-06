@@ -3,11 +3,43 @@
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
+  import {
+    fetchYouTubeMetadata,
+    getYouTubeThumbnailUrl
+  } from '$lib/features/video/services/youtubeMetadataService';
   import { play, pause, seekTo } from '$lib/features/player/services/playerActions';
   import PlayerLayout from '$lib/features/player/components/PlayerLayout.svelte';
   import LyricSelector from '$lib/features/player/components/LyricSelector.svelte';
 
   let { data } = $props();
+
+  interface SocialMetadata {
+    thumbnailUrl: string;
+    videoTitle: string;
+    artist: string;
+    track: string;
+  }
+
+  let socialMetadata = $state<SocialMetadata>({
+    thumbnailUrl: '',
+    videoTitle: '',
+    artist: '',
+    track: ''
+  });
+  let activeMetadataRequestId = 0;
+
+  let currentVideoId = $derived(page.url.searchParams.get('id'));
+  let effectiveThumbnailUrl = $derived(socialMetadata.thumbnailUrl || data.thumbnailUrl || '');
+  let effectiveVideoTitle = $derived(socialMetadata.videoTitle || data.videoTitle || '');
+  let effectiveArtist = $derived(socialMetadata.artist || data.artist || '');
+  let effectiveTrack = $derived(socialMetadata.track || data.track || '');
+  let socialTitle = $derived(
+    effectiveArtist && effectiveTrack
+      ? effectiveArtist === effectiveTrack
+        ? effectiveArtist
+        : `${effectiveArtist} - ${effectiveTrack}`
+      : effectiveVideoTitle
+  );
 
   $effect(() => {
     const idFromUrl = page.url.searchParams.get('id');
@@ -27,6 +59,47 @@
         }
       }
     }
+  });
+
+  $effect(() => {
+    if (!currentVideoId) {
+      socialMetadata.thumbnailUrl = '';
+      socialMetadata.videoTitle = '';
+      socialMetadata.artist = '';
+      socialMetadata.track = '';
+      return;
+    }
+
+    const requestId = ++activeMetadataRequestId;
+    const matchesServerData = currentVideoId === data.videoId;
+    socialMetadata.thumbnailUrl = matchesServerData
+      ? (data.thumbnailUrl ?? getYouTubeThumbnailUrl(currentVideoId))
+      : getYouTubeThumbnailUrl(currentVideoId);
+    socialMetadata.videoTitle = matchesServerData ? (data.videoTitle ?? '') : '';
+    socialMetadata.artist = matchesServerData ? (data.artist ?? '') : '';
+    socialMetadata.track = matchesServerData ? (data.track ?? '') : '';
+
+    const controller = new AbortController();
+
+    void (async () => {
+      const metadata = await fetchYouTubeMetadata(currentVideoId, {
+        signal: controller.signal,
+        timeoutMs: 1000
+      });
+
+      if (!metadata || requestId !== activeMetadataRequestId) {
+        return;
+      }
+
+      socialMetadata.thumbnailUrl = metadata.thumbnailUrl;
+      socialMetadata.videoTitle = metadata.title;
+      socialMetadata.artist = metadata.artist;
+      socialMetadata.track = metadata.track;
+    })();
+
+    return () => {
+      controller.abort();
+    };
   });
 
   // Sync manualLyricId changes to URL (e.g., when loaded from storage)
@@ -137,23 +210,18 @@
 </script>
 
 <svelte:head>
-  {#if data.videoId}
-    {#if data.artist && data.track}
-      <meta
-        property="og:title"
-        content={data.artist === data.track ? data.artist : `${data.artist} - ${data.track}`}
-      />
-    {:else if data.videoTitle}
-      <meta property="og:title" content={data.videoTitle} />
+  {#if currentVideoId}
+    {#if socialTitle}
+      <meta property="og:title" content={socialTitle} />
     {:else}
       <meta property="og:title" content="Lyria" />
     {/if}
     <meta property="og:description" content={data.description} />
     <meta property="og:type" content="video.other" />
     <meta name="theme-color" content="#b91c1c" />
-    {#if data.thumbnailUrl}
-      <meta property="og:image" content={data.thumbnailUrl} />
-      <meta name="twitter:image" content={data.thumbnailUrl} />
+    {#if effectiveThumbnailUrl}
+      <meta property="og:image" content={effectiveThumbnailUrl} />
+      <meta name="twitter:image" content={effectiveThumbnailUrl} />
     {/if}
     <meta name="twitter:card" content="summary_large_image" />
   {/if}
