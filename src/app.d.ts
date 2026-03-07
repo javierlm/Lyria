@@ -64,6 +64,7 @@ declare module '$env/static/private' {
   export const DATABASE_URL: string;
   export const DATABASE_AUTH_TOKEN: string;
   export const DATABASE_LOCAL_URL: string;
+  export const DISCOGS_USER_TOKEN: string;
 }
 
 export {};

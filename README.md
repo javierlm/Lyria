@@ -75,6 +75,9 @@ If you want local database support while running the app, start a local `sqld` c
     # DeepL API Key (if using DeepL)
     DEEPL_API_KEY=your_deepl_api_key
 
+    # Discogs (for extended artist-based music video search)
+    DISCOGS_USER_TOKEN=your_discogs_user_token
+
     # Redis / Upstash (for caching)
     UPSTASH_REDIS_REST_URL=your_upstash_url
     UPSTASH_REDIS_REST_TOKEN=your_upstash_token

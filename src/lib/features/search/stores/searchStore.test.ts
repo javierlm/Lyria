@@ -1,10 +1,26 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SearchStore } from './searchStore.svelte';
 import type { VideoItem } from './searchStore.svelte';
+import { videoService } from '$lib/features/video/services/videoService';
+
+vi.mock('$lib/features/video/services/videoService', () => ({
+  videoService: {
+    getRecentVideos: vi.fn(),
+    getFavoriteVideos: vi.fn(),
+    deleteRecentVideo: vi.fn()
+  }
+}));
 
 type SearchStoreTestAccess = {
   enrichWithLocalData(globalResults: VideoItem[], query: string): VideoItem[];
   mergeGhostResults(baseResults: VideoItem[], ghostResults: VideoItem[]): VideoItem[];
+  buildQueryProfile(query: string): {
+    intent: 'artist' | 'track' | 'artist_track' | 'mixed';
+    normalizedQuery: string;
+    artistTerm: string;
+    trackTerm: string;
+  };
+  rankGhostResults(ghostResults: VideoItem[], query: string): VideoItem[];
 };
 
 function getTestAccess(store: SearchStore): SearchStoreTestAccess {
@@ -16,6 +32,8 @@ describe('SearchStore - enrichWithLocalData', () => {
 
   beforeEach(() => {
     store = new SearchStore();
+    vi.mocked(videoService.getRecentVideos).mockResolvedValue([]);
+    vi.mocked(videoService.getFavoriteVideos).mockResolvedValue([]);
     // Mock recentVideos with local data
     store.recentVideos = [
       {
@@ -274,6 +292,40 @@ describe('SearchStore - enrichWithLocalData', () => {
     });
   });
 
+  describe('Ghost query intent and ranking', () => {
+    it('should treat single-token queries as artist intent', () => {
+      const profile = getTestAccess(store).buildQueryProfile('Nightwish');
+
+      expect(profile.intent).toBe('artist');
+      expect(profile.artistTerm).toBe('');
+      expect(profile.trackTerm).toBe('');
+    });
+
+    it('should rank exact artist match above shorter prefix artist', () => {
+      const ranked = getTestAccess(store).rankGhostResults(
+        [
+          {
+            videoId: 'ghost-night',
+            artist: 'Night',
+            track: 'Warriors',
+            source: 'ghost',
+            ghostProvider: 'discogs'
+          },
+          {
+            videoId: 'ghost-nightwish',
+            artist: 'Nightwish',
+            track: 'Nemo',
+            source: 'ghost',
+            ghostProvider: 'discogs'
+          }
+        ],
+        'Nightwish'
+      );
+
+      expect(ranked[0]?.videoId).toBe('ghost-nightwish');
+    });
+  });
+
   describe('Anonymous user scenario', () => {
     it('should correctly identify local favorites even when global says catalog', () => {
       // Simulating: User is anonymous (no server session)
@@ -435,6 +487,74 @@ describe('SearchStore - enrichWithLocalData', () => {
       expect(merged).toHaveLength(1);
       expect(merged[0]?.videoId).toBe('dup-1');
       expect(merged[0]?.source).toBe('catalog');
+    });
+  });
+
+  describe('Ghost load-more state', () => {
+    it('should derive canLoadMoreGhost from the current query pagination state', () => {
+      const privateStore = store as unknown as {
+        ghostPaginationState: Map<string, unknown>;
+      };
+
+      store.searchValue = 'nightwish';
+      expect(store.canLoadMoreGhost).toBe(false);
+
+      privateStore.ghostPaginationState.set('nightwish', {
+        artistOffset: 20,
+        titleOffset: 20,
+        discogsPage: 2,
+        hasMoreArtist: false,
+        hasMoreTitle: true,
+        hasMoreDiscogs: false
+      });
+
+      expect(store.canLoadMoreGhost).toBe(true);
+
+      store.searchValue = 'epica';
+      expect(store.canLoadMoreGhost).toBe(false);
+    });
+  });
+
+  describe('Visible results synchronization', () => {
+    it('should preserve active remote search results when recent videos reload', async () => {
+      vi.mocked(videoService.getRecentVideos).mockResolvedValue([
+        {
+          videoId: 'recent-1',
+          artist: 'Nirvana',
+          track: 'Lithium',
+          thumbnailUrl: 'https://example.com/recent.jpg',
+          timestamp: 4000
+        }
+      ]);
+      vi.mocked(videoService.getFavoriteVideos).mockResolvedValue([]);
+
+      store.searchValue = 'nightwish';
+      store.filteredVideos = [
+        {
+          videoId: 'catalog-1',
+          artist: 'Nightwish',
+          track: 'Nemo',
+          source: 'catalog'
+        }
+      ];
+      store.showRecentVideos = true;
+
+      const privateStore = store as unknown as {
+        activeSearchResults: VideoItem[];
+      };
+      privateStore.activeSearchResults = [...store.filteredVideos];
+
+      await store.loadRecentVideos();
+
+      expect(store.filteredVideos).toEqual([
+        {
+          videoId: 'catalog-1',
+          artist: 'Nightwish',
+          track: 'Nemo',
+          source: 'catalog'
+        }
+      ]);
+      expect(store.showRecentVideos).toBe(true);
     });
   });
 });

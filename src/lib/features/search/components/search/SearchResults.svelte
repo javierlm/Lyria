@@ -10,6 +10,7 @@
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
   import { tick } from 'svelte';
+  import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 
   function loadVideoFromUrl(url: string) {
     const id = extractVideoId(url);
@@ -18,8 +19,14 @@
     }
   }
 
-  function handleRecentVideoClick(videoId: string) {
-    const url = `https://www.youtube.com/watch?v=${videoId}`;
+  function handleRecentVideoClick(video: { videoId: string; artist: string; track: string }) {
+    playerState.preferredSearchMetadata = {
+      videoId: video.videoId,
+      artist: video.artist,
+      track: video.track
+    };
+
+    const url = `https://www.youtube.com/watch?v=${video.videoId}`;
     loadVideoFromUrl(url);
     searchStore.searchValue = '';
   }
