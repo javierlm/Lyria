@@ -259,6 +259,10 @@ export function isValidYouTubeId(id: string): boolean {
   return /^[a-zA-Z0-9_-]{11}$/.test(id);
 }
 
+export function getArtistFromYouTubeAuthor(author: string): string {
+  return author.replace(/\s*-\s*topic$/i, '').trim();
+}
+
 export function isLyricVideoTitle(title: string): boolean {
   const lowerTitle = title.toLowerCase();
   return /\b(lyrics?|letras?)\b/.test(lowerTitle);

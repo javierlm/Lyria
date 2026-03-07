@@ -21,7 +21,8 @@ import {
   removeJunkSuffixes,
   getPrimaryLanguage,
   isLyricVideoTitle,
-  isValidYouTubeId
+  isValidYouTubeId,
+  getArtistFromYouTubeAuthor
 } from '$lib/shared/utils';
 import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
 import { resolve } from '$app/paths';
@@ -662,6 +663,29 @@ async function processTranslationAndTransliteration(
   ]);
 }
 
+function getMatchingPreferredSearchMetadata(videoData: Pick<YT.VideoData, 'video_id'>): {
+  artist: string;
+  track: string;
+} | null {
+  const preferred = playerState.preferredSearchMetadata;
+  if (!preferred) {
+    return null;
+  }
+
+  const currentVideoId = playerState.videoId || videoData.video_id || '';
+  if (!currentVideoId || preferred.videoId !== currentVideoId) {
+    return null;
+  }
+
+  const artist = preferred.artist.trim();
+  const track = preferred.track.trim();
+  if (!artist || !track) {
+    return null;
+  }
+
+  return { artist, track };
+}
+
 async function searchLyricsWithStrategies(
   videoData: YT.VideoData,
   duration: number
@@ -699,7 +723,10 @@ async function searchLyricsWithStrategies(
     }
   }
 
-  const strategies = [tryCleanedTitle, tryParsedTitle, tryInvertedParameters];
+  const hasPreferredSearchMetadata = getMatchingPreferredSearchMetadata(videoData) !== null;
+  const strategies = hasPreferredSearchMetadata
+    ? [tryPreferredMetadata, tryParsedTitle, tryInvertedParameters]
+    : [tryCleanedTitle, tryParsedTitle, tryInvertedParameters];
   let collectedCandidates: LRCLibResponse[] = [];
 
   for (const strategy of strategies) {
@@ -723,14 +750,36 @@ async function searchLyricsWithStrategies(
   return { found: false, synced: false, lyrics: [], candidates: collectedCandidates };
 }
 
+async function tryPreferredMetadata(
+  videoData: YT.VideoData,
+  duration: number
+): Promise<{ result: LyricsResult; query: string }> {
+  const preferred = getMatchingPreferredSearchMetadata(videoData);
+  if (!preferred) {
+    return tryParsedTitle(videoData, duration);
+  }
+
+  console.log(
+    `Using preferred search metadata: "${preferred.track}" by "${preferred.artist}" for automatic selection`
+  );
+
+  const result = await getSyncedLyrics(preferred.track, preferred.artist, duration);
+  return { result, query: `${preferred.artist} ${preferred.track}` };
+}
+
 async function tryCleanedTitle(
   videoData: YT.VideoData,
   duration: number
 ): Promise<{ result: LyricsResult; query: string }> {
   const cleanedTitle = removeJunkSuffixes(videoData.title);
+  const topicArtistHint = /\s*-\s*topic$/i.test(videoData.author)
+    ? getArtistFromYouTubeAuthor(videoData.author)
+    : undefined;
   console.log(`Attempting lyric search with cleaned raw title: "${cleanedTitle}"`);
 
-  const result = await getSyncedLyrics(cleanedTitle, '', duration);
+  const result = await getSyncedLyrics(cleanedTitle, '', duration, {
+    artistHint: topicArtistHint
+  });
   return { result, query: cleanedTitle };
 }
 
@@ -738,10 +787,16 @@ async function tryParsedTitle(
   videoData: YT.VideoData,
   duration: number
 ): Promise<{ result: LyricsResult; query: string }> {
+  const preferred = getMatchingPreferredSearchMetadata(videoData);
+  if (preferred) {
+    const result = await getSyncedLyrics(preferred.track, preferred.artist, duration);
+    return { result, query: `${preferred.artist} ${preferred.track}` };
+  }
+
   console.log('Cleaned raw title search failed. Proceeding with full parsing logic.');
 
   const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
-  const artist = parsedTitle.artist || videoData.author;
+  const artist = parsedTitle.artist || getArtistFromYouTubeAuthor(videoData.author);
   const track = parsedTitle.track;
 
   if (!parsedTitle.artist) {
@@ -756,8 +811,14 @@ async function tryInvertedParameters(
   videoData: YT.VideoData,
   duration: number
 ): Promise<{ result: LyricsResult; query: string }> {
+  const preferred = getMatchingPreferredSearchMetadata(videoData);
+  if (preferred) {
+    const result = await getSyncedLyrics(preferred.artist, preferred.track, duration);
+    return { result, query: `${preferred.track} ${preferred.artist}` };
+  }
+
   const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
-  const artist = parsedTitle.artist || videoData.author;
+  const artist = parsedTitle.artist || getArtistFromYouTubeAuthor(videoData.author);
   const track = parsedTitle.track;
 
   console.log(`No lyrics found for "${track}" by "${artist}". Retrying with inverted parameters.`);
@@ -781,10 +842,16 @@ function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
     playerState.artist = result.artistName;
     playerState.track = result.trackName;
   } else {
-    // If we have cached parsed title, use it, otherwise parse it (should rely on cache mostly)
-    const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
-    playerState.artist = parsedTitle.artist || videoData.author;
-    playerState.track = parsedTitle.track;
+    const preferred = getMatchingPreferredSearchMetadata(videoData);
+    if (preferred) {
+      playerState.artist = preferred.artist;
+      playerState.track = preferred.track;
+    } else {
+      // If we have cached parsed title, use it, otherwise parse it (should rely on cache mostly)
+      const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
+      playerState.artist = parsedTitle.artist || getArtistFromYouTubeAuthor(videoData.author);
+      playerState.track = parsedTitle.track;
+    }
   }
 
   // Update lyrics state
@@ -1205,6 +1272,14 @@ async function loadDefaultCandidates(searchId: number) {
   const videoData = player.getVideoData();
   const duration = player.getDuration();
 
+  const preferred = getMatchingPreferredSearchMetadata(videoData);
+  if (preferred) {
+    const candidates = await searchCandidates(preferred.track, preferred.artist, duration);
+    if (searchId !== currentSearchId) return;
+    playerState.candidates = candidates;
+    return;
+  }
+
   const cleanTitle = removeJunkSuffixes(videoData.title);
 
   let candidates = await searchCandidates(cleanTitle, '', duration);
@@ -1212,7 +1287,7 @@ async function loadDefaultCandidates(searchId: number) {
 
   if (candidates.length === 0) {
     const parsedTitle = playerState.parsedTitle || parseTitle(videoData.title);
-    const artist = parsedTitle.artist || videoData.author;
+    const artist = parsedTitle.artist || getArtistFromYouTubeAuthor(videoData.author);
     const track = parsedTitle.track;
     candidates = await searchCandidates(track, artist, duration);
     if (searchId !== currentSearchId) return;

@@ -1,4 +1,4 @@
-import { parseTitle } from '$lib/shared/utils';
+import { getArtistFromYouTubeAuthor, parseTitle } from '$lib/shared/utils';
 
 export interface YouTubeMetadata {
   title: string;
@@ -87,7 +87,7 @@ export async function fetchYouTubeMetadata(
     const metadata = {
       title,
       author,
-      artist: parsed.artist || author,
+      artist: parsed.artist || getArtistFromYouTubeAuthor(author),
       track: parsed.track || title,
       thumbnailUrl: getYouTubeThumbnailUrl(videoId)
     };

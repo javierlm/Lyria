@@ -10,6 +10,12 @@ export const LyricsStates = {
 
 export type LyricsState = (typeof LyricsStates)[keyof typeof LyricsStates];
 
+export interface PreferredSearchMetadata {
+  videoId: string;
+  artist: string;
+  track: string;
+}
+
 type OriginalSubtitlePreference = 'show' | 'hide' | null;
 
 const DEFAULT_VOLUME = 100;
@@ -74,6 +80,7 @@ export const playerState = $state({
   isLyricVideo: false,
   videoError: null as { code: number; message: string } | null,
   parsedTitle: null as { artist: string; track: string } | null,
+  preferredSearchMetadata: null as PreferredSearchMetadata | null,
   forceHorizontalMode: false,
   buffered: 0,
   // Transliteration state

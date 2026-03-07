@@ -1,5 +1,5 @@
 import { test, expect } from 'vitest';
-import { parseTitle, isLyricVideoTitle } from '../shared/utils';
+import { getArtistFromYouTubeAuthor, parseTitle, isLyricVideoTitle } from '../shared/utils';
 
 const testCases = [
   { input: 'Artist - Track', expected: { artist: 'Artist', track: 'Track' } },
@@ -77,3 +77,9 @@ for (const { input, expected } of lyricVideoTestCases) {
     expect(isLyricVideoTitle(input)).toBe(expected);
   });
 }
+
+test('should normalize YouTube Topic author names', () => {
+  expect(getArtistFromYouTubeAuthor('Visions of Atlantis - Topic')).toBe('Visions of Atlantis');
+  expect(getArtistFromYouTubeAuthor('Visions of Atlantis-Topic')).toBe('Visions of Atlantis');
+  expect(getArtistFromYouTubeAuthor('Visions of Atlantis')).toBe('Visions of Atlantis');
+});

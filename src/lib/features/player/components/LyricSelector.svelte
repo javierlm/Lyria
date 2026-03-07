@@ -86,7 +86,14 @@
           hasInitialized = true;
           // Set initial search query synchronously if empty
           if (!playerState.searchQuery) {
-            if (playerState.parsedTitle) {
+            const preferred =
+              playerState.preferredSearchMetadata?.videoId === playerState.videoId
+                ? playerState.preferredSearchMetadata
+                : null;
+
+            if (preferred?.artist && preferred.track) {
+              playerState.searchQuery = `${preferred.artist} ${preferred.track}`;
+            } else if (playerState.parsedTitle) {
               const { artist, track } = playerState.parsedTitle;
               playerState.searchQuery = artist ? `${artist} ${track}` : track;
             } else {

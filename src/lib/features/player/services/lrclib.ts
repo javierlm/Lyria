@@ -1,6 +1,7 @@
 const BASE_URL_SEARCH = 'https://lrclib.net/api/search';
 
 const SIMILARITY_THRESHOLD = 0.8;
+const ARTIST_HINT_THRESHOLD = 0.78;
 const HIGH_SIMILARITY = 0.9;
 const BONUS_SIMILARITY = 0.1;
 const FULL_SIMILARITY = 1.0;
@@ -243,6 +244,28 @@ function calculateDurationScore(targetDuration: number, resultDuration: number):
   return 1 / (1 + Math.pow(absDiff / tolerance, 2));
 }
 
+function getTokenOverlapScore(reference: string, candidate: string): number {
+  const referenceTokens = reference
+    .toLowerCase()
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 2);
+
+  if (referenceTokens.length === 0) {
+    return 0;
+  }
+
+  const candidateLower = candidate.toLowerCase();
+  const matched = referenceTokens.filter((token) => candidateLower.includes(token));
+  return matched.length / referenceTokens.length;
+}
+
+function calculateArtistHintScore(artistHint: string, candidateArtist: string): number {
+  const fuzzyScore = fuzzyMatch(artistHint.toLowerCase(), candidateArtist.toLowerCase());
+  const overlapScore = getTokenOverlapScore(artistHint, candidateArtist);
+  return Math.max(fuzzyScore, overlapScore);
+}
+
 // Calculate the best score considering multiple scenarios
 function calculateFlexibleScore(
   searchTrack: string,
@@ -304,7 +327,8 @@ function findBestMatch(
   results: LRCLibResponse[],
   track: string,
   artist: string,
-  targetDuration: number
+  targetDuration: number,
+  artistHint?: string
 ): LRCLibResponse | undefined {
   let bestOverallMatch: LRCLibResponse | undefined;
   let highestOverallSimilarity = -1;
@@ -315,11 +339,22 @@ function findBestMatch(
   // Determinar threshold dinámico basado en la calidad de los datos de entrada
   const hasArtist = artist && artist.trim() !== '';
   const baseThreshold = hasArtist ? SIMILARITY_THRESHOLD : SIMILARITY_THRESHOLD * 0.5;
+  const normalizedArtistHint = artistHint?.trim().toLowerCase() ?? '';
 
   console.log('🔍 Searching for match:', { track, artist: artist || '(empty)' });
   console.log('📊 Threshold:', baseThreshold);
 
   for (const result of results) {
+    if (!hasArtist && normalizedArtistHint) {
+      const hintScore = calculateArtistHintScore(normalizedArtistHint, result.artistName);
+      if (hintScore < ARTIST_HINT_THRESHOLD) {
+        console.log(
+          `  - Skipping by artist hint (${hintScore.toFixed(3)}): ${result.artistName} - ${result.trackName}`
+        );
+        continue;
+      }
+    }
+
     const textSimilarity = calculateFlexibleScore(track, artist, result);
     const trueDuration = getTrueDuration(result);
     const durationScore = calculateDurationScore(targetDuration, trueDuration);
@@ -420,7 +455,8 @@ function normalizeForSearch(text: string): string {
 export async function getSyncedLyrics(
   track: string,
   artist: string,
-  duration: number
+  duration: number,
+  options?: { artistHint?: string }
 ): Promise<LyricsResult> {
   const japaneseCharRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/gu;
   const punctuationRegex = /\p{P}/gu;
@@ -455,7 +491,13 @@ export async function getSyncedLyrics(
     const data: LRCLibResponse[] = await res.json();
     console.log(`📦 Results received: ${data.length}`);
 
-    const finalMatch = findBestMatch(data, sanitizedTrack, sanitizedArtist, duration);
+    const finalMatch = findBestMatch(
+      data,
+      sanitizedTrack,
+      sanitizedArtist,
+      duration,
+      options?.artistHint
+    );
 
     if (finalMatch) {
       const result = parseLyrics(finalMatch);

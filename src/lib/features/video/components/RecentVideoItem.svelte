@@ -24,7 +24,11 @@
 
   const dispatch = createEventDispatcher<{
     delete: string;
-    select: string;
+    select: {
+      videoId: string;
+      artist: string;
+      track: string;
+    };
   }>();
 
   let translateX = $state(0);
@@ -72,7 +76,11 @@
       translateX = 0;
       return;
     }
-    dispatch('select', video.videoId);
+    dispatch('select', {
+      videoId: video.videoId,
+      artist: video.artist,
+      track: video.track
+    });
   }
 </script>
 

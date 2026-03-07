@@ -1,0 +1,90 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { getSyncedLyrics, type LRCLibResponse } from '$lib/features/player/services/lrclib';
+
+function mockLrclibSearchResponse(results: LRCLibResponse[]) {
+  return vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => results
+  } as Response);
+}
+
+describe('getSyncedLyrics automatic detection', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('rejects ambiguous title-only matches when Topic artist hint does not match', async () => {
+    mockLrclibSearchResponse([
+      {
+        id: 1,
+        name: 'Land of the Free',
+        trackName: 'Land of the Free',
+        artistName: 'Home Free',
+        albumName: 'Land of the Free',
+        duration: 273,
+        instrumental: false,
+        plainLyrics: 'line',
+        syncedLyrics: '[00:00.00]line'
+      },
+      {
+        id: 2,
+        name: 'Land of the Free',
+        trackName: 'Land of the Free',
+        artistName: 'Pennywise',
+        albumName: 'Land of the Free',
+        duration: 273,
+        instrumental: false,
+        plainLyrics: 'line',
+        syncedLyrics: '[00:00.00]line'
+      }
+    ]);
+
+    const result = await getSyncedLyrics('The Land of the Free', '', 273, {
+      artistHint: 'Visions of Atlantis - Topic'
+    });
+
+    expect(result.found).toBe(false);
+    expect(result.candidates).toHaveLength(2);
+  });
+
+  it('keeps working when a candidate matches the Topic artist hint', async () => {
+    mockLrclibSearchResponse([
+      {
+        id: 1,
+        name: 'Land of the Free',
+        trackName: 'Land of the Free',
+        artistName: 'Home Free',
+        albumName: 'Land of the Free',
+        duration: 273,
+        instrumental: false,
+        plainLyrics: 'line',
+        syncedLyrics: '[00:00.00]line'
+      },
+      {
+        id: 2,
+        name: 'The Land of the Free',
+        trackName: 'The Land of the Free',
+        artistName: 'Visions of Atlantis',
+        albumName: 'Pirates II: Armada',
+        duration: 273,
+        instrumental: false,
+        plainLyrics: 'line',
+        syncedLyrics: null
+      }
+    ]);
+
+    const result = await getSyncedLyrics('The Land of the Free', '', 273, {
+      artistHint: 'Visions of Atlantis - Topic'
+    });
+
+    expect(result.found).toBe(true);
+    expect(result.artistName).toBe('Visions of Atlantis');
+    expect(result.trackName).toBe('The Land of the Free');
+  });
+});
