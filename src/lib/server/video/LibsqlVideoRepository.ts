@@ -6,6 +6,11 @@ import type {
   RecentVideo,
   RecentVideoInput
 } from '$lib/features/video/domain/IVideoRepository';
+import { FavoritesLimitError } from '$lib/features/video/domain/videoRepositoryErrors';
+import {
+  FAVORITE_VIDEOS_LIMIT,
+  RECENT_VIDEOS_LIMIT as MAX_RECENT_VIDEOS
+} from '$lib/features/video/domain/videoLimits';
 import type {
   FavoriteVideoImportInput,
   RecentVideoImportInput,
@@ -19,9 +24,8 @@ import {
   normalizeRecentImports
 } from './videoImportRepository';
 import { extractVideoId, isValidYouTubeId } from '$lib/shared/utils';
-import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 
-const MAX_RECENT_VIDEOS = 100;
 const DEFAULT_SEARCH_LIMIT = 30;
 const MAX_SEARCH_LIMIT = 60;
 
@@ -301,30 +305,6 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     return existing[0]?.videoId ?? null;
   }
 
-  private async trimRecentVideos(userId: string): Promise<void> {
-    await libsqlClient.execute({
-      sql: `
-        WITH ranked AS (
-          SELECT
-            id,
-            ROW_NUMBER() OVER (ORDER BY last_watched_at DESC) AS rn
-          FROM user_video_state
-          WHERE user_id = ? AND last_watched_at IS NOT NULL
-        )
-        UPDATE user_video_state
-        SET
-          last_watched_at = NULL,
-          updated_at = cast(unixepoch('subsecond') * 1000 as integer)
-        WHERE id IN (
-          SELECT id
-          FROM ranked
-          WHERE rn > ?
-        )
-      `,
-      args: [userId, MAX_RECENT_VIDEOS]
-    });
-  }
-
   private async getExistingStateByVideoIds(
     userId: string,
     videoIds: string[]
@@ -418,6 +398,28 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
               }
             });
         }
+
+        const recentRows = await tx
+          .select({ id: userVideoState.id })
+          .from(userVideoState)
+          .where(and(eq(userVideoState.userId, userId), isNotNull(userVideoState.lastWatchedAt)))
+          .orderBy(desc(userVideoState.lastWatchedAt));
+
+        const staleRecentRows = recentRows.slice(MAX_RECENT_VIDEOS);
+
+        if (staleRecentRows.length > 0) {
+          await tx
+            .update(userVideoState)
+            .set({
+              lastWatchedAt: null
+            })
+            .where(
+              inArray(
+                userVideoState.id,
+                staleRecentRows.map((row) => row.id)
+              )
+            );
+        }
       });
     } catch {
       return {
@@ -425,8 +427,6 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         failed: failed + readyRecents.length
       };
     }
-
-    await this.trimRecentVideos(userId);
 
     return {
       imported: readyRecents.length,
@@ -437,9 +437,9 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
   private async importFavoritesBlock(
     userId: string,
     favorites: FavoriteVideoImportInput[]
-  ): Promise<{ imported: number; failed: number }> {
+  ): Promise<{ imported: number; failed: number; skippedByLimit: number }> {
     if (favorites.length === 0) {
-      return { imported: 0, failed: 0 };
+      return { imported: 0, failed: 0, skippedByLimit: 0 };
     }
 
     const readyFavorites: FavoriteVideoImportInput[] = [];
@@ -460,12 +460,29 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     }
 
     if (readyFavorites.length === 0) {
-      return { imported: 0, failed };
+      return { imported: 0, failed, skippedByLimit: 0 };
+    }
+
+    const [favoriteCountRow] = await db
+      .select({ value: count() })
+      .from(userVideoState)
+      .where(and(eq(userVideoState.userId, userId), eq(userVideoState.isFavorite, true)));
+
+    const remainingSlots = Math.max(0, FAVORITE_VIDEOS_LIMIT - (favoriteCountRow?.value ?? 0));
+    const favoritesToImport = readyFavorites.slice(0, remainingSlots);
+    const skippedByLimit = Math.max(0, readyFavorites.length - favoritesToImport.length);
+
+    if (favoritesToImport.length === 0) {
+      return {
+        imported: 0,
+        failed,
+        skippedByLimit
+      };
     }
 
     try {
       await db.transaction(async (tx) => {
-        for (const favorite of readyFavorites) {
+        for (const favorite of favoritesToImport) {
           const addedAt = toValidDate(favorite.addedAt);
 
           await tx
@@ -490,13 +507,15 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     } catch {
       return {
         imported: 0,
-        failed: failed + readyFavorites.length
+        failed: failed + favoritesToImport.length,
+        skippedByLimit
       };
     }
 
     return {
-      imported: readyFavorites.length,
-      failed
+      imported: favoritesToImport.length,
+      failed,
+      skippedByLimit
     };
   }
 
@@ -513,23 +532,12 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     const watchedAt = new Date();
     const customNormalizedFields = buildNormalizedVideoFields(video.artist, video.track);
 
-    await db
-      .insert(userVideoState)
-      .values({
-        userId,
-        videoId: video.videoId,
-        lastWatchedAt: watchedAt,
-        recentRemovedAt: null,
-        customArtist: video.artist,
-        customTrack: video.track,
-        customArtistNormalized: customNormalizedFields.artistNormalized,
-        customTrackNormalized: customNormalizedFields.trackNormalized,
-        customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
-        customMetadataAt: watchedAt
-      })
-      .onConflictDoUpdate({
-        target: [userVideoState.userId, userVideoState.videoId],
-        set: {
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(userVideoState)
+        .values({
+          userId,
+          videoId: video.videoId,
           lastWatchedAt: watchedAt,
           recentRemovedAt: null,
           customArtist: video.artist,
@@ -538,10 +546,43 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
           customTrackNormalized: customNormalizedFields.trackNormalized,
           customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
           customMetadataAt: watchedAt
-        }
-      });
+        })
+        .onConflictDoUpdate({
+          target: [userVideoState.userId, userVideoState.videoId],
+          set: {
+            lastWatchedAt: watchedAt,
+            recentRemovedAt: null,
+            customArtist: video.artist,
+            customTrack: video.track,
+            customArtistNormalized: customNormalizedFields.artistNormalized,
+            customTrackNormalized: customNormalizedFields.trackNormalized,
+            customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
+            customMetadataAt: watchedAt
+          }
+        });
 
-    await this.trimRecentVideos(userId);
+      const recentRows = await tx
+        .select({ id: userVideoState.id })
+        .from(userVideoState)
+        .where(and(eq(userVideoState.userId, userId), isNotNull(userVideoState.lastWatchedAt)))
+        .orderBy(desc(userVideoState.lastWatchedAt));
+
+      const staleRecentRows = recentRows.slice(MAX_RECENT_VIDEOS);
+
+      if (staleRecentRows.length > 0) {
+        await tx
+          .update(userVideoState)
+          .set({
+            lastWatchedAt: null
+          })
+          .where(
+            inArray(
+              userVideoState.id,
+              staleRecentRows.map((row) => row.id)
+            )
+          );
+      }
+    });
   }
 
   async importVideos(payload: VideoImportPayload): Promise<VideoImportResult> {
@@ -556,6 +597,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
         importedRecents: 0,
         importedFavorites: 0,
         skippedExisting: 0,
+        skippedByLimit: 0,
         failed: 0
       };
     }
@@ -579,6 +621,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
       importedRecents: recentBlockResult.imported,
       importedFavorites: favoriteBlockResult.imported,
       skippedExisting,
+      skippedByLimit: favoriteBlockResult.skippedByLimit,
       failed: recentBlockResult.failed + favoriteBlockResult.failed
     };
   }
@@ -635,23 +678,36 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
 
     const now = new Date();
 
-    await db
-      .insert(userVideoState)
-      .values({
-        userId,
-        videoId,
-        isFavorite: true,
-        favoriteAddedAt: now,
-        favoriteRemovedAt: null
-      })
-      .onConflictDoUpdate({
-        target: [userVideoState.userId, userVideoState.videoId],
-        set: {
-          isFavorite: true,
-          favoriteAddedAt: now,
-          favoriteRemovedAt: null
-        }
-      });
+    const result = await libsqlClient.execute({
+      sql: `
+        INSERT INTO user_video_state (
+          user_id,
+          video_id,
+          is_favorite,
+          favorite_added_at,
+          favorite_removed_at
+        )
+        SELECT ?, ?, 1, ?, NULL
+        WHERE EXISTS (
+          SELECT 1
+          FROM user_video_state
+          WHERE user_id = ? AND video_id = ?
+        ) OR (
+          SELECT COUNT(*)
+          FROM user_video_state
+          WHERE user_id = ? AND is_favorite = 1
+        ) < ?
+        ON CONFLICT(user_id, video_id) DO UPDATE SET
+          is_favorite = 1,
+          favorite_added_at = excluded.favorite_added_at,
+          favorite_removed_at = NULL
+      `,
+      args: [userId, videoId, now.getTime(), userId, videoId, userId, FAVORITE_VIDEOS_LIMIT]
+    });
+
+    if ((result.rowsAffected ?? 0) === 0) {
+      throw new FavoritesLimitError();
+    }
   }
 
   async removeFavoriteVideo(videoId: string): Promise<void> {

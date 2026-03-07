@@ -23,5 +23,6 @@ export interface VideoImportResult {
   importedRecents: number;
   importedFavorites: number;
   skippedExisting: number;
+  skippedByLimit: number;
   failed: number;
 }

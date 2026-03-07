@@ -80,7 +80,7 @@ export class VideoImportPromptService {
           this.deps.writeFlag(doneKey);
           this.activeImportPromptUserId = null;
 
-          if (result.failed === 0) {
+          if (result.failed === 0 && result.skippedByLimit === 0) {
             this.deps.notifySuccess(
               notifications.importCompleted,
               notifications.importCompletedMessage

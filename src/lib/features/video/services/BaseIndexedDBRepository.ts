@@ -1,11 +1,12 @@
 import { BaseVideoRepository } from '../domain/BaseVideoRepository';
 import type { RecentVideo, RecentVideoInput, FavoriteVideo } from '../domain/IVideoRepository';
+import { FavoritesLimitError } from '../domain/videoRepositoryErrors';
+import { FAVORITE_VIDEOS_LIMIT, RECENT_VIDEOS_LIMIT } from '../domain/videoLimits';
 import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 
 const VIDEO_DELAYS_STORE = 'videoDelays';
 const RECENT_VIDEOS_STORE = 'recentVideos';
 const FAVORITE_VIDEOS_STORE = 'favoriteVideos';
-const RECENT_VIDEOS_LIMIT = 100;
 
 export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
   protected db: IDBDatabase | null = null;
@@ -176,45 +177,69 @@ export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
     };
 
     return new Promise((resolve, reject) => {
+      let settled = false;
+
+      const rejectOnce = (error: string) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        reject(error);
+      };
+
       const getRequest = store.get(video.videoId);
       getRequest.onsuccess = () => {
         const existingVideo = getRequest.result;
-        if (existingVideo) {
-          existingVideo.timestamp = recentVideo.timestamp;
-          existingVideo.thumbnailUrl = recentVideo.thumbnailUrl;
-          store.put(existingVideo);
-        } else {
-          store.put(recentVideo);
-        }
+
+        const writeRequest = existingVideo
+          ? store.put({
+              ...existingVideo,
+              timestamp: recentVideo.timestamp,
+              thumbnailUrl: recentVideo.thumbnailUrl
+            })
+          : store.put(recentVideo);
+
+        writeRequest.onsuccess = () => {
+          const cursorRequest = store.index('timestamp').openCursor(null, 'prev');
+          let count = 0;
+
+          cursorRequest.onsuccess = (event) => {
+            const cursor = (event.target as IDBRequest).result;
+            if (!cursor) {
+              return;
+            }
+
+            count += 1;
+            if (count > RECENT_VIDEOS_LIMIT) {
+              store.delete(cursor.value.videoId);
+            }
+
+            cursor.continue();
+          };
+
+          cursorRequest.onerror = (event) =>
+            rejectOnce('Error cleaning up recent videos: ' + (event.target as IDBRequest).error);
+        };
+
+        writeRequest.onerror = (event) =>
+          rejectOnce('Error adding/updating recent video: ' + (event.target as IDBRequest).error);
       };
       getRequest.onerror = (event) => {
-        reject('Error checking for existing video: ' + (event.target as IDBRequest).error);
+        rejectOnce('Error checking for existing video: ' + (event.target as IDBRequest).error);
       };
 
-      transaction.oncomplete = async () => {
-        const db = await this.openDB();
-        const cleanupTransaction = db.transaction([RECENT_VIDEOS_STORE], 'readwrite');
-        const cleanupStore = cleanupTransaction.objectStore(RECENT_VIDEOS_STORE);
+      transaction.oncomplete = () => {
+        if (settled) {
+          return;
+        }
 
-        const request = cleanupStore.index('timestamp').openCursor(null, 'prev');
-        let count = 0;
-        request.onsuccess = (event) => {
-          const cursor = (event.target as IDBRequest).result;
-          if (cursor) {
-            count++;
-            if (count > RECENT_VIDEOS_LIMIT) {
-              cleanupStore.delete(cursor.value.videoId);
-            }
-            cursor.continue();
-          } else {
-            resolve();
-          }
-        };
-        request.onerror = (event) =>
-          reject('Error cleaning up recent videos: ' + (event.target as IDBRequest).error);
+        settled = true;
+        resolve();
       };
+
       transaction.onerror = (event) =>
-        reject('Error adding/updating recent video: ' + (event.target as IDBTransaction).error);
+        rejectOnce('Error adding/updating recent video: ' + (event.target as IDBTransaction).error);
     });
   }
 
@@ -266,6 +291,18 @@ export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
     const store = transaction.objectStore(FAVORITE_VIDEOS_STORE);
 
     return new Promise((resolve, reject) => {
+      let settled = false;
+      let limitError: FavoritesLimitError | null = null;
+
+      const rejectOnce = (error: string | FavoritesLimitError) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        reject(error);
+      };
+
       const newFavoriteVideo: FavoriteVideo = {
         videoId: videoId,
         artist: playerState.artist,
@@ -274,10 +311,61 @@ export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
         addedAt: Date.now(),
         thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
       };
-      const request = store.put(newFavoriteVideo);
-      request.onsuccess = () => resolve();
-      request.onerror = (event) =>
-        reject('Error adding favorite video: ' + (event.target as IDBRequest).error);
+
+      const getRequest = store.get(videoId);
+      getRequest.onsuccess = () => {
+        const existingFavorite = getRequest.result as FavoriteVideo | undefined;
+        if (existingFavorite) {
+          store.put({
+            ...existingFavorite,
+            artist: newFavoriteVideo.artist,
+            track: newFavoriteVideo.track,
+            timestamp: newFavoriteVideo.timestamp,
+            addedAt: newFavoriteVideo.addedAt,
+            thumbnailUrl: newFavoriteVideo.thumbnailUrl
+          });
+          return;
+        }
+
+        const countRequest = store.count();
+        countRequest.onsuccess = () => {
+          const count = countRequest.result;
+          if (count >= FAVORITE_VIDEOS_LIMIT) {
+            limitError = new FavoritesLimitError();
+            transaction.abort();
+            return;
+          }
+
+          store.put(newFavoriteVideo);
+        };
+
+        countRequest.onerror = (event) =>
+          rejectOnce('Error counting favorite videos: ' + (event.target as IDBRequest).error);
+      };
+
+      getRequest.onerror = (event) =>
+        rejectOnce('Error checking favorite video: ' + (event.target as IDBRequest).error);
+
+      transaction.oncomplete = () => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        resolve();
+      };
+
+      transaction.onabort = () => {
+        if (limitError) {
+          rejectOnce(limitError);
+          return;
+        }
+
+        rejectOnce('Error adding favorite video: transaction aborted');
+      };
+
+      transaction.onerror = (event) =>
+        rejectOnce('Error adding favorite video: ' + (event.target as IDBTransaction).error);
     });
   }
 

@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { FavoritesLimitError } from '$lib/features/video/domain/videoRepositoryErrors';
+import { FAVORITE_VIDEOS_LIMIT, RECENT_VIDEOS_LIMIT } from '$lib/features/video/domain/videoLimits';
 import { createLibsqlVideoRepository } from '$lib/server/video';
 import { db } from '$lib/server/db/client';
 import { userVideoState, videos } from '$lib/server/db/schema';
@@ -75,6 +77,85 @@ describe('LibsqlVideoRepository integration', () => {
     expect(favorites).toHaveLength(1);
     expect(favorites[0]?.videoId).toBe('3JWTaaS7LdU');
     expect(favorites[0]?.artist).toBe('Adele');
+  });
+
+  it('trims recents to the configured limit keeping the newest entries', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+
+    for (let index = 0; index < RECENT_VIDEOS_LIMIT + 5; index += 1) {
+      await repository.addRecentVideo({
+        videoId: `recent-${index}`,
+        artist: `Artist ${index}`,
+        track: `Track ${index}`,
+        thumbnailUrl: `https://img.youtube.com/vi/recent-${index}/mqdefault.jpg`
+      });
+    }
+
+    const recents = await repository.getRecentVideos();
+
+    expect(recents).toHaveLength(RECENT_VIDEOS_LIMIT);
+    expect(recents[0]?.videoId).toBe(`recent-${RECENT_VIDEOS_LIMIT + 4}`);
+    expect(recents.at(-1)?.videoId).toBe('recent-5');
+
+    const [trimmedState] = await db
+      .select({ lastWatchedAt: userVideoState.lastWatchedAt })
+      .from(userVideoState)
+      .where(and(eq(userVideoState.userId, userId), eq(userVideoState.videoId, 'recent-0')))
+      .limit(1);
+
+    expect(trimmedState?.lastWatchedAt).toBeNull();
+  });
+
+  it('rejects adding a new favorite beyond the configured limit', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+
+    for (let index = 0; index < FAVORITE_VIDEOS_LIMIT; index += 1) {
+      await repository.addFavoriteVideo(`favorite-${index}`, {
+        videoId: `favorite-${index}`,
+        artist: `Artist ${index}`,
+        track: `Track ${index}`,
+        thumbnailUrl: `https://img.youtube.com/vi/favorite-${index}/mqdefault.jpg`
+      });
+    }
+
+    await expect(
+      repository.addFavoriteVideo('favorite-overflow', {
+        videoId: 'favorite-overflow',
+        artist: 'Overflow Artist',
+        track: 'Overflow Track',
+        thumbnailUrl: 'https://img.youtube.com/vi/favorite-overflow/mqdefault.jpg'
+      })
+    ).rejects.toBeInstanceOf(FavoritesLimitError);
+
+    const favorites = await repository.getFavoriteVideos();
+    expect(favorites).toHaveLength(FAVORITE_VIDEOS_LIMIT);
+    expect(await repository.isFavorite('favorite-overflow')).toBe(false);
+  });
+
+  it('allows re-saving an existing favorite at the limit', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+
+    for (let index = 0; index < FAVORITE_VIDEOS_LIMIT; index += 1) {
+      await repository.addFavoriteVideo(`favorite-${index}`, {
+        videoId: `favorite-${index}`,
+        artist: `Artist ${index}`,
+        track: `Track ${index}`,
+        thumbnailUrl: `https://img.youtube.com/vi/favorite-${index}/mqdefault.jpg`
+      });
+    }
+
+    await expect(
+      repository.addFavoriteVideo('favorite-0', {
+        videoId: 'favorite-0',
+        artist: 'Updated Artist',
+        track: 'Updated Track',
+        thumbnailUrl: 'https://img.youtube.com/vi/favorite-0/mqdefault.jpg'
+      })
+    ).resolves.toBeUndefined();
+
+    const favorites = await repository.getFavoriteVideos();
+    expect(favorites).toHaveLength(FAVORITE_VIDEOS_LIMIT);
+    expect(await repository.isFavorite('favorite-0')).toBe(true);
   });
 
   it('removes a favorite video', async () => {
@@ -450,6 +531,7 @@ describe('LibsqlVideoRepository integration', () => {
 
       expect(result.importedRecents).toBe(0);
       expect(result.importedFavorites).toBe(1);
+      expect(result.skippedByLimit).toBe(0);
       expect(result.failed).toBe(2);
 
       const recents = await repository.getRecentVideos();
@@ -506,6 +588,7 @@ describe('LibsqlVideoRepository integration', () => {
 
       expect(result.importedRecents).toBe(1);
       expect(result.importedFavorites).toBe(0);
+      expect(result.skippedByLimit).toBe(0);
       expect(result.failed).toBe(2);
 
       const recents = await repository.getRecentVideos();
@@ -517,5 +600,52 @@ describe('LibsqlVideoRepository integration', () => {
     } finally {
       transactionSpy.mockRestore();
     }
+  });
+
+  it('imports favorites only up to the configured limit', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+
+    for (let index = 0; index < FAVORITE_VIDEOS_LIMIT - 2; index += 1) {
+      await repository.addFavoriteVideo(`existing-favorite-${index}`, {
+        videoId: `existing-favorite-${index}`,
+        artist: `Artist ${index}`,
+        track: `Track ${index}`,
+        thumbnailUrl: `https://img.youtube.com/vi/existing-favorite-${index}/mqdefault.jpg`
+      });
+    }
+
+    const result = await repository.importVideos({
+      recents: [],
+      favorites: [
+        {
+          videoId: 'import-favorite-a',
+          artist: 'Import Artist A',
+          track: 'Import Track A',
+          addedAt: 1700000000000
+        },
+        {
+          videoId: 'import-favorite-b',
+          artist: 'Import Artist B',
+          track: 'Import Track B',
+          addedAt: 1700000001000
+        },
+        {
+          videoId: 'import-favorite-c',
+          artist: 'Import Artist C',
+          track: 'Import Track C',
+          addedAt: 1700000002000
+        }
+      ]
+    });
+
+    expect(result.importedFavorites).toBe(2);
+    expect(result.skippedByLimit).toBe(1);
+    expect(result.failed).toBe(0);
+
+    const favorites = await repository.getFavoriteVideos();
+    expect(favorites).toHaveLength(FAVORITE_VIDEOS_LIMIT);
+    expect(await repository.isFavorite('import-favorite-a')).toBe(true);
+    expect(await repository.isFavorite('import-favorite-b')).toBe(true);
+    expect(await repository.isFavorite('import-favorite-c')).toBe(false);
   });
 });

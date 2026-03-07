@@ -232,6 +232,9 @@ const es = {
     translationFailedMessage: 'No se pudieron traducir las letras. Inténtalo más tarde.',
     addedToFavorites: 'Añadido a favoritos',
     removedFromFavorites: 'Eliminado de favoritos',
+    favoriteLimitReached: 'Has alcanzado el limite de favoritos',
+    favoriteLimitReachedMessage:
+      'Puedes guardar hasta 500 videos favoritos. Elimina uno para anadir otro.',
     favoriteError: 'No se pudo actualizar favoritos',
     favoriteErrorMessage: 'Inténtalo de nuevo más tarde.',
     recentDeleteError: 'No se pudo quitar de recientes',

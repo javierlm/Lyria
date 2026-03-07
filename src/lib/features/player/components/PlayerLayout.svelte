@@ -14,6 +14,7 @@
   import LL from '$i18n/i18n-svelte';
   import BackToTop from '$lib/features/ui/components/BackToTop.svelte';
 
+  import { isFavoritesLimitError } from '$lib/features/video/domain/videoRepositoryErrors';
   import { videoService } from '$lib/features/video/services/videoService';
   import { notify } from '$lib/features/notification';
 
@@ -91,8 +92,16 @@
         await videoService.addFavoriteVideo(videoId);
         notify.favoriteAdded($LL.notifications.addedToFavorites(), '');
       }
-    } catch {
-      notify.error($LL.notifications.favoriteError(), $LL.notifications.favoriteErrorMessage());
+    } catch (error) {
+      if (isFavoritesLimitError(error)) {
+        notify.warning(
+          $LL.notifications.favoriteLimitReached(),
+          $LL.notifications.favoriteLimitReachedMessage()
+        );
+      } else {
+        notify.error($LL.notifications.favoriteError(), $LL.notifications.favoriteErrorMessage());
+      }
+
       isFavorite = wasFavorite;
     }
   }

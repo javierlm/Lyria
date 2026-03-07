@@ -1,3 +1,7 @@
+import {
+  FAVORITES_LIMIT_ERROR_CODE,
+  FavoritesLimitError
+} from '$lib/features/video/domain/videoRepositoryErrors';
 import { createLibsqlVideoRepository } from '$lib/server/video';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
@@ -53,7 +57,20 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
   const metadata = normalizeMetadata(payload, videoId);
 
   const repository = createLibsqlVideoRepository(locals.user.id);
-  await repository.addFavoriteVideo(videoId, metadata);
+
+  try {
+    await repository.addFavoriteVideo(videoId, metadata);
+  } catch (error) {
+    if (error instanceof FavoritesLimitError) {
+      return json(
+        { error: error.message, code: FAVORITES_LIMIT_ERROR_CODE, limit: error.limit },
+        { status: 409 }
+      );
+    }
+
+    throw error;
+  }
+
   return json({ ok: true });
 };
 

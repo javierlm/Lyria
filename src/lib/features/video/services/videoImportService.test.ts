@@ -139,6 +139,7 @@ describe('videoImportService', () => {
       importedRecents: 1,
       importedFavorites: 1,
       skippedExisting: 0,
+      skippedByLimit: 0,
       failed: 0
     });
 
@@ -148,6 +149,7 @@ describe('videoImportService', () => {
       importedRecents: 1,
       importedFavorites: 1,
       skippedExisting: 2,
+      skippedByLimit: 0,
       failed: 0
     });
 
@@ -209,6 +211,7 @@ describe('videoImportService', () => {
       importedRecents: 0,
       importedFavorites: 0,
       skippedExisting: 0,
+      skippedByLimit: 0,
       failed: 3
     });
   });

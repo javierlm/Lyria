@@ -1,0 +1,2 @@
+export const RECENT_VIDEOS_LIMIT = 200;
+export const FAVORITE_VIDEOS_LIMIT = 500;

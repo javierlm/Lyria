@@ -1,5 +1,6 @@
 import { BaseVideoRepository } from '../domain/BaseVideoRepository';
 import type { FavoriteVideo, RecentVideo, RecentVideoInput } from '../domain/IVideoRepository';
+import { FAVORITES_LIMIT_ERROR_CODE, FavoritesLimitError } from '../domain/videoRepositoryErrors';
 import { extractVideoId } from '$lib/shared/utils';
 import type { VideoImportPayload, VideoImportResult } from './videoImportTypes';
 
@@ -127,11 +128,25 @@ export class ApiVideoRepository extends BaseVideoRepository {
     videoId: string,
     metadata?: { artist?: string; track?: string; thumbnailUrl?: string }
   ): Promise<void> {
-    await this.request(`/api/videos/favorites/${encodeURIComponent(videoId)}`, {
+    const response = await this.request(`/api/videos/favorites/${encodeURIComponent(videoId)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(metadata ?? {})
     });
+
+    if (!response) {
+      throw new Error('Request failed while adding favorite video');
+    }
+
+    if (!response.ok) {
+      const payload = await parseJsonSafely<{ code?: string }>(response, {});
+
+      if (response.status === 409 && payload.code === FAVORITES_LIMIT_ERROR_CODE) {
+        throw new FavoritesLimitError();
+      }
+
+      throw new Error(`Failed to add favorite video: ${response.status}`);
+    }
   }
 
   async removeFavoriteVideo(videoId: string): Promise<void> {
@@ -172,6 +187,7 @@ export class ApiVideoRepository extends BaseVideoRepository {
         importedRecents: 0,
         importedFavorites: 0,
         skippedExisting: 0,
+        skippedByLimit: 0,
         failed: payload.recents.length + payload.favorites.length
       };
     }
@@ -180,6 +196,7 @@ export class ApiVideoRepository extends BaseVideoRepository {
       importedRecents: 0,
       importedFavorites: 0,
       skippedExisting: 0,
+      skippedByLimit: 0,
       failed: payload.recents.length + payload.favorites.length
     });
   }

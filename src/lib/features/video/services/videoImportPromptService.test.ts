@@ -8,6 +8,7 @@ function createDeps(overrides?: Partial<VideoImportPromptDeps>): VideoImportProm
       importedRecents: 1,
       importedFavorites: 1,
       skippedExisting: 0,
+      skippedByLimit: 0,
       failed: 0
     }),
     readFlag: vi.fn().mockReturnValue(false),
@@ -122,6 +123,7 @@ describe('VideoImportPromptService', () => {
         importedRecents: 1,
         importedFavorites: 0,
         skippedExisting: 0,
+        skippedByLimit: 0,
         failed: 1
       }),
       notifyPersistent: vi.fn((params) => {
@@ -131,6 +133,33 @@ describe('VideoImportPromptService', () => {
     service = new VideoImportPromptService(deps, 'done:', 'skipped:');
 
     await service.maybeOfferVideoImport('user-5');
+    if (!capturedOnImport) {
+      throw new Error('Expected import action');
+    }
+    await (capturedOnImport as () => Promise<void>)();
+
+    expect(deps.notifyWarning).toHaveBeenCalledWith('Partial', 'Partial message');
+    expect(deps.notifySuccess).not.toHaveBeenCalled();
+  });
+
+  it('reports warning notification when favorites are skipped by limit', async () => {
+    let capturedOnImport: (() => Promise<void>) | null = null;
+
+    deps = createDeps({
+      importMissingVideosFromIndexedDB: vi.fn().mockResolvedValue({
+        importedRecents: 1,
+        importedFavorites: 2,
+        skippedExisting: 0,
+        skippedByLimit: 3,
+        failed: 0
+      }),
+      notifyPersistent: vi.fn((params) => {
+        capturedOnImport = params.onImport;
+      })
+    });
+    service = new VideoImportPromptService(deps, 'done:', 'skipped:');
+
+    await service.maybeOfferVideoImport('user-7');
     if (!capturedOnImport) {
       throw new Error('Expected import action');
     }

@@ -232,6 +232,9 @@ const en = {
     translationFailedMessage: 'Could not translate the lyrics. Please try again later.',
     addedToFavorites: 'Added to favorites',
     removedFromFavorites: 'Removed from favorites',
+    favoriteLimitReached: 'Favorites limit reached',
+    favoriteLimitReachedMessage:
+      'You can save up to 500 favorite videos. Remove one to add another.',
     favoriteError: 'Could not update favorites',
     favoriteErrorMessage: 'Please try again later.',
     recentDeleteError: 'Could not remove from recents',

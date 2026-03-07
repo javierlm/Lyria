@@ -86,6 +86,7 @@ export async function importMissingVideosFromIndexedDB(): Promise<VideoImportRes
         localFavorites.length -
         missingRecents.length -
         missingFavorites.length,
+      skippedByLimit: result.skippedByLimit,
       failed: result.failed
     };
   } catch (error) {
@@ -99,6 +100,7 @@ export async function importMissingVideosFromIndexedDB(): Promise<VideoImportRes
         localFavorites.length -
         missingRecents.length -
         missingFavorites.length,
+      skippedByLimit: 0,
       failed: missingRecents.length + missingFavorites.length
     };
   }

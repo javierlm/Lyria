@@ -801,6 +801,14 @@ type RootTranslation = {
      */
     removedFromFavorites: string;
     /**
+     * F​a​v​o​r​i​t​e​s​ ​l​i​m​i​t​ ​r​e​a​c​h​e​d
+     */
+    favoriteLimitReached: string;
+    /**
+     * Y​o​u​ ​c​a​n​ ​s​a​v​e​ ​u​p​ ​t​o​ ​5​0​0​ ​f​a​v​o​r​i​t​e​ ​v​i​d​e​o​s​.​ ​R​e​m​o​v​e​ ​o​n​e​ ​t​o​ ​a​d​d​ ​a​n​o​t​h​e​r​.
+     */
+    favoriteLimitReachedMessage: string;
+    /**
      * C​o​u​l​d​ ​n​o​t​ ​u​p​d​a​t​e​ ​f​a​v​o​r​i​t​e​s
      */
     favoriteError: string;
@@ -1712,6 +1720,14 @@ export type TranslationFunctions = {
      * Removed from favorites
      */
     removedFromFavorites: () => LocalizedString;
+    /**
+     * Favorites limit reached
+     */
+    favoriteLimitReached: () => LocalizedString;
+    /**
+     * You can save up to 500 favorite videos. Remove one to add another.
+     */
+    favoriteLimitReachedMessage: () => LocalizedString;
     /**
      * Could not update favorites
      */
