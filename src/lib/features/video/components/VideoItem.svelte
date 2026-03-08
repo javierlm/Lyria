@@ -250,6 +250,15 @@
       min-height: 64px;
     }
 
+    .video-new-badge,
+    .video-global-badge {
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.2rem;
+      font-size: 0.5rem;
+      letter-spacing: 0.03em;
+      line-height: 1;
+    }
+
     .video-info {
       font-size: 0.85rem;
     }
@@ -269,6 +278,13 @@
     .video-item {
       min-height: 58px;
       padding: 0.25rem 0.75rem;
+    }
+
+    .video-new-badge,
+    .video-global-badge {
+      padding: 0.15rem 0.35rem;
+      font-size: 0.5rem;
+      letter-spacing: 0.02em;
     }
 
     .video-thumbnail {

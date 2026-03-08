@@ -199,7 +199,9 @@
     }
 
     .search-form-wrapper:not(.centered) {
-      width: auto;
+      right: calc(40px + 0.75rem);
+      width: min(600px, calc(100vw - 40px - 1.75rem));
+      max-width: calc(100vw - 1rem);
     }
   }
 
