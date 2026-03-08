@@ -9,6 +9,22 @@ const FULL_SIMILARITY = 1.0;
 const TRACK_MULTIPLIER = 0.6;
 const ARTIST_MULTIPLIER = 0.4;
 
+type TrackQualifier = 'remix' | 'live' | 'acoustic' | 'instrumental' | 'edit' | 'extended';
+
+const TRACK_QUALIFIER_RULES: Array<{
+  key: TrackQualifier;
+  pattern: RegExp;
+  penalty: number;
+  bonus: number;
+}> = [
+  { key: 'remix', pattern: /\bremix\b/i, penalty: 0.88, bonus: 1.04 },
+  { key: 'live', pattern: /\blive\b/i, penalty: 0.92, bonus: 1.03 },
+  { key: 'acoustic', pattern: /\bacoustic\b/i, penalty: 0.93, bonus: 1.03 },
+  { key: 'instrumental', pattern: /\binstrumental\b/i, penalty: 0.88, bonus: 1.04 },
+  { key: 'edit', pattern: /\b(edit|radio edit)\b/i, penalty: 0.96, bonus: 1.02 },
+  { key: 'extended', pattern: /\bextended( version)?\b/i, penalty: 0.995, bonus: 1.01 }
+];
+
 export interface SyncedLine {
   startTimeMs: number;
   text: string;
@@ -210,6 +226,40 @@ function calculateWordBasedMatch(
   return Math.min(score, FULL_SIMILARITY);
 }
 
+function getTrackQualifiers(text: string): Set<TrackQualifier> {
+  const qualifiers = new Set<TrackQualifier>();
+
+  for (const rule of TRACK_QUALIFIER_RULES) {
+    if (rule.pattern.test(text)) {
+      qualifiers.add(rule.key);
+    }
+  }
+
+  return qualifiers;
+}
+
+function calculateTrackQualifierAdjustment(searchTrack: string, candidateTrack: string): number {
+  const searchQualifiers = getTrackQualifiers(searchTrack);
+  const candidateQualifiers = getTrackQualifiers(candidateTrack);
+  let adjustment = 1;
+
+  for (const rule of TRACK_QUALIFIER_RULES) {
+    const queryHasQualifier = searchQualifiers.has(rule.key);
+    const candidateHasQualifier = candidateQualifiers.has(rule.key);
+
+    if (candidateHasQualifier && !queryHasQualifier) {
+      adjustment *= rule.penalty;
+      continue;
+    }
+
+    if (candidateHasQualifier && queryHasQualifier) {
+      adjustment *= rule.bonus;
+    }
+  }
+
+  return adjustment;
+}
+
 function calculateDurationScore(targetDuration: number, resultDuration: number): number {
   if (!targetDuration || targetDuration <= 0) return 1.0;
 
@@ -223,9 +273,13 @@ function calculateDurationScore(targetDuration: number, resultDuration: number):
   // Case 1: Video is longer than lyrics (diff >= 0)
   // This is common (intros, outros, credits).
   if (diff >= 0) {
-    // Tier 2: Close match (within 60s)
-    // Give a moderate bonus to prefer this over a "safe but far" match
-    if (diff <= 60) return 1.1;
+    if (diff <= 30) {
+      return 1.15 - (diff / 30) * 0.07;
+    }
+
+    if (diff <= 60) {
+      return 1.08 - ((diff - 30) / 30) * 0.07;
+    }
 
     // Tier 3: Safe match (within 3 minutes)
     if (diff <= 180) return 1.0;
@@ -293,7 +347,13 @@ function calculateFlexibleScore(
   const wordBasedScore = calculateWordBasedMatch(trackLower, artistLower, result);
   if (wordBasedScore > 0) scores.push(wordBasedScore);
 
-  return scores.length > 0 ? Math.min(Math.max(...scores), FULL_SIMILARITY) : 0;
+  if (scores.length === 0) {
+    return 0;
+  }
+
+  const bestBaseScore = Math.min(Math.max(...scores), FULL_SIMILARITY);
+  const qualifierAdjustment = calculateTrackQualifierAdjustment(searchTrack, result.trackName);
+  return Math.min(bestBaseScore * qualifierAdjustment, FULL_SIMILARITY);
 }
 
 /* Get the true duration of the video from the synced lyrics 
