@@ -19,11 +19,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
   }
 
   const repository = createLibsqlVideoRepository(locals.user.id);
-  const [delay, lyricId, metadata] = await Promise.all([
-    repository.getVideoDelay(videoId),
-    repository.getVideoLyricId(videoId),
-    repository.getVideoCustomMetadata(videoId)
-  ]);
+  const { delay, lyricId, metadata } = await repository.getVideoPreferences(videoId);
 
   return json({ delay, lyricId, metadata });
 };
@@ -68,11 +64,7 @@ export const POST: RequestHandler = async ({ request, params, locals }) => {
     await repository.setVideoLyricId(videoId, payload.lyricId ?? null, payload.metadata);
   }
 
-  const [delay, lyricId, metadata] = await Promise.all([
-    repository.getVideoDelay(videoId),
-    repository.getVideoLyricId(videoId),
-    repository.getVideoCustomMetadata(videoId)
-  ]);
+  const { delay, lyricId, metadata } = await repository.getVideoPreferences(videoId);
 
   return json({ delay, lyricId, metadata });
 };

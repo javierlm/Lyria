@@ -3,7 +3,8 @@ import type {
   IVideoRepository,
   RecentVideo,
   RecentVideoInput,
-  VideoCustomMetadata
+  VideoCustomMetadata,
+  VideoPreferences
 } from './IVideoRepository';
 
 export abstract class BaseVideoRepository implements IVideoRepository {
@@ -16,6 +17,21 @@ export abstract class BaseVideoRepository implements IVideoRepository {
   ): Promise<void>;
   abstract getVideoLyricId(videoUrl: string): Promise<number | null>;
   abstract getVideoCustomMetadata(videoUrl: string): Promise<VideoCustomMetadata | null>;
+
+  async getVideoPreferences(videoUrl: string): Promise<VideoPreferences> {
+    const [delay, lyricId, metadata] = await Promise.all([
+      this.getVideoDelay(videoUrl),
+      this.getVideoLyricId(videoUrl),
+      this.getVideoCustomMetadata(videoUrl)
+    ]);
+
+    return {
+      delay,
+      lyricId,
+      metadata
+    };
+  }
+
   abstract addRecentVideo(video: RecentVideoInput): Promise<void>;
   abstract getRecentVideos(): Promise<RecentVideo[]>;
   abstract deleteRecentVideo(videoId: string): Promise<void>;

@@ -11,6 +11,12 @@ export interface VideoCustomMetadata {
   track: string;
 }
 
+export interface VideoPreferences {
+  delay?: number;
+  lyricId: number | null;
+  metadata: VideoCustomMetadata | null;
+}
+
 export interface RecentVideo extends RecentVideoInput {
   timestamp: number;
 }
@@ -29,6 +35,7 @@ export interface IVideoRepository {
   ): Promise<void>;
   getVideoLyricId(videoUrl: string): Promise<number | null>;
   getVideoCustomMetadata(videoUrl: string): Promise<VideoCustomMetadata | null>;
+  getVideoPreferences(videoUrl: string): Promise<VideoPreferences>;
   addRecentVideo(video: RecentVideoInput): Promise<void>;
   getRecentVideos(): Promise<RecentVideo[]>;
   deleteRecentVideo(videoId: string): Promise<void>;

@@ -3,7 +3,8 @@ import type {
   FavoriteVideo,
   RecentVideo,
   RecentVideoInput,
-  VideoCustomMetadata
+  VideoCustomMetadata,
+  VideoPreferences
 } from '../domain/IVideoRepository';
 import { FAVORITES_LIMIT_ERROR_CODE, FavoritesLimitError } from '../domain/videoRepositoryErrors';
 import { extractVideoId } from '$lib/shared/utils';
@@ -37,6 +38,21 @@ export class ApiVideoRepository extends BaseVideoRepository {
     return encodeURIComponent(videoId);
   }
 
+  private parseVideoPreferences(payload: {
+    delay?: number;
+    lyricId?: number | null;
+    metadata?: Partial<VideoCustomMetadata>;
+  }): VideoPreferences {
+    const artist = payload.metadata?.artist?.trim();
+    const track = payload.metadata?.track?.trim();
+
+    return {
+      delay: typeof payload.delay === 'number' ? payload.delay : undefined,
+      lyricId: payload.lyricId ?? null,
+      metadata: artist && track ? { artist, track } : null
+    };
+  }
+
   async setVideoDelay(videoUrl: string, delay: number): Promise<void> {
     const videoPathValue = this.resolveVideoPathValue(videoUrl);
     if (!videoPathValue) {
@@ -51,18 +67,8 @@ export class ApiVideoRepository extends BaseVideoRepository {
   }
 
   async getVideoDelay(videoUrl: string): Promise<number | undefined> {
-    const videoPathValue = this.resolveVideoPathValue(videoUrl);
-    if (!videoPathValue) {
-      return undefined;
-    }
-
-    const response = await this.request(`/api/videos/preferences/${videoPathValue}`);
-    if (!response?.ok) {
-      return undefined;
-    }
-
-    const payload = await parseJsonSafely<{ delay?: number }>(response, {});
-    return typeof payload.delay === 'number' ? payload.delay : undefined;
+    const { delay } = await this.getVideoPreferences(videoUrl);
+    return delay;
   }
 
   async setVideoLyricId(
@@ -83,43 +89,41 @@ export class ApiVideoRepository extends BaseVideoRepository {
   }
 
   async getVideoLyricId(videoUrl: string): Promise<number | null> {
-    const videoPathValue = this.resolveVideoPathValue(videoUrl);
-    if (!videoPathValue) {
-      return null;
-    }
-
-    const response = await this.request(`/api/videos/preferences/${videoPathValue}`);
-    if (!response?.ok) {
-      return null;
-    }
-
-    const payload = await parseJsonSafely<{ lyricId?: number | null }>(response, {});
-    return payload.lyricId ?? null;
+    const { lyricId } = await this.getVideoPreferences(videoUrl);
+    return lyricId;
   }
 
   async getVideoCustomMetadata(videoUrl: string): Promise<VideoCustomMetadata | null> {
+    const { metadata } = await this.getVideoPreferences(videoUrl);
+    return metadata;
+  }
+
+  async getVideoPreferences(videoUrl: string): Promise<VideoPreferences> {
     const videoPathValue = this.resolveVideoPathValue(videoUrl);
     if (!videoPathValue) {
-      return null;
+      return {
+        delay: undefined,
+        lyricId: null,
+        metadata: null
+      };
     }
 
     const response = await this.request(`/api/videos/preferences/${videoPathValue}`);
     if (!response?.ok) {
-      return null;
+      return {
+        delay: undefined,
+        lyricId: null,
+        metadata: null
+      };
     }
 
-    const payload = await parseJsonSafely<{ metadata?: Partial<VideoCustomMetadata> }>(
-      response,
-      {}
-    );
-    const artist = payload.metadata?.artist?.trim();
-    const track = payload.metadata?.track?.trim();
+    const payload = await parseJsonSafely<{
+      delay?: number;
+      lyricId?: number | null;
+      metadata?: Partial<VideoCustomMetadata>;
+    }>(response, {});
 
-    if (!artist || !track) {
-      return null;
-    }
-
-    return { artist, track };
+    return this.parseVideoPreferences(payload);
   }
 
   async addRecentVideo(video: RecentVideoInput): Promise<void> {

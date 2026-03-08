@@ -231,6 +231,26 @@ describe('LibsqlVideoRepository integration', () => {
     });
   });
 
+  it('retrieves all video preferences in a single repository call', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+    const videoUrl = 'https://www.youtube.com/watch?v=9bZkp7q19f0';
+
+    await repository.setVideoDelay(videoUrl, 420);
+    await repository.setVideoLyricId(videoUrl, 123, {
+      artist: 'Custom Artist',
+      track: 'Custom Track'
+    });
+
+    expect(await repository.getVideoPreferences(videoUrl)).toEqual({
+      delay: 420,
+      lyricId: 123,
+      metadata: {
+        artist: 'Custom Artist',
+        track: 'Custom Track'
+      }
+    });
+  });
+
   it('clears custom metadata when clearing manual lyric id', async () => {
     const repository = createLibsqlVideoRepository(userId);
     const videoUrl = 'https://www.youtube.com/watch?v=9bZkp7q19f0';

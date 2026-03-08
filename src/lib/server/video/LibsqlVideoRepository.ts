@@ -5,7 +5,8 @@ import type {
   FavoriteVideo,
   RecentVideo,
   RecentVideoInput,
-  VideoCustomMetadata
+  VideoCustomMetadata,
+  VideoPreferences
 } from '$lib/features/video/domain/IVideoRepository';
 import { FavoritesLimitError } from '$lib/features/video/domain/videoRepositoryErrors';
 import {
@@ -923,6 +924,40 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
     }
 
     return { artist, track };
+  }
+
+  async getVideoPreferences(videoInput: string): Promise<VideoPreferences> {
+    const userId = this.requireUserId();
+
+    const videoId = await this.resolveExistingVideoId(videoInput);
+    if (!videoId) {
+      return {
+        delay: undefined,
+        lyricId: null,
+        metadata: null
+      };
+    }
+
+    const row = await db
+      .select({
+        delayMs: userVideoState.delayMs,
+        manualLyricId: userVideoState.manualLyricId,
+        customArtist: userVideoState.customArtist,
+        customTrack: userVideoState.customTrack
+      })
+      .from(userVideoState)
+      .where(and(eq(userVideoState.userId, userId), eq(userVideoState.videoId, videoId)))
+      .limit(1);
+
+    const delay = row[0]?.delayMs;
+    const artist = row[0]?.customArtist?.trim();
+    const track = row[0]?.customTrack?.trim();
+
+    return {
+      delay: delay ? delay : undefined,
+      lyricId: row[0]?.manualLyricId ?? null,
+      metadata: artist && track ? { artist, track } : null
+    };
   }
 
   async searchVideos(query: string, limit = DEFAULT_SEARCH_LIMIT): Promise<SearchVideoResult[]> {

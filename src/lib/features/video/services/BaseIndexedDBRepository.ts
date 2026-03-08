@@ -3,7 +3,8 @@ import type {
   RecentVideo,
   RecentVideoInput,
   FavoriteVideo,
-  VideoCustomMetadata
+  VideoCustomMetadata,
+  VideoPreferences
 } from '../domain/IVideoRepository';
 import { FavoritesLimitError } from '../domain/videoRepositoryErrors';
 import { FAVORITE_VIDEOS_LIMIT, RECENT_VIDEOS_LIMIT } from '../domain/videoLimits';
@@ -221,6 +222,105 @@ export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
 
       metadataRequest.onerror = (event) =>
         reject('Error getting video custom metadata: ' + (event.target as IDBRequest).error);
+    });
+  }
+
+  async getVideoPreferences(videoUrl: string): Promise<VideoPreferences> {
+    const db = await this.openDB();
+    const transaction = db.transaction([VIDEO_DELAYS_STORE, RECENT_VIDEOS_STORE], 'readonly');
+    const metadataStore = transaction.objectStore(VIDEO_DELAYS_STORE);
+    const recentVideosStore = transaction.objectStore(RECENT_VIDEOS_STORE);
+    const lyricIdKey = `lyricId:${videoUrl}`;
+    const metadataKey = `lyricMetadata:${videoUrl}`;
+    const videoId = extractVideoId(videoUrl) ?? videoUrl.trim();
+
+    return new Promise((resolve, reject) => {
+      const delayRequest = metadataStore.get(videoUrl);
+      const lyricIdRequest = metadataStore.get(lyricIdKey);
+      const metadataRequest = metadataStore.get(metadataKey);
+
+      let settled = false;
+      let delay: number | undefined;
+      let lyricId: number | null = null;
+      let metadata: VideoCustomMetadata | null = null;
+      let pending = 3;
+
+      const rejectOnce = (error: string) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        reject(error);
+      };
+
+      const resolveOnce = () => {
+        if (settled || pending > 0) {
+          return;
+        }
+
+        settled = true;
+        resolve({ delay, lyricId, metadata });
+      };
+
+      const finish = () => {
+        pending -= 1;
+        resolveOnce();
+      };
+
+      delayRequest.onsuccess = (event) => {
+        const result = (event.target as IDBRequest).result;
+        delay = typeof result === 'number' ? result : undefined;
+        finish();
+      };
+      delayRequest.onerror = (event) =>
+        rejectOnce('Error getting video delay: ' + (event.target as IDBRequest).error);
+
+      lyricIdRequest.onsuccess = (event) => {
+        const result = (event.target as IDBRequest).result;
+        lyricId = typeof result === 'number' ? result : null;
+        finish();
+      };
+      lyricIdRequest.onerror = (event) =>
+        rejectOnce('Error getting video lyric ID: ' + (event.target as IDBRequest).error);
+
+      metadataRequest.onsuccess = (event) => {
+        const storedMetadata = (event.target as IDBRequest).result as
+          | Partial<VideoCustomMetadata>
+          | undefined;
+        const artist = storedMetadata?.artist?.trim();
+        const track = storedMetadata?.track?.trim();
+
+        if (artist && track) {
+          metadata = { artist, track };
+          finish();
+          return;
+        }
+
+        if (!videoId) {
+          finish();
+          return;
+        }
+
+        const recentRequest = recentVideosStore.get(videoId);
+        recentRequest.onsuccess = (recentEvent) => {
+          const recentVideo = (recentEvent.target as IDBRequest).result as
+            | Partial<RecentVideo>
+            | undefined;
+          const recentArtist = recentVideo?.artist?.trim();
+          const recentTrack = recentVideo?.track?.trim();
+
+          metadata =
+            recentArtist && recentTrack ? { artist: recentArtist, track: recentTrack } : null;
+          finish();
+        };
+        recentRequest.onerror = (recentEvent) =>
+          rejectOnce(
+            'Error getting recent video metadata: ' + (recentEvent.target as IDBRequest).error
+          );
+      };
+      metadataRequest.onerror = (event) =>
+        rejectOnce('Error getting video custom metadata: ' + (event.target as IDBRequest).error);
     });
   }
 

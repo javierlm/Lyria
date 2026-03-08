@@ -521,13 +521,10 @@ async function loadAndApplyVideoDelay(videoId: string) {
   const currentPreferredMetadata = playerState.preferredSearchMetadata;
   const hasClickedMetadataForCurrentVideo =
     currentPreferredMetadata?.videoId === videoId && currentPreferredMetadata.source === 'clicked';
-  const [storedDelay, storedLyricId, storedMetadata] = await Promise.all([
-    videoService.getVideoDelay(currentVideoUrl),
-    playerState.manualLyricId
-      ? Promise.resolve(playerState.manualLyricId)
-      : videoService.getVideoLyricId(currentVideoUrl),
-    videoService.getVideoCustomMetadata(currentVideoUrl)
-  ]);
+  const storedPreferences = await videoService.getVideoPreferences(currentVideoUrl);
+  const storedDelay = storedPreferences.delay;
+  const storedLyricId = playerState.manualLyricId ?? storedPreferences.lyricId;
+  const storedMetadata = storedPreferences.metadata;
 
   if (storedDelay !== undefined) {
     playerState.timingOffset = storedDelay;
