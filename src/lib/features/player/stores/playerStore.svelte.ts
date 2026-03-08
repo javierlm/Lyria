@@ -14,6 +14,7 @@ export interface PreferredSearchMetadata {
   videoId: string;
   artist: string;
   track: string;
+  source: 'clicked' | 'persisted';
 }
 
 type OriginalSubtitlePreference = 'show' | 'hide' | null;

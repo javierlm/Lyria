@@ -518,18 +518,42 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
 
 async function loadAndApplyVideoDelay(videoId: string) {
   const currentVideoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-  const storedDelay = await videoService.getVideoDelay(currentVideoUrl);
+  const currentPreferredMetadata = playerState.preferredSearchMetadata;
+  const hasClickedMetadataForCurrentVideo =
+    currentPreferredMetadata?.videoId === videoId && currentPreferredMetadata.source === 'clicked';
+  const [storedDelay, storedLyricId, storedMetadata] = await Promise.all([
+    videoService.getVideoDelay(currentVideoUrl),
+    playerState.manualLyricId
+      ? Promise.resolve(playerState.manualLyricId)
+      : videoService.getVideoLyricId(currentVideoUrl),
+    videoService.getVideoCustomMetadata(currentVideoUrl)
+  ]);
+
   if (storedDelay !== undefined) {
     playerState.timingOffset = storedDelay;
   }
 
-  // Load stored lyric ID
-  if (!playerState.manualLyricId) {
-    const storedLyricId = await videoService.getVideoLyricId(currentVideoUrl);
-    if (storedLyricId !== null) {
-      playerState.manualLyricId = storedLyricId;
-      // URL will be synchronized from the page component after navigation completes
-    }
+  if (!playerState.manualLyricId && storedLyricId !== null) {
+    playerState.manualLyricId = storedLyricId;
+    // URL will be synchronized from the page component after navigation completes
+  }
+
+  if (hasClickedMetadataForCurrentVideo) {
+    return;
+  }
+
+  if (storedMetadata) {
+    playerState.preferredSearchMetadata = {
+      videoId,
+      artist: storedMetadata.artist,
+      track: storedMetadata.track,
+      source: 'persisted'
+    };
+  } else if (
+    currentPreferredMetadata?.videoId === videoId &&
+    currentPreferredMetadata.source !== 'clicked'
+  ) {
+    playerState.preferredSearchMetadata = null;
   }
 }
 
@@ -984,11 +1008,19 @@ function initializePlayerProperties(player: YT.Player) {
 async function addCurrentVideoToRecents(videoId: string) {
   if (videoId && playerState.artist && playerState.track) {
     const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+    const preferred = playerState.preferredSearchMetadata;
+    const hasTrustedPreferredMetadata = preferred?.videoId === videoId;
+    const metadataSource =
+      playerState.lyricsState === LyricsStates.Found || hasTrustedPreferredMetadata
+        ? 'trusted'
+        : 'fallback';
+
     await videoService.addRecentVideo({
       videoId,
       artist: playerState.artist,
       track: playerState.track,
-      thumbnailUrl
+      thumbnailUrl,
+      metadataSource
     });
   }
 }

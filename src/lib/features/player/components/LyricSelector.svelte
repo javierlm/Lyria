@@ -93,6 +93,8 @@
 
             if (preferred?.artist && preferred.track) {
               playerState.searchQuery = `${preferred.artist} ${preferred.track}`;
+            } else if (playerState.artist && playerState.track) {
+              playerState.searchQuery = `${playerState.artist} ${playerState.track}`;
             } else if (playerState.parsedTitle) {
               const { artist, track } = playerState.parsedTitle;
               playerState.searchQuery = artist ? `${artist} ${track}` : track;

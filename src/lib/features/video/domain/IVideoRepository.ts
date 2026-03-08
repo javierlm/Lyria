@@ -3,6 +3,12 @@ export interface RecentVideoInput {
   artist: string;
   track: string;
   thumbnailUrl?: string;
+  metadataSource?: 'trusted' | 'fallback';
+}
+
+export interface VideoCustomMetadata {
+  artist: string;
+  track: string;
 }
 
 export interface RecentVideo extends RecentVideoInput {
@@ -22,6 +28,7 @@ export interface IVideoRepository {
     metadata?: { artist?: string; track?: string }
   ): Promise<void>;
   getVideoLyricId(videoUrl: string): Promise<number | null>;
+  getVideoCustomMetadata(videoUrl: string): Promise<VideoCustomMetadata | null>;
   addRecentVideo(video: RecentVideoInput): Promise<void>;
   getRecentVideos(): Promise<RecentVideo[]>;
   deleteRecentVideo(videoId: string): Promise<void>;

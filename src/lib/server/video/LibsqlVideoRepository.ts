@@ -4,7 +4,8 @@ import { BaseVideoRepository } from '$lib/features/video/domain/BaseVideoReposit
 import type {
   FavoriteVideo,
   RecentVideo,
-  RecentVideoInput
+  RecentVideoInput,
+  VideoCustomMetadata
 } from '$lib/features/video/domain/IVideoRepository';
 import { FavoritesLimitError } from '$lib/features/video/domain/videoRepositoryErrors';
 import {
@@ -531,6 +532,7 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
 
     const watchedAt = new Date();
     const customNormalizedFields = buildNormalizedVideoFields(video.artist, video.track);
+    const shouldOverwriteCustomMetadata = video.metadataSource !== 'fallback';
 
     await db.transaction(async (tx) => {
       await tx
@@ -540,24 +542,32 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
           videoId: video.videoId,
           lastWatchedAt: watchedAt,
           recentRemovedAt: null,
-          customArtist: video.artist,
-          customTrack: video.track,
-          customArtistNormalized: customNormalizedFields.artistNormalized,
-          customTrackNormalized: customNormalizedFields.trackNormalized,
-          customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
-          customMetadataAt: watchedAt
+          ...(shouldOverwriteCustomMetadata
+            ? {
+                customArtist: video.artist,
+                customTrack: video.track,
+                customArtistNormalized: customNormalizedFields.artistNormalized,
+                customTrackNormalized: customNormalizedFields.trackNormalized,
+                customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
+                customMetadataAt: watchedAt
+              }
+            : {})
         })
         .onConflictDoUpdate({
           target: [userVideoState.userId, userVideoState.videoId],
           set: {
             lastWatchedAt: watchedAt,
             recentRemovedAt: null,
-            customArtist: video.artist,
-            customTrack: video.track,
-            customArtistNormalized: customNormalizedFields.artistNormalized,
-            customTrackNormalized: customNormalizedFields.trackNormalized,
-            customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
-            customMetadataAt: watchedAt
+            ...(shouldOverwriteCustomMetadata
+              ? {
+                  customArtist: video.artist,
+                  customTrack: video.track,
+                  customArtistNormalized: customNormalizedFields.artistNormalized,
+                  customTrackNormalized: customNormalizedFields.trackNormalized,
+                  customSearchTextNormalized: customNormalizedFields.searchTextNormalized,
+                  customMetadataAt: watchedAt
+                }
+              : {})
           }
         });
 
@@ -886,6 +896,33 @@ export class LibsqlVideoRepository extends BaseVideoRepository {
       .limit(1);
 
     return row[0]?.manualLyricId ?? null;
+  }
+
+  async getVideoCustomMetadata(videoInput: string): Promise<VideoCustomMetadata | null> {
+    const userId = this.requireUserId();
+
+    const videoId = await this.resolveExistingVideoId(videoInput);
+    if (!videoId) {
+      return null;
+    }
+
+    const row = await db
+      .select({
+        customArtist: userVideoState.customArtist,
+        customTrack: userVideoState.customTrack
+      })
+      .from(userVideoState)
+      .where(and(eq(userVideoState.userId, userId), eq(userVideoState.videoId, videoId)))
+      .limit(1);
+
+    const artist = row[0]?.customArtist?.trim();
+    const track = row[0]?.customTrack?.trim();
+
+    if (!artist || !track) {
+      return null;
+    }
+
+    return { artist, track };
   }
 
   async searchVideos(query: string, limit = DEFAULT_SEARCH_LIMIT): Promise<SearchVideoResult[]> {

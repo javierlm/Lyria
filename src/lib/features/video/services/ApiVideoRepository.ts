@@ -1,5 +1,10 @@
 import { BaseVideoRepository } from '../domain/BaseVideoRepository';
-import type { FavoriteVideo, RecentVideo, RecentVideoInput } from '../domain/IVideoRepository';
+import type {
+  FavoriteVideo,
+  RecentVideo,
+  RecentVideoInput,
+  VideoCustomMetadata
+} from '../domain/IVideoRepository';
 import { FAVORITES_LIMIT_ERROR_CODE, FavoritesLimitError } from '../domain/videoRepositoryErrors';
 import { extractVideoId } from '$lib/shared/utils';
 import type { VideoImportPayload, VideoImportResult } from './videoImportTypes';
@@ -90,6 +95,31 @@ export class ApiVideoRepository extends BaseVideoRepository {
 
     const payload = await parseJsonSafely<{ lyricId?: number | null }>(response, {});
     return payload.lyricId ?? null;
+  }
+
+  async getVideoCustomMetadata(videoUrl: string): Promise<VideoCustomMetadata | null> {
+    const videoPathValue = this.resolveVideoPathValue(videoUrl);
+    if (!videoPathValue) {
+      return null;
+    }
+
+    const response = await this.request(`/api/videos/preferences/${videoPathValue}`);
+    if (!response?.ok) {
+      return null;
+    }
+
+    const payload = await parseJsonSafely<{ metadata?: Partial<VideoCustomMetadata> }>(
+      response,
+      {}
+    );
+    const artist = payload.metadata?.artist?.trim();
+    const track = payload.metadata?.track?.trim();
+
+    if (!artist || !track) {
+      return null;
+    }
+
+    return { artist, track };
   }
 
   async addRecentVideo(video: RecentVideoInput): Promise<void> {

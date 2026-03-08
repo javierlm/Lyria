@@ -47,7 +47,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     videoId: payload.videoId,
     artist: payload.artist,
     track: payload.track,
-    thumbnailUrl: payload.thumbnailUrl
+    thumbnailUrl: payload.thumbnailUrl,
+    metadataSource: payload.metadataSource
   });
 
   return json({ ok: true });

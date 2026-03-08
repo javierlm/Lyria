@@ -225,6 +225,10 @@ describe('LibsqlVideoRepository integration', () => {
     });
 
     expect(await repository.getVideoLyricId(videoUrl)).toBe(123);
+    expect(await repository.getVideoCustomMetadata(videoUrl)).toEqual({
+      artist: 'Custom Artist',
+      track: 'Custom Track'
+    });
   });
 
   it('clears custom metadata when clearing manual lyric id', async () => {
@@ -239,6 +243,63 @@ describe('LibsqlVideoRepository integration', () => {
     await repository.setVideoLyricId(videoUrl, null);
 
     expect(await repository.getVideoLyricId(videoUrl)).toBe(null);
+    expect(await repository.getVideoCustomMetadata(videoUrl)).toBe(null);
+  });
+
+  it('preserves trusted custom metadata when a fallback recent update arrives', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+    const videoId = 'preserveCustomMetadata';
+
+    await repository.addRecentVideo({
+      videoId,
+      artist: 'Trusted Artist',
+      track: 'Trusted Track',
+      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+    });
+
+    await repository.setVideoDelay(videoId, 120);
+
+    await repository.addRecentVideo({
+      videoId,
+      artist: 'YouTube Channel',
+      track: 'Raw Video Title',
+      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+      metadataSource: 'fallback'
+    });
+
+    expect(await repository.getVideoCustomMetadata(videoId)).toEqual({
+      artist: 'Trusted Artist',
+      track: 'Trusted Track'
+    });
+
+    const recents = await repository.getRecentVideos();
+    expect(recents[0]?.artist).toBe('Trusted Artist');
+    expect(recents[0]?.track).toBe('Trusted Track');
+  });
+
+  it('updates custom metadata when a trusted recent update arrives', async () => {
+    const repository = createLibsqlVideoRepository(userId);
+    const videoId = 'replaceCustomMetadata';
+
+    await repository.addRecentVideo({
+      videoId,
+      artist: 'Old Artist',
+      track: 'Old Track',
+      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
+    });
+
+    await repository.addRecentVideo({
+      videoId,
+      artist: 'New Artist',
+      track: 'New Track',
+      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+      metadataSource: 'trusted'
+    });
+
+    expect(await repository.getVideoCustomMetadata(videoId)).toEqual({
+      artist: 'New Artist',
+      track: 'New Track'
+    });
   });
 
   it('shows custom artist/track in recent videos when set', async () => {

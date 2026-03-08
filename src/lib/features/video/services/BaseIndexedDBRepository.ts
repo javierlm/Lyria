@@ -1,8 +1,14 @@
 import { BaseVideoRepository } from '../domain/BaseVideoRepository';
-import type { RecentVideo, RecentVideoInput, FavoriteVideo } from '../domain/IVideoRepository';
+import type {
+  RecentVideo,
+  RecentVideoInput,
+  FavoriteVideo,
+  VideoCustomMetadata
+} from '../domain/IVideoRepository';
 import { FavoritesLimitError } from '../domain/videoRepositoryErrors';
 import { FAVORITE_VIDEOS_LIMIT, RECENT_VIDEOS_LIMIT } from '../domain/videoLimits';
 import { playerState } from '$lib/features/player/stores/playerStore.svelte';
+import { extractVideoId } from '$lib/shared/utils';
 
 const VIDEO_DELAYS_STORE = 'videoDelays';
 const RECENT_VIDEOS_STORE = 'recentVideos';
@@ -161,6 +167,60 @@ export abstract class BaseIndexedDBRepository extends BaseVideoRepository {
       };
       request.onerror = (event) =>
         reject('Error getting video lyric ID: ' + (event.target as IDBRequest).error);
+    });
+  }
+
+  async getVideoCustomMetadata(videoUrl: string): Promise<VideoCustomMetadata | null> {
+    const db = await this.openDB();
+    const transaction = db.transaction([VIDEO_DELAYS_STORE, RECENT_VIDEOS_STORE], 'readonly');
+    const metadataStore = transaction.objectStore(VIDEO_DELAYS_STORE);
+    const recentVideosStore = transaction.objectStore(RECENT_VIDEOS_STORE);
+    const metadataKey = `lyricMetadata:${videoUrl}`;
+    const videoId = extractVideoId(videoUrl) ?? videoUrl.trim();
+
+    return new Promise((resolve, reject) => {
+      const metadataRequest = metadataStore.get(metadataKey);
+
+      metadataRequest.onsuccess = (event) => {
+        const metadata = (event.target as IDBRequest).result as
+          | Partial<VideoCustomMetadata>
+          | undefined;
+        const artist = metadata?.artist?.trim();
+        const track = metadata?.track?.trim();
+
+        if (artist && track) {
+          resolve({ artist, track });
+          return;
+        }
+
+        if (!videoId) {
+          resolve(null);
+          return;
+        }
+
+        const recentRequest = recentVideosStore.get(videoId);
+        recentRequest.onsuccess = (recentEvent) => {
+          const recentVideo = (recentEvent.target as IDBRequest).result as
+            | Partial<RecentVideo>
+            | undefined;
+          const recentArtist = recentVideo?.artist?.trim();
+          const recentTrack = recentVideo?.track?.trim();
+
+          if (!recentArtist || !recentTrack) {
+            resolve(null);
+            return;
+          }
+
+          resolve({ artist: recentArtist, track: recentTrack });
+        };
+        recentRequest.onerror = (recentEvent) =>
+          reject(
+            'Error getting recent video metadata: ' + (recentEvent.target as IDBRequest).error
+          );
+      };
+
+      metadataRequest.onerror = (event) =>
+        reject('Error getting video custom metadata: ' + (event.target as IDBRequest).error);
     });
   }
 

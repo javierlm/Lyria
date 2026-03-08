@@ -23,7 +23,8 @@
     playerState.preferredSearchMetadata = {
       videoId: video.videoId,
       artist: video.artist,
-      track: video.track
+      track: video.track,
+      source: 'clicked'
     };
 
     const url = `https://www.youtube.com/watch?v=${video.videoId}`;

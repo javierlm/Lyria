@@ -2,7 +2,8 @@ import type {
   FavoriteVideo,
   IVideoRepository,
   RecentVideo,
-  RecentVideoInput
+  RecentVideoInput,
+  VideoCustomMetadata
 } from './IVideoRepository';
 
 export abstract class BaseVideoRepository implements IVideoRepository {
@@ -14,6 +15,7 @@ export abstract class BaseVideoRepository implements IVideoRepository {
     metadata?: { artist?: string; track?: string }
   ): Promise<void>;
   abstract getVideoLyricId(videoUrl: string): Promise<number | null>;
+  abstract getVideoCustomMetadata(videoUrl: string): Promise<VideoCustomMetadata | null>;
   abstract addRecentVideo(video: RecentVideoInput): Promise<void>;
   abstract getRecentVideos(): Promise<RecentVideo[]>;
   abstract deleteRecentVideo(videoId: string): Promise<void>;
