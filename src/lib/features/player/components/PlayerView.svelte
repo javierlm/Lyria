@@ -21,6 +21,9 @@
   let currentLoadedVideoId: string | null = null;
   let isTouch = $state(false);
   let isSeekInteracting = $state(false);
+  let hideCursor = $derived(
+    playerState.isFullscreen && !isTouch && !showControls && !isSeekInteracting
+  );
 
   let currentLine = $derived(
     playerState.currentLineIndex >= 0
@@ -187,6 +190,7 @@
   bind:this={playerContainer}
   class="player-container"
   class:fullscreen={playerState.isFullscreen}
+  class:hide-cursor={hideCursor}
   role="button"
   aria-label="Toggle playback"
   tabindex="0"
@@ -325,6 +329,13 @@
     transition: all 0.3s ease-in-out;
     overflow: hidden;
     border-radius: 12px;
+  }
+
+  .player-container.hide-cursor,
+  .player-container.hide-cursor #player,
+  .player-container.hide-cursor .subtitles,
+  .player-container.hide-cursor .video-controls-wrapper {
+    cursor: none;
   }
 
   #player {
