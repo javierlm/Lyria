@@ -132,6 +132,14 @@
     showControlsAndResetTimer();
   }
 
+  function isEditableTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    );
+  }
+
   $effect(() => {
     if (playerState.videoId && playerState.videoId !== currentLoadedVideoId) {
       loadVideo(playerState.videoId, 'player', playerState.timingOffset);
@@ -167,16 +175,28 @@
       );
     };
 
+    const handleWindowKeydown = (event: KeyboardEvent) => {
+      if (event.code !== 'KeyF' || isEditableTarget(event.target)) {
+        return;
+      }
+
+      event.preventDefault();
+      toggleFullscreen(playerContainer);
+      showControlsAndResetTimer();
+    };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    window.addEventListener('keydown', handleWindowKeydown);
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleWindowKeydown);
       clearHideControlsTimer();
     };
   });
