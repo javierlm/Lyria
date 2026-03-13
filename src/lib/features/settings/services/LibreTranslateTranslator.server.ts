@@ -1,4 +1,8 @@
-import { type TranslationProvider, type TranslationResponse } from '../domain/TranslationProvider';
+import {
+  type DetectedLanguageCandidate,
+  type TranslationProvider,
+  type TranslationResponse
+} from '../domain/TranslationProvider';
 
 export type LanguageDetection = {
   language: string;
@@ -8,7 +12,7 @@ export type LanguageDetection = {
 const CONFIDENCE_THRESHOLD = 0.8;
 
 export class LibreTranslateTranslator implements TranslationProvider {
-  async detectLanguage(text: string[]): Promise<string | undefined> {
+  async detectLanguages(text: string[]): Promise<DetectedLanguageCandidate[]> {
     try {
       const combinedText = text.join(' ');
       const res = await fetch('http://localhost:5000/detect', {
@@ -25,18 +29,25 @@ export class LibreTranslateTranslator implements TranslationProvider {
 
       const detections: LanguageDetection[] = await res.json();
 
-      if (detections && detections.length > 0) {
-        const topDetection = detections[0];
-        if (topDetection.confidence > CONFIDENCE_THRESHOLD) {
-          return topDetection.language;
-        }
-      }
-
-      return undefined;
+      return (detections || []).map((detection) => ({
+        language: detection.language,
+        percentage: detection.confidence * 100
+      }));
     } catch (error) {
       console.error('Error detecting language with LibreTranslate:', error);
-      return undefined;
+      return [];
     }
+  }
+
+  async detectLanguage(text: string[]): Promise<string | undefined> {
+    const detections = await this.detectLanguages(text);
+    const topDetection = detections[0];
+
+    if (topDetection && topDetection.percentage / 100 > CONFIDENCE_THRESHOLD) {
+      return topDetection.language;
+    }
+
+    return undefined;
   }
 
   async translate(

@@ -15,7 +15,8 @@
   import ScrollToActiveLine from '$lib/features/ui/components/ScrollToActiveLine.svelte';
   import ToggleSwitch from '$lib/features/ui/components/ToggleSwitch.svelte';
   import { getPrimaryLanguage } from '$lib/shared/utils';
-  import { LL } from '$i18n/i18n-svelte';
+  import { getLanguageDisplayName, getLanguageFlagUrl } from '$lib/shared/languageMetadata';
+  import { LL, locale } from '$i18n/i18n-svelte';
   import { translationStore } from '$lib/features/settings/stores/translationStore.svelte';
   import { transliterateLyrics } from '$lib/features/player/services/transliterationService';
   import { isTransliterableLanguage } from '$lib/features/settings/stores/transliterationStore.svelte';
@@ -70,6 +71,12 @@
   const iconSize = $derived(windowWidth > 768 ? 30 : 20);
   const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
 
+  function capitalizeFirstLetter(value: string): string {
+    if (!value) return value;
+
+    return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+  }
+
   let isHorizontalMode = $derived(
     playerState.lyricsState === 'found' &&
       !playerState.isLoadingVideo &&
@@ -118,6 +125,63 @@
       (playerState.percentageOfDetectedLanguages ?? 0) >= PORCENTAGE_LANGUAGE_THRESHOLD
     )
   );
+
+  const sourceLanguageIndicator = $derived.by(() => {
+    const detectedSourceLanguage = playerState.detectedSourceLanguage;
+    const confidence = playerState.percentageOfDetectedLanguages;
+
+    if (!detectedSourceLanguage) {
+      return null;
+    }
+
+    const name = capitalizeFirstLetter(
+      getLanguageDisplayName(detectedSourceLanguage, $locale) ?? detectedSourceLanguage
+    );
+    const flagUrl = getLanguageFlagUrl(detectedSourceLanguage);
+
+    return {
+      flagUrl,
+      name,
+      title: confidence === undefined ? name : `${name} (${Math.round(confidence)}%)`
+    };
+  });
+
+  const secondarySourceLanguageIndicators = $derived.by(() => {
+    const primaryLanguage = getPrimaryLanguage(playerState.detectedSourceLanguage ?? '');
+    const secondaryLanguages: Array<{ language: string; percentage: number }> = [
+      ...playerState.secondaryDetectedLanguages
+    ];
+
+    if (playerState.transliterationLang) {
+      secondaryLanguages.push({ language: playerState.transliterationLang, percentage: 0 });
+    }
+
+    return secondaryLanguages
+      .filter((candidate, index, languages) => {
+        const baseLanguage = getPrimaryLanguage(candidate.language);
+
+        return (
+          baseLanguage !== primaryLanguage &&
+          languages.findIndex(
+            (language) => getPrimaryLanguage(language.language) === baseLanguage
+          ) === index
+        );
+      })
+      .map((candidate) => ({
+        language: candidate.language,
+        percentage: candidate.percentage,
+        name: capitalizeFirstLetter(
+          getLanguageDisplayName(candidate.language, $locale) ?? candidate.language
+        ),
+        flagUrl: getLanguageFlagUrl(candidate.language),
+        title:
+          candidate.percentage > 0
+            ? `${capitalizeFirstLetter(getLanguageDisplayName(candidate.language, $locale) ?? candidate.language)} (${Math.round(candidate.percentage)}%)`
+            : capitalizeFirstLetter(
+                getLanguageDisplayName(candidate.language, $locale) ?? candidate.language
+              )
+      }));
+  });
 
   // Shared condition for auto-scrolling in horizontal mode with synced lyrics
   const canAutoScroll = $derived(
@@ -436,6 +500,25 @@
     <h2 class="original-header">
       <FileTextIcon size={iconSize} weight="bold" />
       <span class="header-text">{$LL.lyrics.original()}</span>
+      {#if sourceLanguageIndicator}
+        <span class="source-language-indicator" title={sourceLanguageIndicator.title}>
+          {#if sourceLanguageIndicator.flagUrl}
+            <span
+              class="flag-icon"
+              style:background-image={`url('${sourceLanguageIndicator.flagUrl}')`}
+            ></span>
+          {/if}
+          <span class="source-language-name">{sourceLanguageIndicator.name}</span>
+        </span>
+      {/if}
+      {#each secondarySourceLanguageIndicators as indicator (indicator.language)}
+        <span class="source-language-indicator secondary" title={indicator.title}>
+          {#if indicator.flagUrl}
+            <span class="flag-icon" style:background-image={`url('${indicator.flagUrl}')`}></span>
+          {/if}
+          <span class="source-language-name">{indicator.name}</span>
+        </span>
+      {/each}
     </h2>
     <div class="transliteration-header-container">
       {#if shouldShowTransliteration && playerState.lyricsState === LyricsStates.Found}
@@ -610,6 +693,48 @@
 
   .original-header {
     grid-column: 1;
+    flex-wrap: wrap;
+  }
+
+  .source-language-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    max-width: 100%;
+    padding: 0.2rem 0.55rem;
+    border: 1px solid rgba(var(--primary-color-rgb), 0.16);
+    border-radius: 999px;
+    background: rgba(var(--primary-color-rgb), 0.08);
+    color: var(--text-color-light);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .source-language-indicator.secondary {
+    background: rgba(var(--primary-color-rgb), 0.05);
+    border-color: rgba(var(--primary-color-rgb), 0.12);
+    color: var(--text-color);
+  }
+
+  .source-language-name {
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .flag-icon {
+    width: 18px;
+    height: 13px;
+    flex-shrink: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 2px;
+    display: inline-block;
+    vertical-align: middle;
   }
 
   .transliteration-header-container {
@@ -861,6 +986,21 @@
       font-size: 1rem;
     }
 
+    .source-language-indicator {
+      padding: 0.16rem 0.42rem;
+      font-size: 0.68rem;
+      gap: 0.3rem;
+    }
+
+    .source-language-name {
+      max-width: 5rem;
+    }
+
+    .flag-icon {
+      width: 16px;
+      height: 12px;
+    }
+
     .original-header {
       grid-column: 1;
     }
@@ -946,6 +1086,14 @@
   @media (max-width: 480px) {
     .lyrics-header h2 .header-text {
       display: none;
+    }
+
+    .source-language-name {
+      display: none;
+    }
+
+    .source-language-indicator {
+      padding-inline: 0.3rem;
     }
   }
 

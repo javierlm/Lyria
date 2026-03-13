@@ -1,6 +1,6 @@
 import { ChromeAITranslationProvider } from './ChromeAITranslationProvider';
 import { translationStore } from '../stores/translationStore.svelte';
-import type { TranslationResponse } from '../domain/TranslationProvider';
+import type { DetectedLanguageCandidate, TranslationResponse } from '../domain/TranslationProvider';
 
 class FrontendTranslationService {
   private readonly chromeProvider: ChromeAITranslationProvider;
@@ -25,10 +25,18 @@ class FrontendTranslationService {
 
   async detectSourceLanguage(text: string[]): Promise<string | undefined> {
     if (translationStore.useChromeAI && translationStore.isChromeAISupported) {
-      const detected = await this.chromeProvider.detectLanguage(text);
-      return detected || 'en';
+      const detected = await this.detectSourceLanguages(text);
+      return detected[0]?.language || 'en';
     }
     return undefined;
+  }
+
+  async detectSourceLanguages(text: string[]): Promise<DetectedLanguageCandidate[]> {
+    if (translationStore.useChromeAI && translationStore.isChromeAISupported) {
+      return this.chromeProvider.detectLanguages(text);
+    }
+
+    return [];
   }
 
   async translate(
@@ -39,9 +47,11 @@ class FrontendTranslationService {
   ): Promise<TranslationResponse | null> {
     if (translationStore.useChromeAI && translationStore.isChromeAISupported) {
       let finalSourceLang = sourceLang;
+      let detectedLanguages: DetectedLanguageCandidate[] = [];
 
       if (finalSourceLang === 'auto') {
-        finalSourceLang = (await this.chromeProvider.detectLanguage(text)) || 'en';
+        detectedLanguages = await this.detectSourceLanguages(text);
+        finalSourceLang = detectedLanguages[0]?.language || 'en';
       }
 
       const availability = await translationStore.checkLanguagePairAvailability(
@@ -51,6 +61,21 @@ class FrontendTranslationService {
 
       if (availability !== 'no') {
         const result = await this.chromeProvider.translate(finalSourceLang, targetLang, text);
+
+        if (detectedLanguages.length > 0) {
+          result.detectedLanguages = detectedLanguages;
+          result.detectedSourceLanguage = detectedLanguages[0].language;
+          result.percentageOfDetectedLanguages = detectedLanguages[0].percentage;
+        }
+
+        if (
+          sourceLang === 'auto' &&
+          result.detectedSourceLanguage &&
+          !result.percentageOfDetectedLanguages
+        ) {
+          result.percentageOfDetectedLanguages = 100;
+        }
+
         translationStore.wasLastTranslationLocal = true;
         translationStore.markLanguagePairAsReady(finalSourceLang, targetLang);
         return result;

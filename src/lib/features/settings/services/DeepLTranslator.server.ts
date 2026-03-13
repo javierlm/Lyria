@@ -1,9 +1,14 @@
-import { type TranslationProvider, type TranslationResponse } from '../domain/TranslationProvider';
+import {
+  type DetectedLanguageCandidate,
+  type TranslationProvider,
+  type TranslationResponse
+} from '../domain/TranslationProvider';
 import * as deepl from 'deepl-node';
 import { DEEPL_API_KEY } from '$env/static/private';
 import { getPrimaryLanguage } from '$lib/shared/utils';
 
 const CONFIDENCE_THRESHOLD = 0.8;
+const SECONDARY_LANGUAGE_THRESHOLD_PERCENTAGE = 10;
 
 if (!DEEPL_API_KEY) {
   throw new Error('DEEPL_API_KEY is not set in environment variables.');
@@ -130,9 +135,20 @@ export class DeepLTranslator implements TranslationProvider {
       }
 
       if (mostFrequentLanguage) {
+        const detectedLanguages = Object.entries(languageCounts)
+          .map(([language, count]) => ({
+            language,
+            percentage: (count / totalDetectedLanguagesCount) * 100
+          }))
+          .sort((a, b) => b.percentage - a.percentage);
+
         translatedResponse.detectedSourceLanguage = mostFrequentLanguage;
         translatedResponse.percentageOfDetectedLanguages =
           (maxCount / totalDetectedLanguagesCount) * 100;
+        translatedResponse.detectedLanguages = detectedLanguages.filter(
+          (candidate, index) =>
+            index === 0 || candidate.percentage >= SECONDARY_LANGUAGE_THRESHOLD_PERCENTAGE
+        );
       }
     }
 
@@ -144,10 +160,21 @@ export class DeepLTranslator implements TranslationProvider {
   }
 
   async detectLanguage(text: string[]): Promise<string | undefined> {
+    const detections = await this.detectLanguages(text);
+    const topDetection = detections[0];
+
+    if (topDetection && topDetection.percentage / 100 > CONFIDENCE_THRESHOLD) {
+      return topDetection.language;
+    }
+
+    return undefined;
+  }
+
+  async detectLanguages(text: string[]): Promise<DetectedLanguageCandidate[]> {
     // Only run on server-side (Node.js environment)
     if (typeof window !== 'undefined') {
       console.warn('detectLanguage called in browser context, skipping');
-      return undefined;
+      return [];
     }
 
     try {
@@ -160,12 +187,17 @@ export class DeepLTranslator implements TranslationProvider {
       identifier.dispose();
 
       if (result.is_reliable && result.probability > CONFIDENCE_THRESHOLD) {
-        return result.language;
+        return [
+          {
+            language: result.language,
+            percentage: result.probability * 100
+          }
+        ];
       }
-      return undefined;
+      return [];
     } catch (error) {
       console.error('Error detecting language with cld3-asm:', error);
-      return undefined;
+      return [];
     }
   }
 }

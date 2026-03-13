@@ -5,57 +5,15 @@
   import CaretDown from 'phosphor-svelte/lib/CaretDown';
   import CloudSlash from 'phosphor-svelte/lib/CloudSlash';
   import { translationStore } from '$lib/features/settings/stores/translationStore.svelte';
+  import { getLanguageFlagUrl } from '$lib/shared/languageMetadata';
   import LL from '$i18n/i18n-svelte';
-
-  const languageFlags: { [key: string]: string } = {
-    AR: 'sa', // Saudi Arabia
-    BG: 'bg', // Bulgaria
-    CS: 'cz', // Czech Republic
-    DA: 'dk', // Denmark
-    DE: 'de', // Germany
-    EL: 'gr', // Greece
-    EN: 'gb', // United Kingdom (generic English)
-    'EN-GB': 'gb', // United Kingdom
-    'EN-US': 'us', // United States
-    ES: 'es', // Spain
-    'ES-419': 'un', // United Nations (generic for Latin America)
-    ET: 'ee', // Estonia
-    FI: 'fi', // Finland
-    FR: 'fr', // France
-    HE: 'il', // Israel
-    HU: 'hu', // Hungary
-    ID: 'id', // Indonesia
-    IT: 'it', // Italy
-    JA: 'jp', // Japan
-    KO: 'kr', // South Korea
-    LT: 'lt', // Lithuania
-    LV: 'lv', // Latvia
-    NB: 'no', // Norway
-    NL: 'nl', // Netherlands
-    PL: 'pl', // Poland
-    PT: 'pt', // Portugal (generic Portuguese)
-    'PT-BR': 'br', // Brazil
-    'PT-PT': 'pt', // Portugal
-    RO: 'ro', // Romania
-    RU: 'ru', // Russia
-    SK: 'sk', // Slovakia
-    SL: 'si', // Slovenia
-    SV: 'se', // Sweden
-    TH: 'th', // Thailand
-    TR: 'tr', // Turkey
-    UK: 'ua', // Ukraine
-    VI: 'vn', // Vietnam
-    ZH: 'cn', // China (generic Chinese)
-    'ZH-HANS': 'cn', // China (simplified)
-    'ZH-HANT': 'tw' // Taiwan (traditional)
-  };
 
   const languages = $derived(
     Object.keys($LL.lyricsLanguages)
       .map((code) => ({
         code: code.toUpperCase(),
         name: $LL.lyricsLanguages[code as keyof typeof $LL.lyricsLanguages](),
-        flagClass: languageFlags[code.toUpperCase()] || 'unknown' // Use a default class if not found
+        flagUrl: getLanguageFlagUrl(code)
       }))
       .sort((a, b) => a.name.localeCompare(b.name))
   );
@@ -182,7 +140,11 @@
 >
   <button class="select-button" bind:this={selectButtonRef} onclick={toggleDropdown}>
     <div class="selected-option">
-      <span class="flag-icon {currentLang.flagClass}"></span>
+      <span
+        class="flag-icon"
+        class:no-flag={!currentLang.flagUrl}
+        style:background-image={currentLang.flagUrl ? `url('${currentLang.flagUrl}')` : 'none'}
+      ></span>
       <span>{currentLang.name}</span>
       {#if translationStore.isChromeAISupported && translationStore.useChromeAI && languageStatus[currentLang.code]}
         <div
@@ -207,7 +169,11 @@
         class:selected={lang.code === selectedLanguage}
         onclick={() => selectLanguage(lang.code)}
       >
-        <span class="flag-icon {lang.flagClass}"></span>
+        <span
+          class="flag-icon"
+          class:no-flag={!lang.flagUrl}
+          style:background-image={lang.flagUrl ? `url('${lang.flagUrl}')` : 'none'}
+        ></span>
         <div class="lang-text-wrapper">
           <span>{lang.name}</span>
           {#if translationStore.isChromeAISupported && translationStore.useChromeAI && languageStatus[lang.code]}
@@ -352,120 +318,10 @@
     vertical-align: middle;
   }
 
-  /* Example flag styles - User needs to provide actual flag images or a sprite */
-  .flag-icon.us {
-    background-image: url('https://flagcdn.com/us.svg'); /* Placeholder */
-  }
-  .flag-icon.gb {
-    background-image: url('https://flagcdn.com/gb.svg'); /* Placeholder */
-  }
-  .flag-icon.es {
-    background-image: url('https://flagcdn.com/es.svg'); /* Placeholder */
-  }
-  .flag-icon.fr {
-    background-image: url('https://flagcdn.com/fr.svg'); /* Placeholder */
-  }
-  .flag-icon.de {
-    background-image: url('https://flagcdn.com/de.svg'); /* Placeholder */
-  }
-  .flag-icon.jp {
-    background-image: url('https://flagcdn.com/jp.svg'); /* Placeholder */
-  }
-  .flag-icon.cn {
-    background-image: url('https://flagcdn.com/cn.svg'); /* Placeholder */
-  }
-  .flag-icon.tw {
-    background-image: url('https://flagcdn.com/tw.svg'); /* Placeholder */
-  }
-  .flag-icon.br {
-    background-image: url('https://flagcdn.com/br.svg'); /* Placeholder */
-  }
-  .flag-icon.pt {
-    background-image: url('https://flagcdn.com/pt.svg'); /* Placeholder */
-  }
-  .flag-icon.it {
-    background-image: url('https://flagcdn.com/it.svg'); /* Placeholder */
-  }
-  .flag-icon.ru {
-    background-image: url('https://flagcdn.com/ru.svg'); /* Placeholder */
-  }
-  .flag-icon.kr {
-    background-image: url('https://flagcdn.com/kr.svg'); /* Placeholder */
-  }
-  .flag-icon.sa {
-    background-image: url('https://flagcdn.com/sa.svg'); /* Placeholder */
-  }
-  .flag-icon.bg {
-    background-image: url('https://flagcdn.com/bg.svg'); /* Placeholder */
-  }
-  .flag-icon.cz {
-    background-image: url('https://flagcdn.com/cz.svg'); /* Placeholder */
-  }
-  .flag-icon.dk {
-    background-image: url('https://flagcdn.com/dk.svg'); /* Placeholder */
-  }
-  .flag-icon.gr {
-    background-image: url('https://flagcdn.com/gr.svg'); /* Placeholder */
-  }
-  .flag-icon.ee {
-    background-image: url('https://flagcdn.com/ee.svg'); /* Placeholder */
-  }
-  .flag-icon.fi {
-    background-image: url('https://flagcdn.com/fi.svg'); /* Placeholder */
-  }
-  .flag-icon.il {
-    background-image: url('https://flagcdn.com/il.svg'); /* Placeholder */
-  }
-  .flag-icon.hu {
-    background-image: url('https://flagcdn.com/hu.svg'); /* Placeholder */
-  }
-  .flag-icon.id {
-    background-image: url('https://flagcdn.com/id.svg'); /* Placeholder */
-  }
-  .flag-icon.lt {
-    background-image: url('https://flagcdn.com/lt.svg'); /* Placeholder */
-  }
-  .flag-icon.lv {
-    background-image: url('https://flagcdn.com/lv.svg'); /* Placeholder */
-  }
-  .flag-icon.no {
-    background-image: url('https://flagcdn.com/no.svg'); /* Placeholder */
-  }
-  .flag-icon.nl {
-    background-image: url('https://flagcdn.com/nl.svg'); /* Placeholder */
-  }
-  .flag-icon.pl {
-    background-image: url('https://flagcdn.com/pl.svg'); /* Placeholder */
-  }
-  .flag-icon.ro {
-    background-image: url('https://flagcdn.com/ro.svg'); /* Placeholder */
-  }
-  .flag-icon.sk {
-    background-image: url('https://flagcdn.com/sk.svg'); /* Placeholder */
-  }
-  .flag-icon.si {
-    background-image: url('https://flagcdn.com/si.svg'); /* Placeholder */
-  }
-  .flag-icon.se {
-    background-image: url('https://flagcdn.com/se.svg'); /* Placeholder */
-  }
-  .flag-icon.th {
-    background-image: url('https://flagcdn.com/th.svg'); /* Placeholder */
-  }
-  .flag-icon.tr {
-    background-image: url('https://flagcdn.com/tr.svg'); /* Placeholder */
-  }
-  .flag-icon.ua {
-    background-image: url('https://flagcdn.com/ua.svg'); /* Placeholder */
-  }
-  .flag-icon.vn {
-    background-image: url('https://flagcdn.com/vn.svg'); /* Placeholder */
-  }
-  .flag-icon.un {
-    background-image: url('https://flagcdn.com/un.svg'); /* Placeholder for generic UN flag */
-  }
-  .flag-icon.unknown {
-    background-image: url('https://flagcdn.com/unknown.svg'); /* Placeholder for unknown flag */
+  .flag-icon.no-flag {
+    background-image: none;
+    background-color: rgba(var(--primary-color-rgb), 0.15);
+    border-color: rgba(var(--primary-color-rgb), 0.25);
   }
 
   .chevron {

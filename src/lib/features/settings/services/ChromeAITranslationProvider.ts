@@ -1,4 +1,8 @@
-import type { TranslationProvider, TranslationResponse } from '../domain/TranslationProvider';
+import type {
+  DetectedLanguageCandidate,
+  TranslationProvider,
+  TranslationResponse
+} from '../domain/TranslationProvider';
 
 // Type definitions for the experimental Chrome AI API
 declare global {
@@ -40,6 +44,8 @@ declare global {
 
 export class ChromeAITranslationProvider implements TranslationProvider {
   private readonly monitorCallback?: (monitor: EventTarget) => void;
+  private readonly LINE_SAMPLE_LIMIT = 12;
+  private readonly LINE_MIN_LENGTH = 8;
 
   private getGlobalTranslator():
     | {
@@ -83,6 +89,20 @@ export class ChromeAITranslationProvider implements TranslationProvider {
 
   constructor(monitorCallback?: (monitor: EventTarget) => void) {
     this.monitorCallback = monitorCallback;
+  }
+
+  private getDetectionSamples(text: string[]): string[] {
+    const meaningfulLines = text
+      .map((line) => line.trim())
+      .filter((line) => line.length >= this.LINE_MIN_LENGTH)
+      .slice(0, this.LINE_SAMPLE_LIMIT);
+
+    if (meaningfulLines.length > 0) {
+      return meaningfulLines;
+    }
+
+    const combinedText = text.join(' ').trim();
+    return combinedText ? [combinedText] : [];
   }
 
   private async createTranslator(source: string, target: string) {
@@ -154,11 +174,11 @@ export class ChromeAITranslationProvider implements TranslationProvider {
     };
   }
 
-  async detectLanguage(text: string[]): Promise<string | undefined> {
-    if (typeof window === 'undefined') return undefined;
+  async detectLanguages(text: string[]): Promise<DetectedLanguageCandidate[]> {
+    if (typeof window === 'undefined') return [];
 
-    const sampleText = text.slice(0, 5).join(' ').trim();
-    if (!sampleText) return undefined;
+    const sampleTexts = this.getDetectionSamples(text);
+    if (sampleTexts.length === 0) return [];
 
     try {
       let detector:
@@ -177,15 +197,42 @@ export class ChromeAITranslationProvider implements TranslationProvider {
       }
 
       if (detector) {
-        const results = await detector.detect(sampleText);
-        if (results?.length > 0) {
-          return results[0].detectedLanguage;
+        const languageScores = new Map<string, number>();
+
+        for (const sampleText of sampleTexts) {
+          const results = await detector.detect(sampleText);
+
+          for (const result of results ?? []) {
+            languageScores.set(
+              result.detectedLanguage,
+              (languageScores.get(result.detectedLanguage) ?? 0) + result.confidence
+            );
+          }
         }
+
+        const totalScore = [...languageScores.values()].reduce((sum, score) => sum + score, 0);
+
+        if (totalScore === 0) {
+          return [];
+        }
+
+        return [...languageScores.entries()]
+          .map(([language, score]) => ({
+            language,
+            percentage: (score / totalScore) * 100
+          }))
+          .filter((result) => result.percentage >= 5)
+          .sort((a, b) => b.percentage - a.percentage);
       }
     } catch {
       // Detection failed silently
     }
 
-    return undefined;
+    return [];
+  }
+
+  async detectLanguage(text: string[]): Promise<string | undefined> {
+    const detectedLanguages = await this.detectLanguages(text);
+    return detectedLanguages[0]?.language;
   }
 }

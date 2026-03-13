@@ -6,15 +6,11 @@
   import { browser } from '$app/environment';
   import type { Locales } from '$i18n/i18n-types';
   import { loadLocaleAsync } from '$i18n/i18n-util.async';
+  import { getLanguageFlagUrl } from '$lib/shared/languageMetadata';
   import ChromeAISettings from './ChromeAISettings.svelte';
   import DemoModeSettings from './DemoModeSettings.svelte';
   import { demoStore } from '../stores/demoStore.svelte';
   import { translationStore } from '../stores/translationStore.svelte';
-
-  const languageFlags: { [key: string]: string } = {
-    en: 'gb',
-    es: 'es'
-  };
 
   const languageNames: { [key: string]: string } = {
     en: 'English',
@@ -24,7 +20,7 @@
   const languages = locales.map((code) => ({
     code,
     name: languageNames[code],
-    flagClass: languageFlags[code]
+    flagUrl: getLanguageFlagUrl(code)
   }));
 
   let dropdownOpen = $state(false);
@@ -81,7 +77,11 @@
     <div class="selected-option">
       {#if currentLang}
         <div class="desktop-view">
-          <span class="flag-icon {currentLang.flagClass}"></span>
+          <span
+            class="flag-icon"
+            class:no-flag={!currentLang.flagUrl}
+            style:background-image={currentLang.flagUrl ? `url('${currentLang.flagUrl}')` : 'none'}
+          ></span>
           <span>{currentLang.name}</span>
         </div>
         <div class="mobile-view">
@@ -104,7 +104,11 @@
         onclick={(e) => selectLanguage(e, lang.code)}
         onpointerdown={handleInteractionStart}
       >
-        <span class="flag-icon {lang.flagClass}"></span>
+        <span
+          class="flag-icon"
+          class:no-flag={!lang.flagUrl}
+          style:background-image={lang.flagUrl ? `url('${lang.flagUrl}')` : 'none'}
+        ></span>
         <span>{lang.name}</span>
         {#if lang.code === $locale}
           <svg class="checkmark" fill="currentColor" viewBox="0 0 20 20">
@@ -194,11 +198,10 @@
     vertical-align: middle;
   }
 
-  .flag-icon.gb {
-    background-image: url('https://flagcdn.com/gb.svg');
-  }
-  .flag-icon.es {
-    background-image: url('https://flagcdn.com/es.svg');
+  .flag-icon.no-flag {
+    background-image: none;
+    background-color: rgba(var(--primary-color-rgb), 0.15);
+    border-color: rgba(var(--primary-color-rgb), 0.25);
   }
 
   .dropdown {

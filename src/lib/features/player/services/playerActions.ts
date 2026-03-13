@@ -25,6 +25,7 @@ import {
   getArtistFromYouTubeAuthor
 } from '$lib/shared/utils';
 import { frontendTranslationService } from '$lib/features/settings/services/FrontendTranslationService';
+import type { DetectedLanguageCandidate } from '$lib/features/settings/domain/TranslationProvider';
 import { resolve } from '$app/paths';
 import { get } from 'svelte/store';
 import { notify, notificationStore } from '$lib/features/notification';
@@ -95,6 +96,7 @@ export async function translateLyrics(targetLang: string) {
     const {
       translatedText,
       detectedSourceLanguage,
+      detectedLanguages,
       percentageOfDetectedLanguages,
       isSameLanguage
     } = translationResponse;
@@ -111,6 +113,11 @@ export async function translateLyrics(targetLang: string) {
       playerState.isTranslatedTextReady = true;
       playerState.detectedSourceLanguage = detectedSourceLanguage;
       playerState.percentageOfDetectedLanguages = percentageOfDetectedLanguages;
+      playerState.secondaryDetectedLanguages = mergeSecondaryDetectedLanguages(
+        detectedSourceLanguage,
+        detectedLanguages?.slice(1) ?? [],
+        playerState.secondaryDetectedLanguages
+      );
 
       // Use backend's isSameLanguage flag if available, otherwise use old logic
       if (isSameLanguage === undefined) {
@@ -423,6 +430,7 @@ function resetPlayerState() {
   playerState.currentTime = 0;
   playerState.isPlaying = false;
   playerState.detectedSourceLanguage = undefined;
+  playerState.secondaryDetectedLanguages = [];
   playerState.percentageOfDetectedLanguages = undefined;
   setOriginalSubtitleAutoHide(false);
   playerState.showTranslatedSubtitle = true;
@@ -640,6 +648,37 @@ function validateDetectedLanguage(lang: string, text: string): boolean {
   return pattern.test(text);
 }
 
+function getBaseLanguageCode(lang: string | undefined): string | undefined {
+  return lang?.toLowerCase().split('-')[0];
+}
+
+function mergeSecondaryDetectedLanguages(
+  primaryLanguage: string | undefined,
+  ...languageGroups: Array<Array<string | DetectedLanguageCandidate | undefined>>
+): DetectedLanguageCandidate[] {
+  const primaryLanguageCode = getBaseLanguageCode(primaryLanguage);
+  const mergedLanguages = new Map<string, number>();
+
+  for (const group of languageGroups) {
+    for (const candidate of group) {
+      const language = typeof candidate === 'string' ? candidate : candidate?.language;
+      const percentage = typeof candidate === 'string' ? 0 : (candidate?.percentage ?? 0);
+      const baseLanguage = getBaseLanguageCode(language);
+
+      if (!baseLanguage || baseLanguage === primaryLanguageCode) {
+        continue;
+      }
+
+      const currentPercentage = mergedLanguages.get(baseLanguage) ?? 0;
+      mergedLanguages.set(baseLanguage, Math.max(currentPercentage, percentage));
+    }
+  }
+
+  return [...mergedLanguages.entries()]
+    .map(([language, percentage]) => ({ language, percentage }))
+    .sort((a, b) => b.percentage - a.percentage);
+}
+
 async function processTranslationAndTransliteration(
   result: LyricsResult,
   videoData: YT.VideoData
@@ -656,11 +695,17 @@ async function processTranslationAndTransliteration(
     // Transliteration (after language detection)
     (async () => {
       try {
-        const detectedLang = await frontendTranslationService.detectSourceLanguage(
+        const detectedLanguages = await frontendTranslationService.detectSourceLanguages(
           result.lyrics.map((l) => l.text)
         );
+        const detectedLang = detectedLanguages[0]?.language;
 
         const lyricsText = result.lyrics.map((l) => l.text).join(' ');
+        const scriptDetections = detectScriptsFromText(lyricsText);
+        const scriptLanguages = scriptDetections.map((script) => ({
+          language: script.lang,
+          percentage: script.percentage * 100
+        }));
 
         // Validate Chrome AI detection against actual script
         let validatedLang: string | undefined;
@@ -670,12 +715,28 @@ async function processTranslationAndTransliteration(
           }
         }
 
-        // Fall back to script detection if Chrome AI was wrong or not available
-        const lang = validatedLang || detectScriptFromText(lyricsText);
+        const primaryLanguageCode = getBaseLanguageCode(playerState.detectedSourceLanguage);
+        const validatedLanguageCode = getBaseLanguageCode(validatedLang);
 
-        if (lang) {
-          playerState.detectedSourceLanguage = lang;
-          await checkAndSetupTransliteration(lang, videoId);
+        playerState.secondaryDetectedLanguages = mergeSecondaryDetectedLanguages(
+          playerState.detectedSourceLanguage,
+          detectedLanguages.slice(1),
+          scriptLanguages
+        );
+
+        const transliterationLanguage =
+          scriptLanguages.find(
+            ({ language }) => language !== primaryLanguageCode && isTransliterableLanguage(language)
+          ) ||
+          (validatedLanguageCode && isTransliterableLanguage(validatedLanguageCode)
+            ? { language: validatedLanguageCode, percentage: 0 }
+            : undefined);
+
+        if (transliterationLanguage) {
+          await checkAndSetupTransliteration(transliterationLanguage.language, videoId);
+        } else {
+          playerState.transliterationAvailable = false;
+          playerState.transliterationLang = null;
         }
       } catch (error) {
         console.error('[Transliteration] Error during setup:', error);
@@ -886,12 +947,11 @@ function updatePlayerState(result: LyricsResult, videoData: YT.VideoData) {
   }
 }
 
-// Simple script detection as fallback when Chrome AI is not available
 const SCRIPT_DETECTION_THRESHOLD = 0.1; // Minimum 10% of text must be non-Latin
 
-function detectScriptFromText(text: string): string | undefined {
+function detectScriptsFromText(text: string): Array<{ lang: string; percentage: number }> {
   const totalChars = text.length;
-  if (totalChars === 0) return undefined;
+  if (totalChars === 0) return [];
 
   // Define script patterns with their language codes
   const scripts: { pattern: RegExp; lang: string; name: string }[] = [
@@ -905,21 +965,29 @@ function detectScriptFromText(text: string): string | undefined {
     { pattern: /[\u0E00-\u0E7F]/g, lang: 'th', name: 'Thai' }
   ];
 
+  const detectedScripts: Array<{ lang: string; percentage: number }> = [];
+
   // Count characters for each script
   for (const script of scripts) {
     const matches = text.match(script.pattern);
     if (matches && matches.length > 0) {
       const percentage = matches.length / totalChars;
 
-      // Only return this language if it exceeds the threshold
       if (percentage >= SCRIPT_DETECTION_THRESHOLD) {
-        return script.lang;
+        detectedScripts.push({ lang: script.lang, percentage });
       }
     }
   }
 
-  // Default to undefined (will not trigger transliteration)
-  return undefined;
+  const hasJapaneseKana = detectedScripts.some((script) => script.lang === 'ja');
+
+  if (hasJapaneseKana) {
+    return detectedScripts
+      .filter((script) => script.lang !== 'zh')
+      .sort((a, b) => b.percentage - a.percentage);
+  }
+
+  return detectedScripts.sort((a, b) => b.percentage - a.percentage);
 }
 
 async function checkAndSetupTransliteration(language: string, videoId: string) {
@@ -1229,6 +1297,7 @@ export async function selectLyric(id: number) {
   playerState.transliteratedLines = [];
   playerState.transliterationAvailable = false;
   playerState.transliterationLang = null;
+  playerState.secondaryDetectedLanguages = [];
   playerState.showTransliteration = true;
   playerState.isTranslatedTextReady = false;
 

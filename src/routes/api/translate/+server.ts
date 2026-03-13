@@ -58,7 +58,8 @@ export const POST: RequestHandler = async ({ request }) => {
     return json({
       translatedText: reconstructedTranslatedText,
       detectedSourceLanguage: cachedResponse.detectedSourceLanguage,
-      percentageOfDetectedLanguages: cachedResponse.percentageOfDetectedLanguages
+      percentageOfDetectedLanguages: cachedResponse.percentageOfDetectedLanguages,
+      detectedLanguages: cachedResponse.detectedLanguages
     });
   }
 
@@ -85,7 +86,6 @@ export const POST: RequestHandler = async ({ request }) => {
       // Don't cache request-specific metadata
       const cacheableData = { ...translatedResponse };
       delete cacheableData.isSameLanguage;
-      delete cacheableData.percentageOfDetectedLanguages;
       await cacheProvider.set(cacheKey, cacheableData);
     }
 
@@ -98,6 +98,7 @@ export const POST: RequestHandler = async ({ request }) => {
       translatedText: reconstructedTranslatedText,
       detectedSourceLanguage: translatedResponse.detectedSourceLanguage,
       percentageOfDetectedLanguages: translatedResponse.percentageOfDetectedLanguages,
+      detectedLanguages: translatedResponse.detectedLanguages,
       isSameLanguage: translatedResponse.isSameLanguage
     });
   } catch (error) {
