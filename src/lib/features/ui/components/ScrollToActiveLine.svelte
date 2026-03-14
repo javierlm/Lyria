@@ -3,14 +3,19 @@
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
   import FloatingActionButton from '$lib/features/ui/components/FloatingActionButton.svelte';
 
-  const { lyricRowRefs = [] } = $props<{ lyricRowRefs: (HTMLDivElement | null)[] }>();
+  const { lyricRowRefs = [], targetLineIndex = -1 } = $props<{
+    lyricRowRefs: (HTMLDivElement | null)[];
+    targetLineIndex?: number;
+  }>();
 
   function scrollToActiveLine() {
-    if (playerState.currentLineIndex >= 0 && lyricRowRefs[playerState.currentLineIndex]) {
-      const activeRow = lyricRowRefs[playerState.currentLineIndex];
-      if (activeRow) {
-        activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    if (targetLineIndex < 0 || !lyricRowRefs[targetLineIndex]) {
+      return;
+    }
+
+    const activeRow = lyricRowRefs[targetLineIndex];
+    if (activeRow) {
+      activeRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
 </script>

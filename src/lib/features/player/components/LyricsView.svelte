@@ -65,11 +65,13 @@
   let lyricRowRefs: (HTMLDivElement | null)[] = $state([]);
   let activeLineOffset = $state(0);
   let activeLineHeight = $state(0);
+  let activeLineMode = $state<'active' | 'upcoming' | null>(null);
   let windowWidth = $state(0);
   let videoHeight = $state(0);
 
   const iconSize = $derived(windowWidth > 768 ? 30 : 20);
   const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
+  const UPCOMING_LINE_INDICATOR_HEIGHT = 3;
 
   function capitalizeFirstLetter(value: string): string {
     if (!value) return value;
@@ -187,6 +189,52 @@
   const canAutoScroll = $derived(
     isHorizontalMode && playerState.lyricsAreSynced && playerState.currentLineIndex >= 0
   );
+
+  function hasVisibleText(index: number): boolean {
+    return !!playerState.lines[index]?.text?.trim();
+  }
+
+  function findNextVisibleLineIndex(startIndex: number): number {
+    for (let i = Math.max(0, startIndex); i < playerState.lines.length; i++) {
+      if (hasVisibleText(i)) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  function getUpcomingVisibleLineIndex(): number {
+    const currentIndex = playerState.currentLineIndex;
+
+    if (currentIndex >= 0) {
+      return findNextVisibleLineIndex(currentIndex + 1);
+    }
+
+    const adjustedTime = playerState.currentTime * 1000 - playerState.timingOffset;
+
+    for (let i = 0; i < playerState.lines.length; i++) {
+      if (playerState.lines[i].startTimeMs > adjustedTime && hasVisibleText(i)) {
+        return i;
+      }
+    }
+
+    return -1;
+  }
+
+  const visualTargetLineIndex = $derived.by(() => {
+    const currentIndex = playerState.currentLineIndex;
+
+    if (currentIndex >= 0 && hasVisibleText(currentIndex)) {
+      return currentIndex;
+    }
+
+    if (!playerState.lyricsAreSynced) {
+      return -1;
+    }
+
+    return getUpcomingVisibleLineIndex();
+  });
 
   function scrollToLine(index: number, smooth: boolean = true) {
     if (index < 0 || index >= lyricRowRefs.length) return;
@@ -340,7 +388,7 @@
     const hasActiveLineWithText =
       playerState.currentLineIndex !== null &&
       playerState.currentLineIndex >= 0 &&
-      playerState.lines[playerState.currentLineIndex]?.text;
+      hasVisibleText(playerState.currentLineIndex);
 
     if (hasActiveLineWithText) {
       const activeRow = lyricRowRefs[playerState.currentLineIndex];
@@ -354,11 +402,33 @@
 
         activeLineOffset = rowRect.top - containerTop + container.scrollTop;
         activeLineHeight = rowRect.height;
+        activeLineMode = 'active';
+        return;
       }
-    } else {
-      activeLineHeight = 0;
-      activeLineOffset = 0;
     }
+
+    if (playerState.lyricsAreSynced) {
+      const upcomingIndex = getUpcomingVisibleLineIndex();
+      const upcomingRow = upcomingIndex >= 0 ? lyricRowRefs[upcomingIndex] : null;
+      const container = lyricsContentRef;
+
+      if (upcomingRow && container) {
+        const rowRect = upcomingRow.getBoundingClientRect();
+        const containerTop = containerInfo?.top ?? container.getBoundingClientRect().top;
+
+        activeLineOffset = Math.max(
+          0,
+          rowRect.top - containerTop + container.scrollTop - UPCOMING_LINE_INDICATOR_HEIGHT / 2
+        );
+        activeLineHeight = UPCOMING_LINE_INDICATOR_HEIGHT;
+        activeLineMode = 'upcoming';
+        return;
+      }
+    }
+
+    activeLineHeight = 0;
+    activeLineOffset = 0;
+    activeLineMode = null;
   }
 
   $effect(() => {
@@ -558,9 +628,10 @@
         <p>{$LL.lyrics.notFound()}</p>
       </div>
     {:else if playerState.lyricsState === LyricsStates.Found}
-      {#if playerState.currentLineIndex !== null && playerState.currentLineIndex >= 0 && activeLineHeight > 0}
+      {#if activeLineMode !== null && activeLineHeight > 0}
         <div
           class="active-line-background"
+          class:upcoming-line-indicator={activeLineMode === 'upcoming'}
           style="transform: translateY({activeLineOffset}px); height: {activeLineHeight}px;"
         ></div>
       {/if}
@@ -618,7 +689,7 @@
     {/if}
   </div>
 
-  <ScrollToActiveLine {lyricRowRefs} />
+  <ScrollToActiveLine {lyricRowRefs} targetLineIndex={visualTargetLineIndex} />
 </div>
 
 <style>
@@ -664,9 +735,24 @@
     border-radius: 8px;
     transition:
       transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      height 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.05s;
+      height 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.05s,
+      opacity 0.25s ease,
+      box-shadow 0.25s ease,
+      border-radius 0.25s ease,
+      background 0.25s ease;
     pointer-events: none;
     z-index: 0;
+  }
+
+  .active-line-background.upcoming-line-indicator {
+    background: linear-gradient(
+      90deg,
+      rgba(239, 68, 68, 0.2) 0%,
+      rgba(239, 68, 68, 0.75) 50%,
+      rgba(239, 68, 68, 0.2) 100%
+    );
+    border-radius: 999px;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
   }
 
   .lyrics-header {
