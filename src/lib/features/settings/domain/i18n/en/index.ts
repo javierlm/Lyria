@@ -61,6 +61,7 @@ const en = {
     translated: 'Translated',
     copyUrl: 'Copy URL',
     syncWithCurrentTime: 'Sync with current time',
+    syncShort: 'Sync',
     deleteVideo: 'Delete video',
     play: 'Play',
     pause: 'Pause',

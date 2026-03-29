@@ -286,7 +286,7 @@
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    min-height: 100dvh;
     position: relative;
     padding-top: 0;
     padding-bottom: env(safe-area-inset-bottom);

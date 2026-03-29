@@ -136,6 +136,7 @@
     align-items: center;
     z-index: 20;
     pointer-events: auto;
+    overflow: hidden;
   }
 
   .content {
@@ -208,7 +209,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-size: cover;
+    background-size: contain;
+    background-repeat: no-repeat;
     background-position: center;
     z-index: 1;
   }

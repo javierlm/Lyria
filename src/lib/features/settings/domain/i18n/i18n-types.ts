@@ -212,6 +212,10 @@ type RootTranslation = {
      */
     syncWithCurrentTime: string;
     /**
+     * S​y​n​c
+     */
+    syncShort: string;
+    /**
      * D​e​l​e​t​e​ ​v​i​d​e​o
      */
     deleteVideo: string;
@@ -1142,6 +1146,10 @@ export type TranslationFunctions = {
      * Sync with current time
      */
     syncWithCurrentTime: () => LocalizedString;
+    /**
+     * Sync
+     */
+    syncShort: () => LocalizedString;
     /**
      * Delete video
      */

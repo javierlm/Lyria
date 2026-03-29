@@ -400,7 +400,7 @@
 
   .subtitles {
     position: absolute;
-    bottom: 50px;
+    bottom: 60px;
     width: 100%;
     text-align: center;
     font-size: 1.4rem;
@@ -444,7 +444,7 @@
 
   @media (max-width: 768px) and (orientation: landscape) {
     .subtitles {
-      bottom: 5px;
+      bottom: 44px;
     }
     .subtitle-line.original {
       font-size: 1.2rem;
@@ -469,7 +469,7 @@
 
   @media (max-width: 768px) and (orientation: portrait) {
     .subtitles {
-      bottom: 20px;
+      bottom: 28px;
     }
     .subtitle-line.original {
       font-size: 0.9rem;

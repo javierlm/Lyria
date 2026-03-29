@@ -6,6 +6,7 @@
   import TimingControls from '$lib/features/player/components/TimingControls.svelte';
   import LyricsView from '$lib/features/player/components/LyricsView.svelte';
   import LikeButton from '$lib/features/video/components/LikeButton.svelte';
+  import MobilePlayerLayout from '$lib/features/player/components/MobilePlayerLayout.svelte';
   import Copy from 'phosphor-svelte/lib/Copy';
   import Check from 'phosphor-svelte/lib/Check';
   import ListBulletsIcon from 'phosphor-svelte/lib/ListBulletsIcon';
@@ -19,6 +20,13 @@
   import { notify } from '$lib/features/notification';
 
   let windowWidth = $state(0);
+  let windowHeight = $state(0);
+
+  // True when on a narrow portrait screen (mobile)
+  const isMobilePortrait = $derived(
+    windowWidth > 0 && windowWidth < 768 && windowWidth < windowHeight
+  );
+
   const iconSize = $derived(windowWidth > 768 ? 24 : 16);
 
   let copied = $state(false);
@@ -122,93 +130,97 @@
   }
 </script>
 
-<svelte:window bind:innerWidth={windowWidth} />
-<div class="main-content-wrapper" class:horizontal-mode={showHorizontalLayout}>
-  <div class="logo-container-main">
-    <Logo isPlayerView={true} />
-  </div>
-  <SearchBar />
+<svelte:window bind:innerWidth={windowWidth} bind:innerHeight={windowHeight} />
+{#if isMobilePortrait}
+  <MobilePlayerLayout />
+{:else}
+  <div class="main-content-wrapper" class:horizontal-mode={showHorizontalLayout}>
+    <div class="logo-container-main">
+      <Logo isPlayerView={true} />
+    </div>
+    <SearchBar />
 
-  <div class="title-container">
-    <h1>
-      {#if playerState.artist && playerState.track}
-        {#if playerState.artist === playerState.track}
+    <div class="title-container">
+      <h1>
+        {#if playerState.artist && playerState.track}
+          {#if playerState.artist === playerState.track}
+            {playerState.artist}
+          {:else}
+            {playerState.artist} - {playerState.track}
+          {/if}
+        {:else if playerState.track}
+          {playerState.track}
+        {:else if playerState.artist}
           {playerState.artist}
         {:else}
-          {playerState.artist} - {playerState.track}
+          &nbsp;
         {/if}
-      {:else if playerState.track}
-        {playerState.track}
-      {:else if playerState.artist}
-        {playerState.artist}
-      {:else}
-        &nbsp;
-      {/if}
-    </h1>
-    {#if playerState.artist || playerState.track}
-      <LikeButton isLiked={isFavorite} onclick={toggleFavorite} size={iconSize} />
-      <button
-        onclick={copyURL}
-        class="action-button copy-button"
-        aria-label={$LL.controls.copyUrl()}
-        title={$LL.controls.copyUrl()}
-      >
-        {#if copied}
-          <Check size={iconSize} />
-        {:else}
-          <Copy size={iconSize} />
-        {/if}
-      </button>
-      <button
-        onclick={() => {
-          playerState.isLyricSelectorOpen = true;
-        }}
-        class="action-button list-button"
-        aria-label={$LL.controls.selectLyrics()}
-        title={$LL.controls.selectLyrics()}
-      >
-        <ListBulletsIcon size={iconSize} />
-      </button>
-      {#if windowWidth >= 1400}
+      </h1>
+      {#if playerState.artist || playerState.track}
+        <LikeButton isLiked={isFavorite} onclick={toggleFavorite} size={iconSize} />
         <button
-          disabled={!playerState.lyricsAreSynced}
-          onclick={() => {
-            playerState.forceHorizontalMode = !playerState.forceHorizontalMode;
-          }}
-          class="action-button horizontal-mode-button"
-          class:active={playerState.forceHorizontalMode}
-          aria-label={playerState.forceHorizontalMode
-            ? $LL.controls.exitHorizontalMode()
-            : $LL.controls.enterHorizontalMode()}
-          title={playerState.forceHorizontalMode
-            ? $LL.controls.exitHorizontalMode()
-            : $LL.controls.enterHorizontalMode()}
+          onclick={copyURL}
+          class="action-button copy-button"
+          aria-label={$LL.controls.copyUrl()}
+          title={$LL.controls.copyUrl()}
         >
-          {#if playerState.forceHorizontalMode}
-            <SquareSplitVerticalIcon size={iconSize} />
+          {#if copied}
+            <Check size={iconSize} />
           {:else}
-            <SquareSplitHorizontalIcon size={iconSize} />
+            <Copy size={iconSize} />
           {/if}
         </button>
+        <button
+          onclick={() => {
+            playerState.isLyricSelectorOpen = true;
+          }}
+          class="action-button list-button"
+          aria-label={$LL.controls.selectLyrics()}
+          title={$LL.controls.selectLyrics()}
+        >
+          <ListBulletsIcon size={iconSize} />
+        </button>
+        {#if windowWidth >= 1400}
+          <button
+            disabled={!playerState.lyricsAreSynced}
+            onclick={() => {
+              playerState.forceHorizontalMode = !playerState.forceHorizontalMode;
+            }}
+            class="action-button horizontal-mode-button"
+            class:active={playerState.forceHorizontalMode}
+            aria-label={playerState.forceHorizontalMode
+              ? $LL.controls.exitHorizontalMode()
+              : $LL.controls.enterHorizontalMode()}
+            title={playerState.forceHorizontalMode
+              ? $LL.controls.exitHorizontalMode()
+              : $LL.controls.enterHorizontalMode()}
+          >
+            {#if playerState.forceHorizontalMode}
+              <SquareSplitVerticalIcon size={iconSize} />
+            {:else}
+              <SquareSplitHorizontalIcon size={iconSize} />
+            {/if}
+          </button>
+        {/if}
       {/if}
-    {/if}
-  </div>
-
-  <div id="scroll-sentinel" style="height: 1px;"></div>
-
-  <div class="player-content" class:horizontal={showHorizontalLayout}>
-    <div class="video-wrapper">
-      <PlayerView />
-      <div class="timing-controls-container">
-        <TimingControls />
-      </div>
     </div>
 
-    <LyricsView />
-  </div>
+    <div id="scroll-sentinel" style="height: 1px;"></div>
 
-  <BackToTop />
-</div>
+    <div class="player-content" class:horizontal={showHorizontalLayout}>
+      <div class="video-wrapper">
+        <PlayerView />
+        <div class="timing-controls-container">
+          <TimingControls />
+        </div>
+      </div>
+
+      <LyricsView />
+    </div>
+
+    <BackToTop />
+  </div>
+{/if}
 
 <style>
   .logo-container-main {

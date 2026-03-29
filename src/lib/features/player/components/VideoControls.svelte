@@ -183,126 +183,130 @@
 </script>
 
 <div class="controls-container">
-  <button
-    class="play-pause-btn"
-    onclick={togglePlayPause}
-    aria-label={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}
-    title={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}
-  >
-    {#if playerState.isPlaying}
-      <IconPause size="20" weight="bold" />
-    {:else}
-      <IconPlay size="20" weight="bold" />
-    {/if}
-  </button>
-
-  <div class="time-display">{formatTime(playerState.currentTime)}</div>
-  <input
-    bind:this={seekBarElement}
-    type="range"
-    min="0"
-    max={playerState.duration}
-    value={playerState.currentTime}
-    step="0.1"
-    oninput={handleSeek}
-    onpointerdown={handleSeekPointerDown}
-    onpointermove={stopControlEvent}
-    onpointerup={handleSeekPointerUp}
-    onpointercancel={handleSeekPointerUp}
-    ontouchstart={handleSeekTouchStart}
-    ontouchend={handleSeekTouchEnd}
-    ontouchcancel={handleSeekTouchEnd}
-    class="seek-bar"
-    style="--progress: {(playerState.currentTime / playerState.duration) * 100 ||
-      0}%; --buffered: {(playerState.buffered / playerState.duration) * 100 || 0}%;"
-  />
-  <div class="time-display">{formatTime(playerState.duration)}</div>
-
-  <div class="volume-controls">
-    <button
-      class="volume-btn"
-      onclick={toggleMute}
-      aria-label={playerState.isMuted || playerState.volume === 0
-        ? $LL.controls.unmute()
-        : $LL.controls.mute()}
-      title={playerState.isMuted || playerState.volume === 0
-        ? $LL.controls.unmute()
-        : $LL.controls.mute()}
-    >
-      {#if playerState.isMuted || playerState.volume === 0}
-        <SpeakerSlash size="20" weight="bold" />
-      {:else}
-        <SpeakerHigh size="20" weight="bold" />
-      {/if}
-    </button>
+  <div class="progress-row">
+    <div class="time-display">{formatTime(playerState.currentTime)}</div>
     <input
+      bind:this={seekBarElement}
       type="range"
       min="0"
-      max="100"
-      bind:value={playerState.volume}
-      oninput={handleVolumeChange}
-      class="volume-bar"
-      style="--volume-progress: {playerState.volume || 0}%;"
+      max={playerState.duration}
+      value={playerState.currentTime}
+      step="0.1"
+      oninput={handleSeek}
+      onpointerdown={handleSeekPointerDown}
+      onpointermove={stopControlEvent}
+      onpointerup={handleSeekPointerUp}
+      onpointercancel={handleSeekPointerUp}
+      ontouchstart={handleSeekTouchStart}
+      ontouchend={handleSeekTouchEnd}
+      ontouchcancel={handleSeekTouchEnd}
+      class="seek-bar"
+      style="--progress: {(playerState.currentTime / playerState.duration) * 100 ||
+        0}%; --buffered: {(playerState.buffered / playerState.duration) * 100 || 0}%;"
     />
+    <div class="time-display">{formatTime(playerState.duration)}</div>
   </div>
 
-  <div class="subtitles-controls">
+  <div class="actions-row">
     <button
-      class="subtitles-btn"
-      onclick={() => {
-        if (playerState.lyricsAreSynced) {
-          toggleOriginalSubtitleVisibility();
-        }
-      }}
-      disabled={!playerState.lyricsAreSynced}
-      title={playerState.showOriginalSubtitle
-        ? $LL.lyrics.hideOriginal()
-        : $LL.lyrics.showOriginal()}
+      class="play-pause-btn"
+      onclick={togglePlayPause}
+      aria-label={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}
+      title={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}
     >
-      {#if playerState.showOriginalSubtitle}
-        <Eye size="20" weight="bold" />
+      {#if playerState.isPlaying}
+        <IconPause size="20" weight="bold" />
       {:else}
-        <EyeSlash size="20" weight="bold" />
+        <IconPlay size="20" weight="bold" />
       {/if}
-      <span>{$LL.controls.original()}</span>
     </button>
+
+    <div class="volume-controls">
+      <button
+        class="volume-btn"
+        onclick={toggleMute}
+        aria-label={playerState.isMuted || playerState.volume === 0
+          ? $LL.controls.unmute()
+          : $LL.controls.mute()}
+        title={playerState.isMuted || playerState.volume === 0
+          ? $LL.controls.unmute()
+          : $LL.controls.mute()}
+      >
+        {#if playerState.isMuted || playerState.volume === 0}
+          <SpeakerSlash size="20" weight="bold" />
+        {:else}
+          <SpeakerHigh size="20" weight="bold" />
+        {/if}
+      </button>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        bind:value={playerState.volume}
+        oninput={handleVolumeChange}
+        class="volume-bar"
+        style="--volume-progress: {playerState.volume || 0}%;"
+      />
+    </div>
+
+    <div class="subtitles-controls">
+      <button
+        class="subtitles-btn"
+        onclick={() => {
+          if (playerState.lyricsAreSynced) {
+            toggleOriginalSubtitleVisibility();
+          }
+        }}
+        disabled={!playerState.lyricsAreSynced}
+        title={playerState.showOriginalSubtitle
+          ? $LL.lyrics.hideOriginal()
+          : $LL.lyrics.showOriginal()}
+      >
+        {#if playerState.showOriginalSubtitle}
+          <Eye size="20" weight="bold" />
+        {:else}
+          <EyeSlash size="20" weight="bold" />
+        {/if}
+        <span>{$LL.controls.original()}</span>
+      </button>
+      <button
+        class="subtitles-btn"
+        onclick={() => {
+          if (playerState.lyricsAreSynced) {
+            playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
+          }
+        }}
+        disabled={!playerState.lyricsAreSynced}
+        title={playerState.showTranslatedSubtitle
+          ? $LL.lyrics.hideTranslated()
+          : $LL.lyrics.showTranslated()}
+      >
+        {#if playerState.showTranslatedSubtitle}
+          <Eye size="20" weight="bold" />
+        {:else}
+          <EyeSlash size="20" weight="bold" />
+        {/if}
+        <span>{$LL.controls.translated()}</span>
+      </button>
+    </div>
+
     <button
-      class="subtitles-btn"
-      onclick={() => {
-        if (playerState.lyricsAreSynced) {
-          playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
-        }
-      }}
-      disabled={!playerState.lyricsAreSynced}
-      title={playerState.showTranslatedSubtitle
-        ? $LL.lyrics.hideTranslated()
-        : $LL.lyrics.showTranslated()}
+      class="fullscreen-btn"
+      onclick={toggleFullscreen}
+      aria-label={playerState.isFullscreen
+        ? $LL.controls.exitFullscreen()
+        : $LL.controls.enterFullscreen()}
+      title={playerState.isFullscreen
+        ? $LL.controls.exitFullscreen()
+        : $LL.controls.enterFullscreen()}
     >
-      {#if playerState.showTranslatedSubtitle}
-        <Eye size="20" weight="bold" />
+      {#if playerState.isFullscreen}
+        <ArrowsInSimpleIcon size="20" weight="bold" />
       {:else}
-        <EyeSlash size="20" weight="bold" />
+        <ArrowsOutSimpleIcon size="20" weight="bold" />
       {/if}
-      <span>{$LL.controls.translated()}</span>
     </button>
   </div>
-
-  <button
-    class="fullscreen-btn"
-    onclick={toggleFullscreen}
-    aria-label={playerState.isFullscreen
-      ? $LL.controls.exitFullscreen()
-      : $LL.controls.enterFullscreen()}
-    title={playerState.isFullscreen
-      ? $LL.controls.exitFullscreen()
-      : $LL.controls.enterFullscreen()}
-  >
-    {#if playerState.isFullscreen}
-      <ArrowsInSimpleIcon size="20" weight="bold" />
-    {:else}
-      <ArrowsOutSimpleIcon size="20" weight="bold" />
-    {/if}
-  </button>
 </div>
 
 <style>
@@ -312,11 +316,23 @@
     left: 0;
     width: 100%;
     display: flex;
-    align-items: center;
-    padding: 10px;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 8px;
     background: rgba(0, 0, 0, 0.7);
     color: white;
     box-sizing: border-box;
+  }
+
+  .progress-row,
+  .actions-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .actions-row {
+    gap: 0.35rem;
   }
 
   .play-pause-btn,
@@ -327,7 +343,7 @@
     border: none;
     color: white;
     cursor: pointer;
-    padding: 5px;
+    padding: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -353,23 +369,22 @@
   .subtitles-controls {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.35rem;
     margin-left: auto;
   }
 
   .subtitles-btn {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    padding: 5px 10px;
+    gap: 0.2rem;
+    padding: 4px 8px;
     border-radius: 5px;
   }
   .fullscreen-btn {
-    margin-left: 0.5rem;
+    margin-left: 0.25rem;
   }
 
   .time-display {
-    margin: 0 10px;
     font-size: 0.9rem;
     min-width: 40px;
     text-align: center;
@@ -379,7 +394,7 @@
     flex-grow: 1;
     -webkit-appearance: none;
     appearance: none;
-    height: 8px;
+    height: 6px;
     background:
       linear-gradient(135deg, var(--primary-color), var(--secondary-color)) no-repeat 0% 0% /
         var(--progress, 0%) 100%,
@@ -389,7 +404,7 @@
     outline: none;
     opacity: 0.7;
     transition: opacity 0.2s;
-    margin: 0 10px;
+    margin: 0 8px;
     border-radius: 4px;
     cursor: pointer;
   }
@@ -401,8 +416,8 @@
   .seek-bar::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     cursor: pointer;
@@ -414,8 +429,8 @@
   }
 
   .seek-bar::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     cursor: pointer;
@@ -441,7 +456,7 @@
     outline: none;
     opacity: 0.7;
     transition: opacity 0.2s;
-    margin-left: 10px;
+    margin-left: 0;
     border-radius: 4px;
     cursor: pointer;
   }
@@ -471,6 +486,7 @@
   .volume-controls {
     display: flex;
     align-items: center;
+    gap: 0.25rem;
   }
 
   @media (max-width: 768px) {
@@ -483,35 +499,39 @@
     }
 
     .controls-container {
-      padding: 5px;
+      padding: 4px;
+      gap: 0.3rem;
     }
 
     .volume-bar {
       display: none;
     }
 
+    .actions-row {
+      gap: 0.2rem;
+    }
+
     .time-display {
-      margin: 0 5px;
       font-size: 0.8rem;
       min-width: 35px;
     }
 
     .seek-bar {
-      margin: 0 5px;
+      margin: 0 4px;
     }
   }
 
   @media (max-width: 768px) and (orientation: landscape) and (pointer: coarse) {
     :global(.player-container.fullscreen) .controls-container {
-      padding-top: 10px;
-      padding-bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 10px));
-      padding-left: max(22px, calc(env(safe-area-inset-left, 0px) + 14px));
-      padding-right: max(22px, calc(env(safe-area-inset-right, 0px) + 14px));
+      padding-top: 6px;
+      padding-bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) + 6px));
+      padding-left: max(18px, calc(env(safe-area-inset-left, 0px) + 10px));
+      padding-right: max(18px, calc(env(safe-area-inset-right, 0px) + 10px));
     }
 
     :global(.player-container.fullscreen) .seek-bar {
-      margin-left: 12px;
-      margin-right: 12px;
+      margin-left: 8px;
+      margin-right: 8px;
       touch-action: none;
     }
   }

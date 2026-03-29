@@ -7,6 +7,8 @@
   import { debounce } from '$lib/shared/utils';
   import LL from '$i18n/i18n-svelte';
 
+  let { layout = 'column' }: { layout?: 'column' | 'row' } = $props();
+
   let editing = $state(false);
   let inputElement: HTMLInputElement | null = $state(null);
   let inputValue: string = $state('');
@@ -74,7 +76,7 @@
   }
 </script>
 
-<div class="timing-controls">
+<div class="timing-controls" class:row-layout={layout === 'row'}>
   <div class="delay-controls">
     <button
       onclick={() => updateTimingOffset(-100)}
@@ -124,7 +126,11 @@
     title={$LL.controls.syncWithCurrentTime()}
   >
     <ArrowsClockwise size="20" weight="bold" />
-    {$LL.controls.syncWithCurrentTime()}
+    {#if layout === 'row'}
+      {$LL.controls.syncShort()}
+    {:else}
+      {$LL.controls.syncWithCurrentTime()}
+    {/if}
   </button>
 </div>
 
@@ -236,6 +242,40 @@
     display: flex;
     justify-content: center;
     align-items: center;
+  }
+
+  /* Row Layout for Mobile */
+  .timing-controls.row-layout {
+    flex-direction: row;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0;
+    gap: 0.75rem;
+  }
+
+  .timing-controls.row-layout .delay-controls {
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .timing-controls.row-layout .sync-button {
+    height: 32px;
+    padding: 0 0.75rem;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    border-radius: 6px;
+  }
+
+  .timing-controls.row-layout .delay-controls button {
+    width: 32px;
+    height: 32px;
+    font-size: 1.15rem;
+  }
+
+  .timing-controls.row-layout .timing-input,
+  .timing-controls.row-layout .timing-display {
+    font-size: 1rem;
+    padding: 2px 4px;
   }
 
   @media (max-width: 768px) {

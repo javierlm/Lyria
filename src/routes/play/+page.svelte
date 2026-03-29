@@ -228,8 +228,16 @@
 </svelte:head>
 
 {#if playerState.videoId}
-  <div in:fade={{ duration: 300 }}>
+  <div class="play-page-content" in:fade={{ duration: 300 }}>
     <PlayerLayout />
   </div>
   <LyricSelector />
 {/if}
+
+<style>
+  .play-page-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+</style>

@@ -8,6 +8,8 @@
   import { getLanguageFlagUrl } from '$lib/shared/languageMetadata';
   import LL from '$i18n/i18n-svelte';
 
+  let { compact = false }: { compact?: boolean } = $props();
+
   const languages = $derived(
     Object.keys($LL.lyricsLanguages)
       .map((code) => ({
@@ -136,6 +138,7 @@
 
 <div
   class="select-wrapper"
+  class:compact
   style="--max-dropdown-width: {maxDropdownWidth ? `${maxDropdownWidth}px` : 'auto'};"
 >
   <button class="select-button" bind:this={selectButtonRef} onclick={toggleDropdown}>
@@ -145,7 +148,7 @@
         class:no-flag={!currentLang.flagUrl}
         style:background-image={currentLang.flagUrl ? `url('${currentLang.flagUrl}')` : 'none'}
       ></span>
-      <span>{currentLang.name}</span>
+      <span class="selected-label" title={currentLang.name}>{currentLang.name}</span>
       {#if translationStore.isChromeAISupported && translationStore.useChromeAI && languageStatus[currentLang.code]}
         <div
           class="local-badge"
@@ -285,6 +288,14 @@
     height: 42px;
   }
 
+  .select-wrapper.compact .select-button {
+    min-width: 0;
+    padding: 0 0.75rem;
+    height: 34px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+  }
+
   :global(body.dark-mode) .select-button {
     box-shadow:
       0 8px 20px rgba(239, 68, 68, 0.5),
@@ -305,6 +316,18 @@
     justify-content: center;
     gap: 8px;
     flex-grow: 1;
+    min-width: 0;
+  }
+
+  .selected-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .select-wrapper.compact .selected-option {
+    gap: 0.4rem;
   }
 
   .flag-icon {
@@ -316,6 +339,11 @@
     border: 1px solid #ccc;
     display: inline-block;
     vertical-align: middle;
+  }
+
+  .select-wrapper.compact .flag-icon {
+    width: 18px;
+    height: 13px;
   }
 
   .flag-icon.no-flag {
@@ -460,6 +488,16 @@
   @media (max-width: 768px) {
     .select-wrapper {
       width: 140px;
+    }
+
+    .select-wrapper.compact {
+      width: min(112px, 28vw);
+    }
+
+    .select-wrapper.compact .select-button {
+      padding: 0 0.625rem;
+      height: 32px;
+      font-size: 0.75rem;
     }
 
     .dropdown {

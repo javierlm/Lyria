@@ -61,6 +61,7 @@ const es = {
     translated: 'Traducido',
     copyUrl: 'Copiar URL',
     syncWithCurrentTime: 'Sincronizar con el tiempo actual',
+    syncShort: 'Sincron.',
     deleteVideo: 'Eliminar video',
     play: 'Reproducir',
     pause: 'Pausar',
