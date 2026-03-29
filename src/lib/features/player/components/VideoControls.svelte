@@ -27,8 +27,7 @@
   }
 
   let { onToggleFullscreen, onSeekInteractionStart, onSeekInteractionEnd }: Props = $props();
-  const LANDSCAPE_TOUCH_FULLSCREEN_QUERY =
-    '(max-width: 768px) and (orientation: landscape) and (pointer: coarse)';
+  const TOUCH_FULLSCREEN_QUERY = '(max-width: 768px) and (pointer: coarse)';
 
   let seekBarElement: HTMLInputElement | null = null;
   let isSeekInteractionActive = $state(false);
@@ -78,7 +77,7 @@
       return false;
     }
 
-    return playerState.isFullscreen && window.matchMedia(LANDSCAPE_TOUCH_FULLSCREEN_QUERY).matches;
+    return playerState.isFullscreen && window.matchMedia(TOUCH_FULLSCREEN_QUERY).matches;
   }
 
   function stopControlEvent(event: Event) {
@@ -521,7 +520,7 @@
     }
   }
 
-  @media (max-width: 768px) and (orientation: landscape) and (pointer: coarse) {
+  @media (max-width: 768px) and (pointer: coarse) {
     :global(.player-container.fullscreen) .controls-container {
       padding-top: 6px;
       padding-bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) + 6px));

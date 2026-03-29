@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
   import Logo from '$lib/features/ui/components/Logo.svelte';
   import SearchBar from '$lib/features/search/components/SearchBar.svelte';
@@ -7,6 +10,7 @@
   import LyricsView from '$lib/features/player/components/LyricsView.svelte';
   import LikeButton from '$lib/features/video/components/LikeButton.svelte';
   import MobilePlayerLayout from '$lib/features/player/components/MobilePlayerLayout.svelte';
+  import CaretLeft from 'phosphor-svelte/lib/CaretLeft';
   import Copy from 'phosphor-svelte/lib/Copy';
   import Check from 'phosphor-svelte/lib/Check';
   import ListBulletsIcon from 'phosphor-svelte/lib/ListBulletsIcon';
@@ -19,12 +23,27 @@
   import { videoService } from '$lib/features/video/services/videoService';
   import { notify } from '$lib/features/notification';
 
+  function detectCoarsePointer(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.matchMedia('(pointer: coarse)').matches;
+  }
+
   let windowWidth = $state(0);
   let windowHeight = $state(0);
+  let isCoarsePointer = $state(detectCoarsePointer());
 
-  // True when on a narrow portrait screen (mobile)
-  const isMobilePortrait = $derived(
-    windowWidth > 0 && windowWidth < 768 && windowWidth < windowHeight
+  const MOBILE_LAYOUT_MAX_SMALLEST_SIDE = 768;
+
+  // Keep the mobile layout stable across rotations by classifying mobile devices
+  // using the smallest viewport side instead of the current orientation.
+  const isMobileLayout = $derived(
+    isCoarsePointer &&
+      windowWidth > 0 &&
+      windowHeight > 0 &&
+      Math.min(windowWidth, windowHeight) < MOBILE_LAYOUT_MAX_SMALLEST_SIDE
   );
 
   const iconSize = $derived(windowWidth > 768 ? 24 : 16);
@@ -128,13 +147,52 @@
         console.error('Error copying URL:', err);
       });
   }
+
+  function goToHome() {
+    goto(resolve('/'));
+  }
+
+  onMount(() => {
+    const coarsePointerMediaQuery = window.matchMedia('(pointer: coarse)');
+
+    const syncCoarsePointer = () => {
+      isCoarsePointer = coarsePointerMediaQuery.matches;
+    };
+
+    syncCoarsePointer();
+    coarsePointerMediaQuery.addEventListener('change', syncCoarsePointer);
+
+    return () => {
+      coarsePointerMediaQuery.removeEventListener('change', syncCoarsePointer);
+    };
+  });
 </script>
 
 <svelte:window bind:innerWidth={windowWidth} bind:innerHeight={windowHeight} />
-{#if isMobilePortrait}
-  <MobilePlayerLayout />
-{:else}
-  <div class="main-content-wrapper" class:horizontal-mode={showHorizontalLayout}>
+<div
+  class="player-layout-root"
+  class:mobile-layout-root={isMobileLayout}
+  class:main-content-wrapper={!isMobileLayout}
+  class:horizontal-mode={!isMobileLayout && showHorizontalLayout}
+>
+  {#if isMobileLayout}
+    <SearchBar />
+
+    <div class="top-logo-container">
+      <button
+        class="top-nav-button"
+        onclick={goToHome}
+        aria-label={$LL.videoError.goBack()}
+        title={$LL.videoError.goBack()}
+      >
+        <CaretLeft size={20} weight="bold" />
+      </button>
+
+      <div class="top-logo">
+        <Logo isPlayerView={true} />
+      </div>
+    </div>
+  {:else}
     <div class="logo-container-main">
       <Logo isPlayerView={true} />
     </div>
@@ -204,25 +262,53 @@
         {/if}
       {/if}
     </div>
+  {/if}
 
-    <div id="scroll-sentinel" style="height: 1px;"></div>
+  <div id="scroll-sentinel" style="height: 1px;"></div>
 
-    <div class="player-content" class:horizontal={showHorizontalLayout}>
-      <div class="video-wrapper">
-        <PlayerView />
-        <div class="timing-controls-container">
-          <TimingControls />
-        </div>
+  <div
+    class="player-content"
+    class:horizontal={!isMobileLayout && showHorizontalLayout}
+    class:mobile-player-content={isMobileLayout}
+  >
+    <div class="video-wrapper" class:mobile-video-wrapper={isMobileLayout}>
+      <PlayerView />
+      <div class="timing-controls-container" class:mobile-timing-controls={isMobileLayout}>
+        <TimingControls layout={isMobileLayout ? 'row' : 'column'} />
       </div>
-
-      <LyricsView />
     </div>
 
-    <BackToTop />
+    {#if isMobileLayout}
+      <MobilePlayerLayout
+        showSearch={false}
+        showHeader={false}
+        showPlayer={false}
+        showTimingControls={false}
+      />
+    {:else}
+      <LyricsView />
+    {/if}
   </div>
-{/if}
+
+  {#if !isMobileLayout}
+    <BackToTop />
+  {/if}
+</div>
 
 <style>
+  .player-layout-root {
+    width: 100%;
+  }
+
+  .player-layout-root.mobile-layout-root {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background-color: var(--background-color);
+  }
+
   .logo-container-main {
     display: flex;
     justify-content: center;
@@ -240,6 +326,51 @@
   .main-content-wrapper.horizontal-mode {
     max-width: clamp(1500px, 98vw, 2000px);
     padding: 0 0.5rem;
+  }
+
+  .top-logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 0;
+    margin-top: 0.5rem;
+    height: 35px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+
+  .top-nav-button {
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background-color: color-mix(in srgb, var(--card-background) 88%, transparent);
+    color: var(--text-color);
+    cursor: pointer;
+    transition:
+      background-color var(--theme-transition-duration) var(--theme-transition-timing),
+      border-color var(--theme-transition-duration) var(--theme-transition-timing),
+      transform 0.2s ease;
+  }
+
+  .top-nav-button:hover {
+    background-color: rgba(var(--primary-color-rgb), 0.12);
+  }
+
+  .top-nav-button:active {
+    transform: scale(0.96);
+  }
+
+  .top-logo {
+    transform: scale(0.3);
+    transform-origin: center top;
+    margin-top: -16px;
   }
 
   @media (min-width: 2561px) {
@@ -269,6 +400,12 @@
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  .mobile-player-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
   .video-wrapper,
   :global(.lyrics-container) {
     width: 100%;
@@ -289,6 +426,14 @@
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  .mobile-video-wrapper {
+    width: 100%;
+    max-width: none;
+    margin-bottom: 0;
+    padding: 0 1rem;
+    margin-top: 0.5rem;
+  }
+
   :global(.lyrics-container) {
     margin-top: 1.5rem;
     transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
@@ -305,6 +450,13 @@
 
   .player-content.horizontal .timing-controls-container {
     max-width: 100%;
+  }
+
+  .mobile-timing-controls {
+    margin-top: 0.5rem;
+    padding: 0 0.25rem 0.5rem;
+    margin-bottom: 0;
+    max-width: none;
   }
 
   @media (min-width: 2561px) {
@@ -378,6 +530,11 @@
 
     .action-button {
       font-size: 0.5rem;
+    }
+
+    .mobile-video-wrapper {
+      padding: 0 1rem;
+      margin-top: 0.75rem;
     }
   }
 

@@ -10,6 +10,8 @@ import { getLanguage, setLanguage } from '$lib/features/settings/domain/language
 import {
   getPlayer,
   setPlayer,
+  getLoadedPlayerVideoId,
+  setLoadedPlayerVideoId,
   playerState,
   LyricsStates,
   setOriginalSubtitleAutoHide,
@@ -339,6 +341,7 @@ function startVideoLoadTimeout() {
 function destroyExistingPlayer() {
   stopPlayerSizeSync?.();
   stopPlayerSizeSync = null;
+  setLoadedPlayerVideoId(null);
 
   const oldPlayer = getPlayer();
   if (oldPlayer) {
@@ -346,6 +349,28 @@ function destroyExistingPlayer() {
     setPlayer(null);
     console.log('Destroyed old player.');
   }
+}
+
+function attachPlayerIframe(player: YT.Player, hostElement: HTMLElement) {
+  const iframe = player.getIframe();
+
+  if (!iframe || iframe.parentElement === hostElement) {
+    return;
+  }
+
+  hostElement.replaceChildren();
+  hostElement.appendChild(iframe);
+}
+
+function syncExistingPlayer(player: YT.Player, hostElement: HTMLElement) {
+  attachPlayerIframe(player, hostElement);
+  startPlayerSizeSync(player);
+  initializePlayerProperties(player);
+  playerState.duration = player.getDuration();
+  playerState.buffered = player.getVideoLoadedFraction() * playerState.duration;
+  playerState.isLoadingVideo = false;
+  clearVideoLoadTimeout();
+  syncWithIframe();
 }
 
 function startPlayerSizeSync(player: YT.Player) {
@@ -444,7 +469,49 @@ function resetPlayerState() {
   playerState.buffered = 0;
 }
 
-export async function loadVideo(videoId: string, elementId: string, initialOffset?: number) {
+export async function loadVideo(
+  videoId: string,
+  hostElement: HTMLElement | null,
+  initialOffset?: number
+) {
+  if (!hostElement) return;
+
+  if (initialOffset !== undefined) {
+    playerState.timingOffset = initialOffset;
+  }
+
+  if (!videoId) {
+    ++currentVideoLoadId;
+    destroyExistingPlayer();
+    resetPlayerState();
+    clearVideoLoadTimeout();
+    playerState.videoId = null;
+    playerState.isLoadingVideo = false;
+    return;
+  }
+
+  playerState.videoId = videoId;
+
+  if (!isValidYouTubeId(videoId)) {
+    ++currentVideoLoadId;
+    destroyExistingPlayer();
+    resetPlayerState();
+    clearVideoLoadTimeout();
+    playerState.videoId = videoId;
+    playerState.videoError = { code: 2, message: 'invalidId' };
+    playerState.isLoadingVideo = false;
+    console.error(`Invalid YouTube video ID format: "${videoId}"`);
+    return;
+  }
+
+  const existingPlayer = getPlayer();
+  const loadedVideoId = getLoadedPlayerVideoId();
+
+  if (existingPlayer && loadedVideoId === videoId) {
+    syncExistingPlayer(existingPlayer, hostElement);
+    return;
+  }
+
   destroyExistingPlayer();
   resetPlayerState();
   clearVideoLoadTimeout();
@@ -452,15 +519,9 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
   const loadId = ++currentVideoLoadId;
   playerState.videoId = videoId;
   playerState.isLoadingVideo = true;
-  if (initialOffset) {
-    playerState.timingOffset = initialOffset;
-  }
 
-  if (!videoId || !isValidYouTubeId(videoId)) {
-    playerState.videoError = { code: 2, message: 'invalidId' };
-    playerState.isLoadingVideo = false;
-    console.error(`Invalid YouTube video ID format: "${videoId}"`);
-    return;
+  if (initialOffset !== undefined) {
+    playerState.timingOffset = initialOffset;
   }
 
   await loadYouTubeAPI();
@@ -469,7 +530,7 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
   await loadAndApplyVideoDelay(videoId);
   if (loadId !== currentVideoLoadId) return;
 
-  const player = new YT.Player(elementId, {
+  const player = new YT.Player(hostElement, {
     videoId,
     playerVars: {
       playsinline: 1,
@@ -1095,6 +1156,7 @@ async function handlePlayerReady(event: YT.PlayerEvent, videoId: string, loadId:
 
   const player = event.target;
   setPlayer(player);
+  setLoadedPlayerVideoId(videoId);
 
   // Clear the timeout since the player loaded successfully
   clearVideoLoadTimeout();
@@ -1227,6 +1289,10 @@ export function adjustTiming(offset: number) {
 export function toggleFullscreen(element: HTMLElement | null) {
   if (!element) return;
 
+  const isTouchMobileFullscreenTarget =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(max-width: 768px) and (pointer: coarse)').matches;
+
   const isNativeFullscreen =
     document.fullscreenElement ||
     (document as Document & { webkitFullscreenElement?: Element }).webkitFullscreenElement ||
@@ -1247,6 +1313,10 @@ export function toggleFullscreen(element: HTMLElement | null) {
     }
   } else if (playerState.isFullscreen) {
     playerState.isFullscreen = false;
+  } else if (isTouchMobileFullscreenTarget) {
+    // Mobile browsers are inconsistent when requesting native fullscreen for the
+    // custom player container. Use the CSS fullscreen mode directly instead.
+    playerState.isFullscreen = true;
   } else if (element.requestFullscreen) {
     element.requestFullscreen().catch((err) => {
       console.warn(`Native fullscreen failed: ${err.message}, falling back to CSS`);

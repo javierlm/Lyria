@@ -16,9 +16,9 @@
   import LoadingScreen from '$lib/features/ui/components/LoadingScreen.svelte';
 
   let playerContainer: HTMLElement;
+  let playerHost: HTMLElement;
   let showControls = $state(false);
   let hideControlsTimeout: ReturnType<typeof setTimeout> | undefined;
-  let currentLoadedVideoId: string | null = null;
   let isTouch = $state(false);
   let isSeekInteracting = $state(false);
   let hideCursor = $derived(
@@ -141,12 +141,10 @@
   }
 
   $effect(() => {
-    if (playerState.videoId && playerState.videoId !== currentLoadedVideoId) {
-      loadVideo(playerState.videoId, 'player', playerState.timingOffset);
-      currentLoadedVideoId = playerState.videoId;
-    } else if (!playerState.videoId && currentLoadedVideoId) {
-      loadVideo('', 'player');
-      currentLoadedVideoId = null;
+    if (playerState.videoId && playerHost) {
+      loadVideo(playerState.videoId, playerHost, playerState.timingOffset);
+    } else if (!playerState.videoId && playerHost) {
+      loadVideo('', playerHost);
     }
   });
 
@@ -260,7 +258,7 @@
     }
   }}
 >
-  <div id="player"></div>
+  <div id="player" bind:this={playerHost}></div>
 
   {#if playerState.lyricsAreSynced}
     {#key currentLine}
@@ -457,7 +455,7 @@
     }
   }
 
-  @media (max-width: 768px) and (orientation: landscape) and (pointer: coarse) {
+  @media (max-width: 768px) and (pointer: coarse) {
     .player-container.fullscreen {
       overscroll-behavior: none;
     }

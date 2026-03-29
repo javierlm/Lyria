@@ -236,8 +236,14 @@
 
 <style>
   .play-page-content {
-    display: flex;
-    flex: 1;
-    min-height: 0;
+    width: 100%;
+  }
+
+  @media (max-width: 768px) {
+    .play-page-content {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+    }
   }
 </style>

@@ -23,6 +23,18 @@
   import { LyricsStates } from '$lib/features/player/stores/playerStore.svelte';
   import { isTransliterableLanguage } from '$lib/features/settings/stores/transliterationStore.svelte';
 
+  let {
+    showSearch = true,
+    showHeader = true,
+    showPlayer = true,
+    showTimingControls = true
+  }: {
+    showSearch?: boolean;
+    showHeader?: boolean;
+    showPlayer?: boolean;
+    showTimingControls?: boolean;
+  } = $props();
+
   // ── State ──────────────────────────────────────────────────────────────
   let isFavorite = $state(false);
   let lyricsContainer: HTMLDivElement;
@@ -203,28 +215,34 @@
 </script>
 
 <div class="mobile-layout">
-  <SearchBar />
+  {#if showSearch}
+    <SearchBar />
+  {/if}
 
-  <!-- ── Top Logo ─────────────────────────────────────────────────── -->
-  <div class="top-logo-container">
-    <button
-      class="top-nav-button"
-      onclick={goToHome}
-      aria-label={$LL.videoError.goBack()}
-      title={$LL.videoError.goBack()}
-    >
-      <CaretLeft size={20} weight="bold" />
-    </button>
+  {#if showHeader}
+    <!-- ── Top Logo ─────────────────────────────────────────────────── -->
+    <div class="top-logo-container">
+      <button
+        class="top-nav-button"
+        onclick={goToHome}
+        aria-label={$LL.videoError.goBack()}
+        title={$LL.videoError.goBack()}
+      >
+        <CaretLeft size={20} weight="bold" />
+      </button>
 
-    <div class="top-logo">
-      <Logo isPlayerView={true} />
+      <div class="top-logo">
+        <Logo isPlayerView={true} />
+      </div>
     </div>
-  </div>
+  {/if}
 
-  <!-- ── Video section (Standard 16:9) ────────────────────────────── -->
-  <div class="video-section">
-    <PlayerView />
-  </div>
+  {#if showPlayer}
+    <!-- ── Video section (Standard 16:9) ────────────────────────────── -->
+    <div class="video-section">
+      <PlayerView />
+    </div>
+  {/if}
 
   <!-- ── Info row ─────────────────────────────────────────────────── -->
   <div class="song-info">
@@ -269,10 +287,12 @@
     </div>
   </div>
 
-  <!-- ── Timing Controls (Original appearance, inline layout) ─────── -->
-  <div class="timing-controls-wrapper">
-    <TimingControls layout="row" />
-  </div>
+  {#if showTimingControls}
+    <!-- ── Timing Controls (Original appearance, inline layout) ─────── -->
+    <div class="timing-controls-wrapper">
+      <TimingControls layout="row" />
+    </div>
+  {/if}
 
   <!-- ── Translation Controls ─────────────────────────────────────── -->
   {#if playerState.translatedLines.length > 0}

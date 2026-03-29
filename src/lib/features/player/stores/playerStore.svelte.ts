@@ -94,6 +94,7 @@ export const playerState = $state({
 });
 
 let playerInstance: YT.Player | null = null;
+let loadedPlayerVideoId: string | null = null;
 
 export function getPlayer(): YT.Player | null {
   return playerInstance;
@@ -101,6 +102,14 @@ export function getPlayer(): YT.Player | null {
 
 export function setPlayer(player: YT.Player | null) {
   playerInstance = player;
+}
+
+export function getLoadedPlayerVideoId(): string | null {
+  return loadedPlayerVideoId;
+}
+
+export function setLoadedPlayerVideoId(videoId: string | null) {
+  loadedPlayerVideoId = videoId;
 }
 
 function syncOriginalSubtitleVisibility() {
