@@ -1289,10 +1289,6 @@ export function adjustTiming(offset: number) {
 export function toggleFullscreen(element: HTMLElement | null) {
   if (!element) return;
 
-  const isTouchMobileFullscreenTarget =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(max-width: 768px) and (pointer: coarse)').matches;
-
   const isNativeFullscreen =
     document.fullscreenElement ||
     (document as Document & { webkitFullscreenElement?: Element }).webkitFullscreenElement ||
@@ -1313,10 +1309,6 @@ export function toggleFullscreen(element: HTMLElement | null) {
     }
   } else if (playerState.isFullscreen) {
     playerState.isFullscreen = false;
-  } else if (isTouchMobileFullscreenTarget) {
-    // Mobile browsers are inconsistent when requesting native fullscreen for the
-    // custom player container. Use the CSS fullscreen mode directly instead.
-    playerState.isFullscreen = true;
   } else if (element.requestFullscreen) {
     element.requestFullscreen().catch((err) => {
       console.warn(`Native fullscreen failed: ${err.message}, falling back to CSS`);
