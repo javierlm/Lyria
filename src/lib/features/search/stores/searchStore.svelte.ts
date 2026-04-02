@@ -506,7 +506,7 @@ export class SearchStore {
       .filter(
         ({ video, metrics }) => metrics.score >= minScore && passesProviderRules({ video, metrics })
       )
-      .toSorted((a, b) => b.metrics.score - a.metrics.score);
+      .sort((a, b) => b.metrics.score - a.metrics.score);
 
     if (filtered.length >= 4) {
       return filtered.map((entry) => entry.video);
@@ -518,7 +518,7 @@ export class SearchStore {
         ({ video, metrics }) =>
           metrics.score >= relaxedMinScore && passesProviderRules({ video, metrics })
       )
-      .toSorted((a, b) => b.metrics.score - a.metrics.score)
+      .sort((a, b) => b.metrics.score - a.metrics.score)
       .map((entry) => entry.video);
   }
 
@@ -1030,9 +1030,10 @@ export class SearchStore {
 
   async searchGlobalVideos(query: string, signal?: AbortSignal): Promise<VideoItem[]> {
     try {
-      const response = await fetch(`/api/search/videos?q=${encodeURIComponent(query)}&limit=30`, {
-        signal
-      });
+      const response = await fetch(
+        `/api/search/videos?q=${encodeURIComponent(query)}&limit=30`,
+        signal ? { signal } : undefined
+      );
       if (!response.ok) {
         return [];
       }
@@ -1101,11 +1102,11 @@ export class SearchStore {
       return this.matchesSearch(localVideo, searchTerms);
     });
 
-    const trailingLocalFallback = matchingLocalVideos.toSorted((a, b) =>
+    const trailingLocalFallback = [...matchingLocalVideos].sort((a, b) =>
       this.compareBySourceAndTimestamp(a, b)
     );
 
-    return [...enrichedResults, ...trailingLocalFallback].toSorted((a, b) =>
+    return [...enrichedResults, ...trailingLocalFallback].sort((a, b) =>
       this.compareBySourceAndTimestamp(a, b)
     );
   }

@@ -40,7 +40,8 @@
   let lyricsContainer: HTMLDivElement;
   let lyricLineElements: HTMLDivElement[] = $state([]);
   let isAutoScrolling = false;
-  let scrollTimeout: ReturnType<typeof setTimeout>;
+  let isManualBrowsing = $state(false);
+  let autoScrollSettleTimeout: ReturnType<typeof setTimeout> | undefined;
 
   const shouldShowTransliteration = $derived(
     playerState.transliterationAvailable &&
@@ -140,10 +141,36 @@
     scrollToLine(currentIndex);
   });
 
+  $effect(() => {
+    return () => {
+      if (autoScrollSettleTimeout) {
+        clearTimeout(autoScrollSettleTimeout);
+      }
+    };
+  });
+
+  function scheduleAutoScrollCompletion() {
+    if (autoScrollSettleTimeout) {
+      clearTimeout(autoScrollSettleTimeout);
+    }
+
+    autoScrollSettleTimeout = setTimeout(() => {
+      isAutoScrolling = false;
+      isManualBrowsing = false;
+      autoScrollSettleTimeout = undefined;
+    }, 140);
+  }
+
   function scrollToLine(index: number) {
     const row = lyricLineElements[index];
     const container = lyricsContainer;
     if (!row || !container) return;
+
+    if (autoScrollSettleTimeout) {
+      clearTimeout(autoScrollSettleTimeout);
+    }
+
+    isAutoScrolling = true;
 
     const rowRect = row.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
@@ -161,6 +188,35 @@
       top: targetScrollTop,
       behavior: 'smooth'
     });
+
+    scheduleAutoScrollCompletion();
+  }
+
+  function handleManualBrowsingStart() {
+    if (!playerState.lyricsAreSynced) {
+      return;
+    }
+
+    if (autoScrollSettleTimeout) {
+      clearTimeout(autoScrollSettleTimeout);
+      autoScrollSettleTimeout = undefined;
+    }
+
+    isAutoScrolling = false;
+    isManualBrowsing = true;
+  }
+
+  function handleLyricsScroll() {
+    if (!playerState.lyricsAreSynced) {
+      return;
+    }
+
+    if (isAutoScrolling) {
+      scheduleAutoScrollCompletion();
+      return;
+    }
+
+    isManualBrowsing = true;
   }
 
   function getDistance(i: number): number {
@@ -349,7 +405,15 @@
   {/if}
 
   <!-- ── Lyrics panel ─────────────────────────────────────────────── -->
-  <div class="lyrics-panel" bind:this={lyricsContainer}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="lyrics-panel"
+    bind:this={lyricsContainer}
+    onscroll={handleLyricsScroll}
+    onpointerdown={handleManualBrowsingStart}
+    onwheel={handleManualBrowsingStart}
+    ontouchstart={handleManualBrowsingStart}
+  >
     <div class="lyrics-list">
       {#if playerState.lines.length > 0}
         {#each playerState.lines as line, i (i)}
@@ -359,10 +423,10 @@
             <div
               class="lyric-item"
               class:d0={activeVisibleLineIndex === i}
-              class:d1={i !== activeVisibleLineIndex && dist === 1}
-              class:d2={i !== activeVisibleLineIndex && dist === 2}
-              class:d3={i !== activeVisibleLineIndex && dist === 3}
-              class:dfar={i !== activeVisibleLineIndex && dist > 3}
+              class:d1={!isManualBrowsing && i !== activeVisibleLineIndex && dist === 1}
+              class:d2={!isManualBrowsing && i !== activeVisibleLineIndex && dist === 2}
+              class:d3={!isManualBrowsing && i !== activeVisibleLineIndex && dist === 3}
+              class:dfar={!isManualBrowsing && i !== activeVisibleLineIndex && dist > 3}
               class:upcoming={activeVisibleLineIndex < 0 && upcomingVisibleLineIndex === i}
               bind:this={lyricLineElements[i]}
               onclick={() => {
@@ -427,7 +491,7 @@
   .top-nav-button {
     position: absolute;
     left: 1rem;
-    top: 0;
+    top: calc(50% - 8px);
     display: grid;
     place-items: center;
     width: 2.25rem;
@@ -437,6 +501,7 @@
     background-color: color-mix(in srgb, var(--card-background) 88%, transparent);
     color: var(--text-color);
     cursor: pointer;
+    transform: translateY(-50%);
     transition:
       background-color var(--theme-transition-duration) var(--theme-transition-timing),
       border-color var(--theme-transition-duration) var(--theme-transition-timing),
@@ -448,7 +513,7 @@
   }
 
   .top-nav-button:active {
-    transform: scale(0.96);
+    transform: translateY(-50%) scale(0.96);
   }
 
   .top-logo {
@@ -684,28 +749,28 @@
   .lyric-item.d1 .lyric-content-wrapper {
     transform: scale(0.95);
     opacity: 0.72;
-    filter: blur(0.15px);
+    filter: blur(0.3px);
   }
 
   /* ±2 */
   .lyric-item.d2 .lyric-content-wrapper {
     transform: scale(0.85);
     opacity: 0.48;
-    filter: blur(0.4px);
+    filter: blur(0.65px);
   }
 
   /* ±3 */
   .lyric-item.d3 .lyric-content-wrapper {
     transform: scale(0.8);
     opacity: 0.28;
-    filter: blur(0.85px);
+    filter: blur(1.1px);
   }
 
   /* far */
   .lyric-item.dfar .lyric-content-wrapper {
     transform: scale(0.75);
     opacity: 0.1;
-    filter: blur(1.5px);
+    filter: blur(1.8px);
   }
 
   .lyric-original {

@@ -148,7 +148,7 @@ function resolveArtistResult(
         score: queryTokens.length > 0 ? overlap / queryTokens.length : 0
       };
     })
-    .toSorted((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score);
 
   const best = scored[0];
   if (!best || best.score < 0.5) {
@@ -591,7 +591,7 @@ export class DiscogsGhostSearchService {
           } satisfies DiscogsReleaseCandidate;
         })
         .filter((entry): entry is DiscogsReleaseCandidate => Boolean(entry))
-        .toSorted((a, b) => b.score - a.score);
+        .sort((a, b) => b.score - a.score);
 
       for (const candidate of scored) {
         const key = `${candidate.type}:${candidate.id}`;
@@ -974,7 +974,7 @@ export class DiscogsGhostSearchService {
           const overlap = tokenOverlapScore(release.artist ?? '', resolvedArtistLabel);
           return overlap >= 0.6;
         })
-        .toSorted((a, b) => Number(isMainRole(b.role)) - Number(isMainRole(a.role)))
+        .sort((a, b) => Number(isMainRole(b.role)) - Number(isMainRole(a.role)))
         .slice(0, this.maxReleaseDetailsPerPage);
 
       for (let start = 0; start < releases.length; start += this.detailBatchSize) {

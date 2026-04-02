@@ -343,7 +343,7 @@
   .top-nav-button {
     position: absolute;
     left: 1rem;
-    top: 0;
+    top: calc(50% - 8px);
     display: grid;
     place-items: center;
     width: 2.25rem;
@@ -353,6 +353,7 @@
     background-color: color-mix(in srgb, var(--card-background) 88%, transparent);
     color: var(--text-color);
     cursor: pointer;
+    transform: translateY(-50%);
     transition:
       background-color var(--theme-transition-duration) var(--theme-transition-timing),
       border-color var(--theme-transition-duration) var(--theme-transition-timing),
@@ -364,7 +365,7 @@
   }
 
   .top-nav-button:active {
-    transform: scale(0.96);
+    transform: translateY(-50%) scale(0.96);
   }
 
   .top-logo {

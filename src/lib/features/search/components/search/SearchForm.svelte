@@ -52,7 +52,18 @@
     searchStore.loadRecentVideos();
   }
 
-  function handleSearchInput() {
+  function syncSearchValueFromElement(input: HTMLInputElement | null): void {
+    if (!input) {
+      return;
+    }
+
+    if (input.value !== searchStore.searchValue) {
+      searchStore.searchValue = input.value;
+    }
+  }
+
+  function handleSearchInput(event: Event) {
+    syncSearchValueFromElement(event.currentTarget as HTMLInputElement | null);
     searchStore.triggerSearch();
   }
 
@@ -68,6 +79,7 @@
     event.preventDefault();
     const form = event.target as HTMLFormElement;
     const input = form.elements.namedItem('url') as HTMLInputElement;
+    syncSearchValueFromElement(input);
     const value = input.value.trim();
 
     if (!value) return;
@@ -79,6 +91,8 @@
       const url = `https://www.youtube.com/watch?v=${video.videoId}`;
       loadVideoFromUrl(url);
       searchStore.searchValue = '';
+    } else {
+      searchStore.triggerSearch();
     }
   }
 </script>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { slide, fade } from 'svelte/transition';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -141,10 +141,17 @@
   }
 
   $effect(() => {
-    if (playerState.videoId && playerHost) {
-      loadVideo(playerState.videoId, playerHost, playerState.timingOffset);
-    } else if (!playerState.videoId && playerHost) {
-      loadVideo('', playerHost);
+    const videoId = playerState.videoId;
+
+    if (videoId && playerHost) {
+      // `loadVideo` mutates and reads broad player state; keep this effect tied to host/video changes only.
+      untrack(() => {
+        loadVideo(videoId, playerHost, playerState.timingOffset);
+      });
+    } else if (!videoId && playerHost) {
+      untrack(() => {
+        loadVideo('', playerHost);
+      });
     }
   });
 
