@@ -22,7 +22,11 @@
   let isTouch = $state(false);
   let isSeekInteracting = $state(false);
   let hideCursor = $derived(
-    playerState.isFullscreen && !isTouch && !showControls && !isSeekInteracting
+    playerState.isFullscreen &&
+      !isTouch &&
+      !showControls &&
+      !isSeekInteracting &&
+      !playerState.isKeyboardSeeking
   );
 
   let currentLine = $derived(
@@ -152,6 +156,18 @@
 
   $effect(() => {
     if (playerState.isPlaying && showControls && !isSeekInteracting) {
+      resetHideControlsTimer();
+    }
+  });
+
+  $effect(() => {
+    if (playerState.isKeyboardSeeking) {
+      showControls = true;
+      clearHideControlsTimer();
+      return;
+    }
+
+    if (showControls) {
       resetHideControlsTimer();
     }
   });

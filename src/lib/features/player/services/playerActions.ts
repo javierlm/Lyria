@@ -1139,11 +1139,11 @@ export function pause() {
   getPlayer()?.pauseVideo();
 }
 
-export function seekTo(time: number) {
+export function seekTo(time: number, allowSeekAhead = true) {
   const player = getPlayer();
   if (player) {
     playerState.isSeeking = true;
-    player.seekTo(time, true);
+    player.seekTo(time, allowSeekAhead);
 
     lastSyncedTime = time;
     lastSyncTimestamp = performance.now();

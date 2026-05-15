@@ -129,18 +129,23 @@
   let seekInterval: ReturnType<typeof setInterval> | undefined;
   const SEEK_INTERVAL_MS = 250;
   const SEEK_AMOUNT = 5;
+  let keyboardSeekTarget = 0;
 
   function startSeeking(direction: 'left' | 'right') {
     if (seekInterval || playerState.isSeeking) return;
+
+    playerState.isKeyboardSeeking = true;
 
     const performSeek = () => {
       if (playerState.isSeeking) return;
 
       if (direction === 'left') {
-        seekTo(Math.max(0, playerState.currentTime - SEEK_AMOUNT));
+        keyboardSeekTarget = Math.max(0, playerState.currentTime - SEEK_AMOUNT);
       } else {
-        seekTo(Math.min(playerState.duration, playerState.currentTime + SEEK_AMOUNT));
+        keyboardSeekTarget = Math.min(playerState.duration, playerState.currentTime + SEEK_AMOUNT);
       }
+
+      seekTo(keyboardSeekTarget, false);
     };
 
     performSeek();
@@ -153,6 +158,13 @@
       clearInterval(seekInterval);
       seekInterval = undefined;
     }
+
+    if (!playerState.isKeyboardSeeking) {
+      return;
+    }
+
+    playerState.isKeyboardSeeking = false;
+    seekTo(keyboardSeekTarget, true);
   }
 
   onMount(() => {
@@ -164,6 +176,7 @@
       switch (event.code) {
         case 'Space':
           event.preventDefault();
+          stopSeeking();
           if (playerState.isPlaying) {
             pause();
           } else {

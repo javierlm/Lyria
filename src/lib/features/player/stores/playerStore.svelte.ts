@@ -68,6 +68,7 @@ export const playerState = $state({
   userLang: getLanguage(), // Initialize userLang using getLanguage()
   id: 0,
   isSeeking: false,
+  isKeyboardSeeking: false,
   showOriginalSubtitle: true,
   originalSubtitlePreference: null as OriginalSubtitlePreference,
   autoHideOriginalSubtitle: false,
