@@ -44,12 +44,14 @@ let lastSyncedTime = 0;
 let lastSyncTimestamp = 0;
 let lastPeriodicSync = 0;
 let isPlayerPlaying = false;
+let seekCompletionTimeout: ReturnType<typeof setTimeout> | undefined;
 
 const HUMAN_REACTION_TIME_MS = 500;
 const PORCENTAGE_LANGUAGE_THRESHOLD = 80;
 const PERIODIC_SYNC_INTERVAL_MS = 5000;
 const BUFFER_SYNC_INTERVAL_MS = 1000;
 const VIDEO_LOAD_TIMEOUT_MS = 15000;
+const SEEK_COMPLETION_FALLBACK_MS = 1200;
 
 let lastBufferSync = 0;
 
@@ -286,6 +288,40 @@ function stopSync() {
   }
 }
 
+function clearSeekCompletionTimeout() {
+  if (seekCompletionTimeout) {
+    clearTimeout(seekCompletionTimeout);
+    seekCompletionTimeout = undefined;
+  }
+}
+
+function finishSeeking() {
+  clearSeekCompletionTimeout();
+  playerState.isSeeking = false;
+
+  if (isPlayerPlaying && animationFrameId === null) {
+    animationFrameId = requestAnimationFrame(updateFrame);
+  }
+}
+
+function scheduleSeekCompletionFallback() {
+  clearSeekCompletionTimeout();
+
+  seekCompletionTimeout = setTimeout(() => {
+    seekCompletionTimeout = undefined;
+
+    if (!playerState.isSeeking) {
+      return;
+    }
+
+    playerState.isSeeking = false;
+
+    if (isPlayerPlaying && animationFrameId === null) {
+      animationFrameId = requestAnimationFrame(updateFrame);
+    }
+  }, SEEK_COMPLETION_FALLBACK_MS);
+}
+
 function handlePlayerError(event: YT.OnErrorEvent) {
   const errorCode = event.data;
   let message: string;
@@ -490,12 +526,13 @@ export async function loadVideo(videoId: string, elementId: string, initialOffse
         if (event.data === YT.PlayerState.BUFFERING) {
           playerState.isSeeking = true;
           stopSync();
+          scheduleSeekCompletionFallback();
         } else if (
           event.data === YT.PlayerState.PLAYING ||
           event.data === YT.PlayerState.PAUSED ||
           event.data === YT.PlayerState.ENDED
         ) {
-          playerState.isSeeking = false;
+          finishSeeking();
 
           if (event.data === YT.PlayerState.PLAYING) {
             playerState.isLoadingVideo = false;
@@ -1148,6 +1185,7 @@ export function seekTo(time: number, allowSeekAhead = true) {
     lastSyncedTime = time;
     lastSyncTimestamp = performance.now();
     playerState.currentTime = time;
+    scheduleSeekCompletionFallback();
 
     if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
       const t = time * 1000;

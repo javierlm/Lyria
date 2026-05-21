@@ -130,15 +130,15 @@
   const SEEK_INTERVAL_MS = 250;
   const SEEK_AMOUNT = 5;
   let keyboardSeekTarget = 0;
+  let resumePlaybackAfterKeyboardSeek = false;
 
   function startSeeking(direction: 'left' | 'right') {
-    if (seekInterval || playerState.isSeeking) return;
+    if (seekInterval || playerState.isKeyboardSeeking) return;
 
     playerState.isKeyboardSeeking = true;
+    resumePlaybackAfterKeyboardSeek = playerState.isPlaying;
 
     const performSeek = () => {
-      if (playerState.isSeeking) return;
-
       if (direction === 'left') {
         keyboardSeekTarget = Math.max(0, playerState.currentTime - SEEK_AMOUNT);
       } else {
@@ -153,7 +153,7 @@
     seekInterval = setInterval(performSeek, SEEK_INTERVAL_MS);
   }
 
-  function stopSeeking() {
+  function stopSeeking(resumePlayback = true) {
     if (seekInterval) {
       clearInterval(seekInterval);
       seekInterval = undefined;
@@ -165,6 +165,12 @@
 
     playerState.isKeyboardSeeking = false;
     seekTo(keyboardSeekTarget, true);
+
+    if (resumePlayback && resumePlaybackAfterKeyboardSeek) {
+      play();
+    }
+
+    resumePlaybackAfterKeyboardSeek = false;
   }
 
   onMount(() => {
@@ -176,7 +182,12 @@
       switch (event.code) {
         case 'Space':
           event.preventDefault();
-          stopSeeking();
+          if (playerState.isKeyboardSeeking) {
+            stopSeeking(false);
+            break;
+          }
+
+          stopSeeking(false);
           if (playerState.isPlaying) {
             pause();
           } else {
@@ -217,7 +228,7 @@
     return () => {
       window.removeEventListener('keydown', handleKeydown);
       window.removeEventListener('keyup', handleKeyup);
-      stopSeeking();
+      stopSeeking(false);
     };
   });
 </script>
