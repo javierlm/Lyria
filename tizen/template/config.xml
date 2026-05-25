@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget
+  xmlns="http://www.w3.org/ns/widgets"
+  xmlns:tizen="http://tizen.org/ns/widgets"
+  id="{{APP_ID}}"
+  version="{{APP_VERSION}}"
+  viewmodes="maximized"
+>
+  <name>{{APP_NAME}}</name>
+  <icon src="icon.png" />
+  <content src="index.html" />
+  <access origin="{{REMOTE_ORIGIN}}" subdomains="true" />
+  <access origin="https://img.youtube.com" subdomains="true" />
+  <access origin="https://i.ytimg.com" subdomains="true" />
+  <access origin="https://s.ytimg.com" subdomains="true" />
+  <access origin="https://www.youtube.com" subdomains="true" />
+  <access origin="https://www.youtube-nocookie.com" subdomains="true" />
+  <access origin="https://youtube.com" subdomains="true" />
+  <access origin="https://googlevideo.com" subdomains="true" />
+  <access origin="https://googleapis.com" subdomains="true" />
+  <access origin="https://youtubei.googleapis.com" subdomains="true" />
+  <access origin="https://lrclib.net" subdomains="true" />
+  <access origin="https://flagcdn.com" subdomains="true" />
+  <feature name="http://tizen.org/feature/screen.size.all" />
+  <tizen:application id="{{APP_ID}}" package="{{PACKAGE_ID}}" required_version="{{REQUIRED_VERSION}}" />
+  <tizen:setting
+    pointing-device-support="disable"
+    screen-orientation="landscape"
+    context-menu="disable"
+    background-support="disable"
+    encryption="disable"
+    install-location="auto"
+    hwkey-event="enable"
+  />
+</widget>

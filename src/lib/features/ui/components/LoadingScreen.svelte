@@ -4,6 +4,10 @@
   import { play } from '$lib/features/player/services/playerActions';
   import IconPlay from 'phosphor-svelte/lib/Play';
   import LL from '$i18n/i18n-svelte';
+  import { tvModeStore } from '$lib/features/settings/stores/tvModeStore.svelte';
+  import { getTvRemoteAction } from '$lib/features/tv/services/tvRemoteKeys';
+
+  let { navId }: { navId?: string } = $props();
 
   let phrase = $derived.by(() => {
     const currentVideoId = playerState.videoId;
@@ -91,11 +95,37 @@
   function handleInteraction() {
     play();
   }
+
+  function handleTvPreplayKeydown(event: KeyboardEvent) {
+    if (!tvModeStore.enabled || !showPlayButton) {
+      return;
+    }
+
+    const remoteAction = getTvRemoteAction(event);
+    const shouldStartPlayback =
+      event.key === 'Enter' ||
+      event.key === ' ' ||
+      remoteAction === 'playPause' ||
+      remoteAction === 'play';
+
+    if (!shouldStartPlayback) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    handleInteraction();
+  }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="loading-screen" out:fade={{ duration: 300 }} onclick={handleInteraction}>
+<svelte:window onkeydown={handleTvPreplayKeydown} />
+
+<div
+  class="loading-screen"
+  out:fade={{ duration: 300 }}
+  tabindex="-1"
+  data-tv-player-nav-id={navId}
+>
   {#if playerState.videoId && thumbnailUrl}
     <!-- Hidden image to detect loading errors and placeholder -->
     <img
@@ -112,10 +142,12 @@
   {/if}
   <div class="content">
     {#if showPlayButton}
-      <div class="play-button" in:fade>
-        <IconPlay size="48" weight="fill" />
-      </div>
-      <p class="phrase">{$LL.controls.clickToStart()}</p>
+      <button type="button" class="preplay-button" in:fade onclick={handleInteraction}>
+        <div class="play-button">
+          <IconPlay size="48" weight="fill" />
+        </div>
+        <span class="phrase">{$LL.controls.clickToStart()}</span>
+      </button>
     {:else}
       <div class="spinner"></div>
       <p class="phrase">{phrase}</p>
@@ -137,6 +169,29 @@
     z-index: 20;
     pointer-events: auto;
     overflow: hidden;
+  }
+
+  :global(.loading-screen[data-tv-player-active='true']) {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: -6px;
+    box-shadow: inset 0 0 0 3px rgba(var(--primary-color-rgb), 0.35);
+  }
+
+  .preplay-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.4rem 1.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 18px;
+    background: rgba(15, 23, 42, 0.52);
+    color: white;
+    cursor: pointer;
+  }
+
+  .preplay-button:focus-visible {
+    outline: none;
   }
 
   .content {

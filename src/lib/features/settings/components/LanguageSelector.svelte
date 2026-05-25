@@ -8,7 +8,7 @@
   import { getLanguageFlagUrl } from '$lib/shared/languageMetadata';
   import LL from '$i18n/i18n-svelte';
 
-  let { compact = false }: { compact?: boolean } = $props();
+  let { compact = false, navId }: { compact?: boolean; navId?: string } = $props();
 
   const languages = $derived(
     Object.keys($LL.lyricsLanguages)
@@ -141,7 +141,12 @@
   class:compact
   style="--max-dropdown-width: {maxDropdownWidth ? `${maxDropdownWidth}px` : 'auto'};"
 >
-  <button class="select-button" bind:this={selectButtonRef} onclick={toggleDropdown}>
+  <button
+    class="select-button"
+    bind:this={selectButtonRef}
+    onclick={toggleDropdown}
+    data-tv-player-nav-id={navId}
+  >
     <div class="selected-option">
       <span
         class="flag-icon"
@@ -308,6 +313,13 @@
 
   .select-button:active {
     transform: translateY(0);
+  }
+
+  :global(.select-button[data-tv-player-active='true']) {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
+    border-color: var(--primary-color);
   }
 
   .selected-option {

@@ -12,6 +12,7 @@
       thumbnailUrl?: string;
       timestamp?: number | null;
       isGhost?: boolean;
+      isCatalogResult?: boolean;
       source?: 'user-recent' | 'user-favorite' | 'catalog' | 'ghost';
       ghostProvider?: 'wikidata' | 'discogs';
     };

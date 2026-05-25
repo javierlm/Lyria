@@ -14,15 +14,27 @@
   import LL from '$i18n/i18n-svelte';
 
   import LoadingScreen from '$lib/features/ui/components/LoadingScreen.svelte';
+  import { tvModeStore } from '$lib/features/settings/stores/tvModeStore.svelte';
 
   let playerContainer: HTMLElement;
   let playerHost: HTMLElement;
+  let {
+    loadingNavId,
+    activeTvNavId = null
+  }: { loadingNavId?: string; activeTvNavId?: string | null } = $props();
+
   let showControls = $state(false);
   let hideControlsTimeout: ReturnType<typeof setTimeout> | undefined;
   let isTouch = $state(false);
   let isSeekInteracting = $state(false);
+  let wasTvModeEnabled = $state(false);
+  let previousActiveTvNavId = $state<string | null>(null);
   let hideCursor = $derived(
-    playerState.isFullscreen && !isTouch && !showControls && !isSeekInteracting
+    playerState.isFullscreen &&
+      !tvModeStore.enabled &&
+      !isTouch &&
+      !showControls &&
+      !isSeekInteracting
   );
 
   let currentLine = $derived(
@@ -44,6 +56,7 @@
   );
 
   const HIDE_DELAY = 3000;
+  const TV_DIRECTION_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
 
   function clearHideControlsTimer() {
     if (hideControlsTimeout) {
@@ -73,6 +86,17 @@
   function showControlsAndResetTimer() {
     showControls = true;
     resetHideControlsTimer();
+  }
+
+  function isVideoControlsNavId(navId: string | null | undefined): boolean {
+    return (
+      navId === 'video-seek' ||
+      navId === 'video-play-pause' ||
+      navId === 'video-mute' ||
+      navId === 'video-subtitles-original' ||
+      navId === 'video-subtitles-translated' ||
+      navId === 'video-fullscreen'
+    );
   }
 
   function handleSeekInteractionStart() {
@@ -156,9 +180,36 @@
   });
 
   $effect(() => {
+    const isTvModeEnabled = tvModeStore.enabled;
+
+    if (isTvModeEnabled && !wasTvModeEnabled) {
+      showControls = true;
+      untrack(() => {
+        resetHideControlsTimer();
+      });
+    }
+
+    wasTvModeEnabled = isTvModeEnabled;
+  });
+
+  $effect(() => {
     if (playerState.isPlaying && showControls && !isSeekInteracting) {
       resetHideControlsTimer();
     }
+  });
+
+  $effect(() => {
+    const nextActiveTvNavId = activeTvNavId;
+    const enteredVideoControls =
+      isVideoControlsNavId(nextActiveTvNavId) && !isVideoControlsNavId(previousActiveTvNavId);
+
+    if (tvModeStore.enabled && enteredVideoControls) {
+      untrack(() => {
+        showControlsAndResetTimer();
+      });
+    }
+
+    previousActiveTvNavId = nextActiveTvNavId;
   });
 
   onMount(() => {
@@ -190,11 +241,24 @@
       showControlsAndResetTimer();
     };
 
+    const handleTvDirectionKeydown = (event: KeyboardEvent) => {
+      if (!tvModeStore.enabled || !TV_DIRECTION_KEYS.has(event.key)) {
+        return;
+      }
+
+      if (!isVideoControlsNavId(activeTvNavId)) {
+        return;
+      }
+
+      showControlsAndResetTimer();
+    };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
     window.addEventListener('keydown', handleWindowKeydown);
+    window.addEventListener('keydown', handleTvDirectionKeydown);
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -202,6 +266,7 @@
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
       window.removeEventListener('keydown', handleWindowKeydown);
+      window.removeEventListener('keydown', handleTvDirectionKeydown);
       clearHideControlsTimer();
     };
   });
@@ -314,11 +379,17 @@
       onToggleFullscreen={handleToggleFullscreen}
       onSeekInteractionStart={handleSeekInteractionStart}
       onSeekInteractionEnd={handleSeekInteractionEnd}
+      seekNavId="video-seek"
+      playPauseNavId="video-play-pause"
+      muteNavId="video-mute"
+      originalSubtitleNavId="video-subtitles-original"
+      translatedSubtitleNavId="video-subtitles-translated"
+      fullscreenNavId="video-fullscreen"
     />
   </div>
 
   {#if playerState.isLoadingVideo && !playerState.videoError}
-    <LoadingScreen />
+    <LoadingScreen navId={loadingNavId} />
   {/if}
 
   {#if playerState.videoError}

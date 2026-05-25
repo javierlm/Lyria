@@ -28,7 +28,8 @@
     "auth:migrate": "pnpm run db:migrate",
     "typesafe-i18n": "typesafe-i18n --no-watch",
     "typesafe-i18n:watch": "typesafe-i18n",
-    "sync:cache": "tsx --env-file=.env.local scripts/sync-translation-cache.ts"
+    "sync:cache": "tsx --env-file=.env.local scripts/sync-translation-cache.ts",
+    "tizen:prepare": "node scripts/prepare-tizen-app.mjs"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.21",

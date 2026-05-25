@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { authClient } from '$lib/features/auth/services/authClient';
+  import {
+    authClient,
+    clearStoredBearerToken,
+    isBearerAuthTransport
+  } from '$lib/features/auth/services/authClient';
   import { authStore } from '$lib/features/auth/stores/authStore.svelte';
   import { invalidateAll } from '$app/navigation';
   import { fade, fly } from 'svelte/transition';
@@ -14,6 +18,16 @@
   type ProviderId = 'google' | 'microsoft' | 'spotify';
 
   const providers: ProviderId[] = ['google', 'microsoft', 'spotify'];
+
+  let {
+    signInNavId,
+    linkMicrosoftNavId,
+    signOutNavId
+  }: {
+    signInNavId?: string;
+    linkMicrosoftNavId?: string;
+    signOutNavId?: string;
+  } = $props();
 
   function getProviderLabel(provider: ProviderId): string {
     const authMessages = $LL.auth as typeof $LL.auth & {
@@ -67,6 +81,10 @@
 
   function resolveCallbackURL(): string {
     if (typeof window === 'undefined') {
+      return '/';
+    }
+
+    if (isBearerAuthTransport) {
       return '/';
     }
 
@@ -171,6 +189,8 @@
         return;
       }
 
+      clearStoredBearerToken();
+
       isPanelOpen = false;
       window.location.reload();
     } catch {
@@ -215,11 +235,17 @@
         <span class="user-name">
           {authStore.user?.name ?? authStore.user?.email ?? $LL.auth.account()}
         </span>
-        <button class="auth-btn secondary" onclick={linkMicrosoftAccount} disabled={isLoading}
-          >{$LL.auth.providers.microsoft()}</button
+        <button
+          class="auth-btn secondary"
+          data-tv-top-nav-id={linkMicrosoftNavId}
+          onclick={linkMicrosoftAccount}
+          disabled={isLoading}>{$LL.auth.providers.microsoft()}</button
         >
-        <button class="auth-btn secondary" onclick={signOut} disabled={isLoading}
-          >{$LL.auth.signOut()}</button
+        <button
+          class="auth-btn secondary"
+          data-tv-top-nav-id={signOutNavId}
+          onclick={signOut}
+          disabled={isLoading}>{$LL.auth.signOut()}</button
         >
       </div>
       {#if statusMessage}
@@ -227,7 +253,12 @@
       {/if}
     </div>
   {:else}
-    <button class="auth-btn" onclick={() => (isPanelOpen = true)} disabled={isLoading}>
+    <button
+      class="auth-btn"
+      data-tv-top-nav-id={signInNavId}
+      onclick={() => (isPanelOpen = true)}
+      disabled={isLoading}
+    >
       {$LL.auth.signIn()}
     </button>
   {/if}
@@ -356,6 +387,15 @@
   .auth-btn:hover:not(:disabled) {
     border-color: var(--primary-color);
     color: var(--primary-color);
+  }
+
+  .auth-btn:focus-visible,
+  .close-button:focus-visible,
+  .provider-btn:focus-visible,
+  .submit-btn:focus-visible,
+  .switch-mode:focus-visible {
+    outline: 2px solid rgba(var(--primary-color-rgb), 0.95);
+    outline-offset: 2px;
   }
 
   .auth-btn:disabled {
@@ -577,6 +617,38 @@
     margin: 0.65rem 0 0;
     font-size: 0.76rem;
     color: #ef4444;
+  }
+
+  :global(html.tv-mode) .auth-btn {
+    min-height: var(--top-control-height);
+    padding: 0.7rem 1rem;
+    font-size: 0.82rem;
+    border-width: 1px;
+    background: var(--tv-surface-background);
+    border-color: var(--tv-surface-border);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  :global(html.tv-mode) .auth-btn.secondary {
+    background: rgba(var(--primary-color-rgb), 0.08);
+  }
+
+  :global(html.tv-mode) .authenticated-controls {
+    align-items: stretch;
+  }
+
+  :global(html.tv-mode) .user-pill {
+    min-height: var(--top-control-height);
+    height: auto;
+    padding: 0.3rem 0.35rem 0.3rem 0.9rem;
+    gap: 0.65rem;
+    background: var(--tv-surface-background);
+    border-color: var(--tv-surface-border);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.14);
+  }
+
+  :global(html.tv-mode) .user-name {
+    font-size: 0.82rem;
   }
 
   @media (max-width: 640px) {

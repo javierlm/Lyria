@@ -1,4 +1,5 @@
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
+import { bearer } from 'better-auth/plugins/bearer';
 import { db } from './db/client';
 import * as authSchema from './db/auth-schema';
 
@@ -163,6 +164,6 @@ export function createAuthBaseOptions(runtimeEnv: AuthEnv) {
           }
         : {})
     },
-    plugins: []
+    plugins: [bearer()]
   };
 }

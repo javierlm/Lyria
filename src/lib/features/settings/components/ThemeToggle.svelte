@@ -12,6 +12,8 @@
     system: $LL.theme.system()
   });
 
+  let { navId }: { navId?: string } = $props();
+
   function cycleTheme() {
     const current = themeStore.theme;
     let next: Theme;
@@ -27,6 +29,7 @@
 <button
   class="theme-toggle"
   onclick={cycleTheme}
+  data-tv-top-nav-id={navId}
   aria-label={$LL.theme.toggle()}
   title={$LL.theme.current(themeLabels[themeStore.theme])}
 >
@@ -70,6 +73,13 @@
     color: var(--primary-color);
   }
 
+  .theme-toggle:focus-visible {
+    outline: 2px solid rgba(var(--primary-color-rgb), 0.9);
+    outline-offset: 2px;
+    background-color: rgba(var(--primary-color-rgb), 0.12);
+    color: var(--primary-color);
+  }
+
   .icon-container {
     position: relative;
     width: 20px;
@@ -85,5 +95,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  :global(html.tv-mode) .theme-toggle {
+    width: var(--top-control-height);
+    height: var(--top-control-height);
+    border: 1px solid var(--tv-surface-border);
+    background: var(--tv-surface-background);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  :global(html.tv-mode) .icon-container {
+    width: 22px;
+    height: 22px;
   }
 </style>

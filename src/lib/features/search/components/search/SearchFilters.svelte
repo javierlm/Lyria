@@ -61,6 +61,11 @@
     color: var(--primary-color);
   }
 
+  .chip:focus-visible {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 2px;
+  }
+
   .chip.active {
     background-color: var(--primary-color);
     color: var(--on-primary-color);
@@ -72,5 +77,18 @@
       padding: 0.35rem 0.7rem;
       font-size: 0.8rem;
     }
+  }
+
+  :global(html.tv-mode) .filters-container {
+    gap: 0.75rem;
+    padding-top: 0.2rem;
+  }
+
+  :global(html.tv-mode) .chip {
+    min-height: 44px;
+    padding: 0.6rem 0.95rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 700;
   }
 </style>

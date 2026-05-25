@@ -10,6 +10,7 @@
   import { play, pause, seekTo } from '$lib/features/player/services/playerActions';
   import PlayerLayout from '$lib/features/player/components/PlayerLayout.svelte';
   import LyricSelector from '$lib/features/player/components/LyricSelector.svelte';
+  import { tvModeStore } from '$lib/features/settings/stores/tvModeStore.svelte';
 
   let { data } = $props();
 
@@ -157,6 +158,10 @@
 
   onMount(() => {
     const handleKeydown = (event: KeyboardEvent) => {
+      if (tvModeStore.enabled) {
+        return;
+      }
+
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
       }
@@ -186,6 +191,10 @@
     };
 
     const handleKeyup = (event: KeyboardEvent) => {
+      if (tvModeStore.enabled) {
+        return;
+      }
+
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
       }

@@ -2,9 +2,11 @@
   import { onMount } from 'svelte';
   import Logo from '$lib/features/ui/components/Logo.svelte';
   import SearchBar from '$lib/features/search/components/SearchBar.svelte';
+  import TVHomeView from '$lib/features/home/components/TVHomeView.svelte';
   import SongOfTheDayCard from '$lib/features/song-of-the-day/components/SongOfTheDayCard.svelte';
   import SongOfTheDaySkeleton from '$lib/features/song-of-the-day/components/SongOfTheDaySkeleton.svelte';
   import { keyboardStore, initKeyboardStore } from '$lib/stores/keyboardStore.svelte';
+  import { tvModeStore } from '$lib/features/settings/stores/tvModeStore.svelte';
 
   // Use derived values from the shared store
   let isKeyboardOpen = $derived(keyboardStore.isOpen);
@@ -33,12 +35,20 @@
     let touchStartY = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
+      if (tvModeStore.enabled) {
+        return;
+      }
+
       if (e.touches.length > 0) {
         touchStartY = e.touches[0].clientY;
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      if (tvModeStore.enabled) {
+        return;
+      }
+
       const dropdown =
         e.target instanceof Element ? e.target.closest('.recent-videos-dropdown') : null;
 
@@ -105,27 +115,31 @@
   });
 </script>
 
-<div class="search-screen" class:keyboard-open={isKeyboardOpen}>
-  <div class="center-block">
-    <div class="logo-container">
-      <Logo />
-    </div>
+{#if tvModeStore.enabled}
+  <TVHomeView />
+{:else}
+  <div class="search-screen" class:keyboard-open={isKeyboardOpen}>
+    <div class="center-block">
+      <div class="logo-container">
+        <Logo />
+      </div>
 
-    <!-- Desktop: Positioned absolutely to the right -->
-    <!-- Mobile: Positioned in normal flow between logo and search -->
-    <div class="song-of-day-wrapper" class:hidden={isKeyboardOpen}>
-      <SongOfTheDayCard>
-        {#snippet skeleton()}
-          <SongOfTheDaySkeleton />
-        {/snippet}
-      </SongOfTheDayCard>
-    </div>
+      <!-- Desktop: Positioned absolutely to the right -->
+      <!-- Mobile: Positioned in normal flow between logo and search -->
+      <div class="song-of-day-wrapper" class:hidden={isKeyboardOpen}>
+        <SongOfTheDayCard>
+          {#snippet skeleton()}
+            <SongOfTheDaySkeleton />
+          {/snippet}
+        </SongOfTheDayCard>
+      </div>
 
-    <div class="search-wrapper">
-      <SearchBar centered={true} />
+      <div class="search-wrapper">
+        <SearchBar centered={true} />
+      </div>
     </div>
   </div>
-</div>
+{/if}
 
 <style>
   .search-screen {

@@ -23,6 +23,8 @@
     flagUrl: getLanguageFlagUrl(code)
   }));
 
+  let { navId }: { navId?: string } = $props();
+
   let dropdownOpen = $state(false);
 
   const currentLang = $derived(
@@ -73,7 +75,12 @@
 </script>
 
 <div class="select-wrapper">
-  <button class="select-button" onclick={toggleDropdown} onpointerdown={handleInteractionStart}>
+  <button
+    class="select-button"
+    data-tv-top-nav-id={navId}
+    onclick={toggleDropdown}
+    onpointerdown={handleInteractionStart}
+  >
     <div class="selected-option">
       {#if currentLang}
         <div class="desktop-view">
@@ -181,6 +188,11 @@
     background: linear-gradient(135deg, var(--primary-color-hover), var(--secondary-color));
   }
 
+  .select-button:focus-visible {
+    outline: 2px solid rgba(var(--primary-color-rgb), 0.95);
+    outline-offset: 2px;
+  }
+
   .selected-option {
     display: flex;
     align-items: center;
@@ -244,6 +256,12 @@
 
   .dropdown-option:hover {
     background: rgba(var(--primary-color-rgb), 0.1);
+  }
+
+  .dropdown-option:focus-visible {
+    outline: none;
+    background: rgba(var(--primary-color-rgb), 0.14);
+    border-left-color: var(--primary-color);
   }
 
   .dropdown-option.selected {
@@ -326,5 +344,37 @@
 
   .demo-settings-wrapper {
     padding: 4px;
+  }
+
+  :global(html.tv-mode) .select-wrapper {
+    width: 190px;
+  }
+
+  :global(html.tv-mode) .select-button {
+    height: var(--top-control-height);
+    padding: 0.75rem 1rem;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  }
+
+  :global(html.tv-mode) .flag-icon {
+    width: 26px;
+    height: 18px;
+  }
+
+  :global(html.tv-mode) .dropdown {
+    min-width: 100%;
+    border-radius: 22px;
+    margin-top: 0.4rem;
+    box-shadow: 0 24px 64px var(--darker-shadow-color);
+  }
+
+  :global(html.tv-mode) .dropdown-option {
+    padding: 0.9rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border-left-width: 4px;
   }
 </style>

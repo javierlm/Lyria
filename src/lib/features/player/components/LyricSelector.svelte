@@ -8,7 +8,7 @@
     play
   } from '$lib/features/player/services/playerActions';
   import { getPlayer } from '$lib/features/player/stores/playerStore.svelte';
-  import { untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import MusicNotes from 'phosphor-svelte/lib/MusicNotes';
   import Check from 'phosphor-svelte/lib/Check';
@@ -21,6 +21,10 @@
 
   let loading = $state(false);
   let selecting = $state<number | null>(null);
+  let modalOverlayRef: HTMLDivElement | null = $state(null);
+  let previousFocusedElement: HTMLElement | null = $state(null);
+  let activeNavElement: HTMLElement | null = $state(null);
+  let focusedNavIndex = $state(0);
   let searchTimeout: ReturnType<typeof setTimeout>;
   let activeSearchController: AbortController | null = null;
   let searchId = 0;
@@ -78,11 +82,78 @@
     playerState.searchQuery = '';
   }
 
+  const selectorNavIds = $derived.by(() => {
+    const ids = ['lyric-selector-close', 'lyric-selector-search'];
+
+    if (playerState.searchQuery) {
+      ids.push('lyric-selector-clear');
+    }
+
+    if (!loading && playerState.searchQuery.trim()) {
+      ids.push('lyric-selector-auto');
+      ids.push(
+        ...playerState.candidates.map((candidate) => `lyric-selector-candidate:${candidate.id}`)
+      );
+    }
+
+    return ids;
+  });
+
+  function getNavElement(navId: string): HTMLElement | null {
+    return modalOverlayRef?.querySelector(`[data-tv-lyric-nav-id="${navId}"]`) ?? null;
+  }
+
+  function applyActiveNavElement(nextElement: HTMLElement | null): void {
+    if (activeNavElement && activeNavElement !== nextElement) {
+      activeNavElement.removeAttribute('data-tv-lyric-active');
+    }
+
+    activeNavElement = nextElement;
+
+    if (activeNavElement) {
+      activeNavElement.setAttribute('data-tv-lyric-active', 'true');
+    }
+  }
+
+  async function focusByIndex(index: number, scroll = true): Promise<void> {
+    const clampedIndex = Math.max(0, Math.min(index, selectorNavIds.length - 1));
+    const navId = selectorNavIds[clampedIndex];
+    const element = navId ? getNavElement(navId) : null;
+    if (!element) return;
+
+    focusedNavIndex = clampedIndex;
+    applyActiveNavElement(element);
+    element.focus({ preventScroll: true });
+
+    if (scroll) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function syncFocusedElement(event: FocusEvent): void {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const focusable = target.closest<HTMLElement>('[data-tv-lyric-nav-id]');
+    if (!focusable) return;
+
+    const navId = focusable.dataset.tvLyricNavId;
+    if (!navId) return;
+
+    const nextIndex = selectorNavIds.indexOf(navId);
+    if (nextIndex >= 0) {
+      focusedNavIndex = nextIndex;
+      applyActiveNavElement(focusable);
+    }
+  }
+
   let hasInitialized = false;
   $effect(() => {
     if (playerState.isLyricSelectorOpen) {
       untrack(() => {
         if (!hasInitialized) {
+          previousFocusedElement =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null;
           hasInitialized = true;
           // Set initial search query synchronously if empty
           if (!playerState.searchQuery) {
@@ -113,11 +184,38 @@
         pause();
         loadCandidates();
         document.body.style.overflow = 'hidden';
+        tick().then(() => {
+          void focusByIndex(1, false);
+        });
       });
     } else {
       hasInitialized = false;
       document.body.style.overflow = '';
+      applyActiveNavElement(null);
     }
+  });
+
+  $effect(() => {
+    selectorNavIds;
+
+    if (!playerState.isLyricSelectorOpen || !modalOverlayRef) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      const activeNavId = activeNavElement?.dataset.tvLyricNavId;
+      if (activeNavId && getNavElement(activeNavId)) {
+        void focusByIndex(selectorNavIds.indexOf(activeNavId), false);
+        return;
+      }
+
+      if (getNavElement('lyric-selector-search')) {
+        void focusByIndex(
+          Math.min(selectorNavIds.indexOf('lyric-selector-search'), selectorNavIds.length - 1),
+          false
+        );
+      }
+    });
   });
 
   async function loadCandidates() {
@@ -132,6 +230,9 @@
   function close() {
     playerState.isLyricSelectorOpen = false;
     play();
+    tick().then(() => {
+      previousFocusedElement?.focus?.();
+    });
   }
 
   function formatDuration(seconds: number) {
@@ -173,8 +274,43 @@
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
       close();
+      return;
     }
+
+    if (event.key === 'Enter') {
+      event.stopPropagation();
+      const target = event.target as HTMLElement | null;
+      if (!(target instanceof HTMLInputElement)) {
+        activeNavElement?.click();
+      }
+      return;
+    }
+
+    if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    const isInput = target instanceof HTMLInputElement;
+
+    if (isInput && event.key === 'ArrowDown') {
+      event.preventDefault();
+      event.stopPropagation();
+      void focusByIndex(Math.min(selectorNavIds.length - 1, Math.max(2, focusedNavIndex + 1)));
+      return;
+    }
+
+    if (isInput && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    const delta = event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 1;
+    void focusByIndex(focusedNavIndex + delta);
   }
 
   function isAutoSelected(candidateId: number): boolean {
@@ -182,12 +318,11 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if playerState.isLyricSelectorOpen}
   <div
     use:portal
     class="modal-overlay"
+    bind:this={modalOverlayRef}
     transition:fade={{ duration: 200 }}
     onclick={(event) => {
       if (event.target === event.currentTarget) {
@@ -195,6 +330,7 @@
       }
     }}
     onkeydown={handleKeydown}
+    onfocusin={syncFocusedElement}
     role="dialog"
     aria-modal="true"
     tabindex="0"
@@ -205,7 +341,12 @@
           <MusicNotes size={20} />
           {$LL.lyricSelector.title()}
         </h2>
-        <button onclick={close} class="close-button" aria-label={$LL.lyricSelector.close()}>
+        <button
+          onclick={close}
+          class="close-button"
+          aria-label={$LL.lyricSelector.close()}
+          data-tv-lyric-nav-id="lyric-selector-close"
+        >
           <X size={24} />
         </button>
       </div>
@@ -218,9 +359,15 @@
             bind:value={playerState.searchQuery}
             placeholder={$LL.lyricSelector.searchPlaceholder()}
             class="search-input"
+            data-tv-lyric-nav-id="lyric-selector-search"
           />
           {#if playerState.searchQuery}
-            <button onclick={clearSearch} class="clear-search-button" aria-label="Clear search">
+            <button
+              onclick={clearSearch}
+              class="clear-search-button"
+              aria-label="Clear search"
+              data-tv-lyric-nav-id="lyric-selector-clear"
+            >
               <X size={16} weight="bold" />
             </button>
           {/if}
@@ -244,6 +391,7 @@
                 : ''} {selecting === -1 ? 'loading' : ''}"
               onclick={handleClear}
               disabled={selecting !== null}
+              data-tv-lyric-nav-id="lyric-selector-auto"
             >
               <div class="option-info">
                 <div class="option-title">{$LL.lyricSelector.automatic()}</div>
@@ -262,6 +410,7 @@
                   : ''} {selecting === candidate.id ? 'loading' : ''}"
                 onclick={() => candidate.id && handleSelect(candidate.id)}
                 disabled={selecting !== null}
+                data-tv-lyric-nav-id={`lyric-selector-candidate:${candidate.id}`}
               >
                 <div class="option-info">
                   <div class="option-title">{candidate.trackName}</div>
@@ -362,6 +511,12 @@
 
   .close-button:hover {
     opacity: 1;
+  }
+
+  :global([data-tv-lyric-active='true']) {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
   }
 
   .modal-content {

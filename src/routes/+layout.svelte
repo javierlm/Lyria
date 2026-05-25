@@ -6,6 +6,7 @@
   import AppLanguageSelector from '$lib/features/settings/components/AppLanguageSelector.svelte';
   import ReloadPrompt from '$lib/features/ui/components/ReloadPrompt.svelte';
   import ThemeToggle from '$lib/features/settings/components/ThemeToggle.svelte';
+  import TVModeToggle from '$lib/features/settings/components/TVModeToggle.svelte';
   import AuthControls from '$lib/features/auth/components/AuthControls.svelte';
   import { NotificationContainer, notify } from '$lib/features/notification';
   import LL from '$i18n/i18n-svelte';
@@ -24,14 +25,46 @@
 
   import { onNavigate } from '$app/navigation';
   import { searchStore } from '$lib/features/search/stores/searchStore.svelte';
+  import { tvModeStore } from '$lib/features/settings/stores/tvModeStore.svelte';
 
   const SIGN_IN_NOTIFICATION_FLAG = 'lyria:auth:show-signin-notification';
   const IMPORT_DONE_PREFIX = 'lyria:import:done:';
   const IMPORT_SKIPPED_PREFIX = 'lyria:import:skipped:';
+  const MOBILE_TV_TOGGLE_MAX_WIDTH = 768;
+  const TOP_CONTROL_FOCUS_EVENT = 'lyria:focus-top-controls';
+  const PAGE_TV_CONTENT_FOCUS_EVENT = 'lyria:focus-page-tv-content';
+  const TOP_LANGUAGE_NAV_ID = 'top-language';
+  const TOP_TV_MODE_NAV_ID = 'top-tv-mode';
+  const TOP_THEME_NAV_ID = 'top-theme';
+  const TOP_AUTH_SIGN_IN_NAV_ID = 'top-auth-sign-in';
+  const TOP_AUTH_LINK_MICROSOFT_NAV_ID = 'top-auth-link-microsoft';
+  const TOP_AUTH_SIGN_OUT_NAV_ID = 'top-auth-sign-out';
 
   let previousAuthUserId = $state<string | null>(null);
+  let hideTvModeToggle = $state(false);
+  let topControlsElement = $state<HTMLDivElement | null>(null);
+  let activeTopControlElement = $state<HTMLElement | null>(null);
+  let focusedTopControlIndex = $state(0);
 
   let { data, children } = $props();
+
+  const topControlNavIds = $derived.by(() => {
+    const navIds = [TOP_LANGUAGE_NAV_ID];
+
+    if (!hideTvModeToggle) {
+      navIds.push(TOP_TV_MODE_NAV_ID);
+    }
+
+    navIds.push(TOP_THEME_NAV_ID);
+
+    if (authStore.isAuthenticated) {
+      navIds.push(TOP_AUTH_LINK_MICROSOFT_NAV_ID, TOP_AUTH_SIGN_OUT_NAV_ID);
+    } else {
+      navIds.push(TOP_AUTH_SIGN_IN_NAV_ID);
+    }
+
+    return navIds;
+  });
 
   $effect(() => {
     setLocale(data.locale);
@@ -85,6 +118,87 @@
     } catch {
       // Best effort only
     }
+  }
+
+  function isEditableTarget(target: EventTarget | null): boolean {
+    return (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      (target instanceof HTMLElement && target.isContentEditable)
+    );
+  }
+
+  function getTopControlElement(navId: string): HTMLElement | null {
+    return (
+      topControlsElement?.querySelector<HTMLElement>(`[data-tv-top-nav-id="${navId}"]`) ?? null
+    );
+  }
+
+  function applyActiveTopControl(nextElement: HTMLElement | null): void {
+    if (activeTopControlElement && activeTopControlElement !== nextElement) {
+      activeTopControlElement.removeAttribute('data-tv-top-active');
+    }
+
+    activeTopControlElement = nextElement;
+
+    if (activeTopControlElement) {
+      activeTopControlElement.setAttribute('data-tv-top-active', 'true');
+    }
+  }
+
+  function handleTopControlsFocusIn(event: FocusEvent): void {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const focusable = target.closest<HTMLElement>('[data-tv-top-nav-id]');
+    if (!focusable) return;
+
+    const navId = focusable.dataset.tvTopNavId;
+    if (!navId) return;
+
+    const nextIndex = topControlNavIds.indexOf(navId);
+    if (nextIndex >= 0) {
+      focusedTopControlIndex = nextIndex;
+    }
+
+    applyActiveTopControl(focusable);
+  }
+
+  function handleTopControlsFocusOut(event: FocusEvent): void {
+    const nextFocusedElement = event.relatedTarget;
+
+    if (nextFocusedElement instanceof Node && topControlsElement?.contains(nextFocusedElement)) {
+      return;
+    }
+
+    applyActiveTopControl(null);
+  }
+
+  async function focusTopControlByIndex(index: number): Promise<void> {
+    const clampedIndex = Math.max(0, Math.min(index, topControlNavIds.length - 1));
+    const navId = topControlNavIds[clampedIndex];
+    if (!navId) return;
+
+    const element = getTopControlElement(navId);
+    if (!element) return;
+
+    focusedTopControlIndex = clampedIndex;
+    applyActiveTopControl(element);
+    element.focus({ preventScroll: true });
+    element.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  }
+
+  async function focusTopControls(): Promise<void> {
+    const activeNavId = activeTopControlElement?.dataset.tvTopNavId;
+    if (activeNavId) {
+      const activeIndex = topControlNavIds.indexOf(activeNavId);
+      if (activeIndex >= 0) {
+        await focusTopControlByIndex(activeIndex);
+        return;
+      }
+    }
+
+    await focusTopControlByIndex(focusedTopControlIndex);
   }
 
   const videoImportPromptService = new VideoImportPromptService(
@@ -178,7 +292,74 @@
   });
 
   onMount(() => {
+    const updateHideTvModeToggle = () => {
+      hideTvModeToggle =
+        window.innerWidth <= MOBILE_TV_TOGGLE_MAX_WIDTH &&
+        window.matchMedia('(pointer: coarse)').matches;
+    };
+
+    const coarsePointerQuery = window.matchMedia('(pointer: coarse)');
+
+    const handleTopControlsKeydown = (event: KeyboardEvent) => {
+      if (
+        !tvModeStore.enabled ||
+        event.defaultPrevented ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        isEditableTarget(event.target)
+      ) {
+        return;
+      }
+
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      const topFocusable = target?.closest<HTMLElement>('[data-tv-top-nav-id]');
+      if (!topFocusable) {
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        (activeTopControlElement ?? topFocusable).click();
+        return;
+      }
+
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault();
+        const delta = event.key === 'ArrowLeft' ? -1 : 1;
+        void focusTopControlByIndex(focusedTopControlIndex + delta);
+        return;
+      }
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        event.stopPropagation();
+        window.dispatchEvent(new CustomEvent(PAGE_TV_CONTENT_FOCUS_EVENT));
+      }
+    };
+
+    const handleFocusTopControls = () => {
+      if (!tvModeStore.enabled) {
+        return;
+      }
+
+      void focusTopControls();
+    };
+
+    updateHideTvModeToggle();
     injectAnalytics({ mode: dev ? 'development' : 'production' });
+
+    coarsePointerQuery.addEventListener('change', updateHideTvModeToggle);
+    window.addEventListener('resize', updateHideTvModeToggle);
+    window.addEventListener('keydown', handleTopControlsKeydown);
+    window.addEventListener(TOP_CONTROL_FOCUS_EVENT, handleFocusTopControls);
+
+    return () => {
+      coarsePointerQuery.removeEventListener('change', updateHideTvModeToggle);
+      window.removeEventListener('resize', updateHideTvModeToggle);
+      window.removeEventListener('keydown', handleTopControlsKeydown);
+      window.removeEventListener(TOP_CONTROL_FOCUS_EVENT, handleFocusTopControls);
+    };
   });
 
   onNavigate((navigation) => {
@@ -205,10 +386,23 @@
 </svelte:head>
 
 <div class="container">
-  <div class="top-controls">
-    <AppLanguageSelector />
-    <ThemeToggle />
-    <AuthControls />
+  <div
+    bind:this={topControlsElement}
+    class="top-controls"
+    class:tv-mode-controls={tvModeStore.enabled}
+    onfocusin={handleTopControlsFocusIn}
+    onfocusout={handleTopControlsFocusOut}
+  >
+    <AppLanguageSelector navId={TOP_LANGUAGE_NAV_ID} />
+    {#if !hideTvModeToggle}
+      <TVModeToggle navId={TOP_TV_MODE_NAV_ID} />
+    {/if}
+    <ThemeToggle navId={TOP_THEME_NAV_ID} />
+    <AuthControls
+      signInNavId={TOP_AUTH_SIGN_IN_NAV_ID}
+      linkMicrosoftNavId={TOP_AUTH_LINK_MICROSOFT_NAV_ID}
+      signOutNavId={TOP_AUTH_SIGN_OUT_NAV_ID}
+    />
     {#if demoStore.isDemoMode}
       <span class="demo-badge">DEMO</span>
     {/if}
@@ -260,6 +454,24 @@
     --button-shadow-color: rgba(0, 0, 0, 0.6);
   }
 
+  :global(html.tv-mode) {
+    font-size: 18px;
+    --top-control-height: 48px;
+    --top-controls-safe-offset: 20px;
+    --tv-surface-background: color-mix(in srgb, var(--card-background) 92%, transparent);
+    --tv-surface-border: color-mix(in srgb, var(--border-color) 88%, white 12%);
+    --tv-focus-ring: 3px solid rgba(var(--primary-color-rgb), 0.95);
+    --tv-focus-shadow: 0 0 0 6px rgba(var(--primary-color-rgb), 0.2);
+    --tv-panel-radius: 24px;
+    --tv-focus-lift: translateY(-1px) scale(1.01);
+    scroll-behavior: smooth;
+  }
+
+  :global(html.tv-mode body) {
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   :global(body) {
     font-family: 'Inter', sans-serif;
     background-color: var(--background-color);
@@ -293,6 +505,10 @@
     box-sizing: border-box;
   }
 
+  :global(html.tv-mode) .container {
+    padding-inline: clamp(20px, 3vw, 48px);
+  }
+
   .top-controls {
     display: flex;
     justify-content: flex-start;
@@ -300,6 +516,58 @@
     padding: 1rem;
     gap: 0.5rem;
     z-index: 50;
+    flex-wrap: wrap;
+  }
+
+  .top-controls.tv-mode-controls {
+    position: sticky;
+    top: 0;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 0 1rem;
+    margin-inline: auto;
+    width: min(100%, 1800px);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background-color) 94%, transparent) 0%,
+      color-mix(in srgb, var(--background-color) 82%, transparent) 75%,
+      transparent 100%
+    );
+    backdrop-filter: blur(18px);
+    z-index: 120;
+  }
+
+  .top-controls.tv-mode-controls > :global(*) {
+    flex-shrink: 0;
+  }
+
+  .top-controls.tv-mode-controls :global(button:focus-visible),
+  .top-controls.tv-mode-controls :global([role='switch']:focus-visible),
+  .top-controls.tv-mode-controls :global([data-tv-top-active='true']) {
+    outline: var(--tv-focus-ring);
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow);
+    transform: var(--tv-focus-lift);
+  }
+
+  .top-controls.tv-mode-controls :global(button),
+  .top-controls.tv-mode-controls :global([role='switch']) {
+    transition:
+      transform 0.16s ease,
+      box-shadow 0.16s ease,
+      background-color 0.16s ease,
+      border-color 0.16s ease,
+      color 0.16s ease;
+  }
+
+  .top-controls.tv-mode-controls :global(button:active),
+  .top-controls.tv-mode-controls :global([role='switch']:active) {
+    transform: scale(0.98);
+  }
+
+  .top-controls.tv-mode-controls {
+    gap: 0.75rem;
   }
 
   :global(html.ios-safe-area) .container {
@@ -329,5 +597,15 @@
     padding: 2px 6px;
     border-radius: 3px;
     background: rgba(var(--primary-color-rgb), 0.05);
+  }
+
+  :global(html.tv-mode) .demo-badge {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(var(--primary-color-rgb), 0.12);
+    border: 1px solid rgba(var(--primary-color-rgb), 0.25);
   }
 </style>

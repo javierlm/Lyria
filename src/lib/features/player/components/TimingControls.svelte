@@ -7,7 +7,24 @@
   import { debounce } from '$lib/shared/utils';
   import LL from '$i18n/i18n-svelte';
 
-  let { layout = 'column' }: { layout?: 'column' | 'row' } = $props();
+  let {
+    layout = 'column',
+    decreaseNavId,
+    centerNavId,
+    increaseNavId,
+    syncNavId
+  }: {
+    layout?: 'column' | 'row' | 'tv';
+    decreaseNavId?: string;
+    centerNavId?: string;
+    increaseNavId?: string;
+    syncNavId?: string;
+  } = $props();
+
+  const isCompactLayout = $derived(layout === 'row' || layout === 'tv');
+  const syncLabel = $derived(
+    isCompactLayout ? $LL.controls.syncShort() : $LL.controls.syncWithCurrentTime()
+  );
 
   let editing = $state(false);
   let inputElement: HTMLInputElement | null = $state(null);
@@ -76,7 +93,7 @@
   }
 </script>
 
-<div class="timing-controls" class:row-layout={layout === 'row'}>
+<div class="timing-controls" class:row-layout={layout === 'row'} class:tv-layout={layout === 'tv'}>
   <div class="delay-controls">
     <button
       onclick={() => updateTimingOffset(-100)}
@@ -85,6 +102,7 @@
       onmouseleave={stopDelayChange}
       aria-label={$LL.controls.decreaseTimingOffset()}
       title={$LL.controls.decreaseTimingOffset()}
+      data-tv-player-nav-id={decreaseNavId}
     >
       <MinusCircle size="24" weight="bold" />
     </button>
@@ -98,11 +116,12 @@
             onblur={handleBlur}
             onkeydown={handleKeydown}
             class="timing-input"
+            data-tv-player-nav-id={centerNavId}
           />
           <span class="unit-display">s</span>
         </div>
       {:else}
-        <button onclick={startEditing} class="timing-display"
+        <button onclick={startEditing} class="timing-display" data-tv-player-nav-id={centerNavId}
           >{(playerState.timingOffset / 1000).toFixed(1)}s</button
         >
       {/if}
@@ -114,6 +133,7 @@
       onmouseleave={stopDelayChange}
       aria-label={$LL.controls.increaseTimingOffset()}
       title={$LL.controls.increaseTimingOffset()}
+      data-tv-player-nav-id={increaseNavId}
     >
       <PlusCircle size="24" weight="bold" />
     </button>
@@ -124,13 +144,10 @@
     class="sync-button"
     aria-label={$LL.controls.syncWithCurrentTime()}
     title={$LL.controls.syncWithCurrentTime()}
+    data-tv-player-nav-id={syncNavId}
   >
     <ArrowsClockwise size="20" weight="bold" />
-    {#if layout === 'row'}
-      {$LL.controls.syncShort()}
-    {:else}
-      {$LL.controls.syncWithCurrentTime()}
-    {/if}
+    {syncLabel}
   </button>
 </div>
 
@@ -276,6 +293,62 @@
   .timing-controls.row-layout .timing-display {
     font-size: 1rem;
     padding: 2px 4px;
+  }
+
+  .timing-controls.tv-layout {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: min(100%, 520px);
+    margin-top: 0;
+    gap: 0.55rem;
+  }
+
+  .timing-controls.tv-layout .delay-controls {
+    gap: 0.2rem;
+    flex-shrink: 0;
+  }
+
+  .timing-controls.tv-layout .delay-controls button {
+    width: 34px;
+    height: 34px;
+    font-size: 1.1rem;
+  }
+
+  .timing-controls.tv-layout .center-control-wrapper {
+    width: 72px;
+  }
+
+  .timing-controls.tv-layout .timing-input,
+  .timing-controls.tv-layout .timing-display,
+  .timing-controls.tv-layout .unit-display {
+    font-size: 0.95rem;
+  }
+
+  .timing-controls.tv-layout .timing-input {
+    width: 52px;
+    padding: 2px 3px;
+  }
+
+  .timing-controls.tv-layout .sync-button {
+    min-width: 0;
+    height: 34px;
+    padding: 0 0.8rem;
+    font-size: 0.82rem;
+    flex-shrink: 0;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+  }
+
+  :global(.timing-controls [data-tv-player-active='true']) {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
+    border-radius: 999px;
+  }
+
+  :global(.timing-controls .timing-input[data-tv-player-active='true']) {
+    border-color: var(--primary-color);
   }
 
   @media (max-width: 768px) {

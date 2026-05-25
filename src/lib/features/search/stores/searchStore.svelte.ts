@@ -27,6 +27,7 @@ export type VideoItem = {
   timestamp?: number | null;
   isFavorite?: boolean;
   isGhost?: boolean;
+  isCatalogResult?: boolean;
   source: VideoSource;
   ghostProvider?: 'wikidata' | 'discogs';
 };
@@ -1057,6 +1058,7 @@ export class SearchStore {
           thumbnailUrl: result.thumbnailUrl,
           timestamp,
           isFavorite: result.isFavorite,
+          isCatalogResult: true,
           source
         };
       });
@@ -1090,6 +1092,7 @@ export class SearchStore {
         ...globalVideo,
         isFavorite: localVideo.isFavorite,
         timestamp: localVideo.timestamp,
+        isCatalogResult: globalVideo.isCatalogResult,
         source: this.resolveSource(localVideo.isFavorite, localVideo.timestamp)
       };
     });

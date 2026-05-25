@@ -6,19 +6,21 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
   import { songOfTheDayStore } from '../stores/songOfTheDayStore.svelte';
+  import { apiFetch } from '$lib/shared/apiClient';
 
   interface Props {
     skeleton?: Snippet;
+    navId?: string;
   }
 
-  let { skeleton }: Props = $props();
+  let { skeleton, navId }: Props = $props();
 
   let song = $state<SongOfTheDayDisplay | null>(null);
   let loading = $state(true);
 
   onMount(async () => {
     try {
-      const res = await fetch('/api/song-of-the-day');
+      const res = await apiFetch('/api/song-of-the-day');
       if (res.ok) {
         song = await res.json();
       }
@@ -47,7 +49,7 @@
 {#if loading}
   {@render skeleton?.()}
 {:else if song}
-  <a href={resolve('/play')} class="song-of-day-card" onclick={handleClick}>
+  <a href={resolve('/play')} class="song-of-day-card" onclick={handleClick} data-tv-nav-id={navId}>
     <div class="thumbnail">
       <img src="https://img.youtube.com/vi/{song.videoId}/mqdefault.jpg" alt={song.track} />
     </div>
@@ -64,6 +66,7 @@
     display: flex;
     gap: 12px;
     padding: 12px;
+    box-sizing: border-box;
     background-color: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -81,6 +84,14 @@
   .song-of-day-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px var(--darker-shadow-color);
+    border-color: var(--primary-color);
+  }
+
+  :global(.song-of-day-card[data-tv-active='true']),
+  .song-of-day-card:focus-visible {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
     border-color: var(--primary-color);
   }
 

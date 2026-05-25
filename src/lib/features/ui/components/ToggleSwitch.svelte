@@ -5,13 +5,25 @@
     checked: boolean;
     onchange?: (checked: boolean) => void;
     id?: string;
+    navId?: string;
+    topNavId?: string;
     label?: string;
     disabled?: boolean;
     size?: 'sm' | 'md';
     icon?: Snippet;
   }
 
-  let { checked, onchange, id, label, disabled = false, size = 'md', icon }: Props = $props();
+  let {
+    checked,
+    onchange,
+    id,
+    navId,
+    topNavId,
+    label,
+    disabled = false,
+    size = 'md',
+    icon
+  }: Props = $props();
 
   function toggle() {
     if (!disabled) {
@@ -40,6 +52,8 @@
         aria-label={label}
         {id}
         {disabled}
+        data-tv-player-nav-id={navId}
+        data-tv-top-nav-id={topNavId}
         onclick={toggle}
         class="toggle-wrapper"
       >
@@ -54,6 +68,8 @@
       aria-label="Toggle"
       {id}
       {disabled}
+      data-tv-player-nav-id={navId}
+      data-tv-top-nav-id={topNavId}
       onclick={toggle}
       class="toggle-wrapper"
     >
@@ -169,6 +185,13 @@
   .toggle-wrapper:focus-visible .toggle-slider {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
+  }
+
+  :global(.toggle-wrapper[data-tv-player-active='true']) .toggle-slider,
+  :global(.toggle-wrapper[data-tv-top-active='true']) .toggle-slider {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
   }
 
   /* Hover state */

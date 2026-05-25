@@ -18,6 +18,7 @@
   import { getLanguageDisplayName, getLanguageFlagUrl } from '$lib/shared/languageMetadata';
   import { LL, locale } from '$i18n/i18n-svelte';
   import { translationStore } from '$lib/features/settings/stores/translationStore.svelte';
+  import { tvModeStore } from '$lib/features/settings/stores/tvModeStore.svelte';
   import { transliterateLyrics } from '$lib/features/player/services/transliterationService';
   import { isTransliterableLanguage } from '$lib/features/settings/stores/transliterationStore.svelte';
 
@@ -83,8 +84,8 @@
     playerState.lyricsState === 'found' &&
       !playerState.isLoadingVideo &&
       playerState.duration > 0 &&
-      windowWidth >= 1400 &&
-      (!playerState.lyricsAreSynced || playerState.forceHorizontalMode)
+      (tvModeStore.enabled ||
+        (windowWidth >= 1400 && (!playerState.lyricsAreSynced || playerState.forceHorizontalMode)))
   );
 
   let shouldShowTransliteration = $derived(
@@ -535,6 +536,7 @@
           toggleOriginalSubtitleVisibility();
         }}
         disabled={!playerState.lyricsAreSynced}
+        data-tv-player-nav-id="lyrics-toggle-original"
         aria-label={playerState.showOriginalSubtitle
           ? $LL.lyrics.hideOriginal()
           : $LL.lyrics.showOriginal()}
@@ -545,13 +547,14 @@
           <EyeSlashIcon size={20} />
         {/if}
       </button>
-      <LanguageSelector />
+      <LanguageSelector navId="lyrics-language" />
       <button
         class="toggle-visibility"
         onclick={() => {
           playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
         }}
         disabled={!playerState.lyricsAreSynced}
+        data-tv-player-nav-id="lyrics-toggle-translated"
         aria-label={playerState.showTranslatedSubtitle
           ? $LL.lyrics.hideTranslated()
           : $LL.lyrics.showTranslated()}
@@ -596,6 +599,7 @@
           checked={playerState.showTransliteration}
           onchange={handleTransliterationToggle}
           id="transliteration-toggle"
+          navId="lyrics-transliteration"
           label={$LL.lyrics.showTransliteration()}
         >
           {#snippet icon()}
@@ -643,6 +647,7 @@
             class:current={playerState.currentLineIndex === i}
             class:clickable={playerState.lyricsAreSynced}
             bind:this={lyricRowRefs[i]}
+            data-tv-player-nav-id={line.text ? `lyrics-line:${i}` : undefined}
             onclick={() => handleLineSelection(i)}
             onkeydown={(e) => handleLineSelection(i, e)}
             role="button"
@@ -881,6 +886,13 @@
 
   .lyric-row.clickable {
     cursor: pointer;
+  }
+
+  :global(.lyric-row[data-tv-player-active='true']) {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 2px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
+    border-radius: 10px;
   }
 
   .lyric-row:last-child {
@@ -1246,6 +1258,13 @@
     transform: scale(1.05);
   }
 
+  :global(.toggle-visibility[data-tv-player-active='true']) {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
+    border-color: var(--primary-color);
+  }
+
   .toggle-visibility:disabled {
     cursor: not-allowed;
     opacity: 0.4;
@@ -1275,7 +1294,7 @@
 
   .lyrics-container.horizontal-mode {
     margin: 0;
-    padding: 0.75rem 0.5rem;
+    padding: 0.65rem 0.45rem;
     height: auto;
     max-height: 100%;
     min-height: 0;
@@ -1288,7 +1307,7 @@
 
   .lyrics-container.horizontal-mode .lyrics-header {
     flex-shrink: 0;
-    padding-bottom: 0.75rem;
+    padding-bottom: 0.55rem;
   }
 
   .lyrics-container.horizontal-mode .lyrics-content {
@@ -1301,6 +1320,58 @@
     min-height: 0;
     max-height: none;
     padding-right: 0.5rem;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode {
+    padding: 0.55rem 0.35rem;
+    border-radius: 14px;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .controls-wrapper {
+    gap: 0.4rem;
+    margin-bottom: 0.45rem;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .lyrics-header {
+    gap: 0.4rem;
+    padding-bottom: 0.45rem;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .lyrics-header h2 {
+    font-size: 1.05rem;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .source-language-indicator {
+    padding: 0.16rem 0.42rem;
+    font-size: 0.68rem;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .toggle-visibility {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .timestamp {
+    font-size: 0.94rem;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .lyric-row {
+    min-height: 3rem;
+    gap: 0.4rem;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .lyric-line {
+    padding: 0.65rem 0;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .lyric-line .content {
+    font-size: 0.98rem;
+    line-height: 1.42;
+  }
+
+  :global(html.tv-mode) .lyrics-container.horizontal-mode .lyrics-content {
+    padding-right: 0.35rem;
   }
 
   .lyrics-container.horizontal-mode .lyrics-content::-webkit-scrollbar {

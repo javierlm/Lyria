@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget
+  xmlns="http://www.w3.org/ns/widgets"
+  xmlns:tizen="http://tizen.org/ns/widgets"
+  id="LyriaTV001.lyria"
+  version="0.0.1"
+  viewmodes="maximized"
+>
+  <name>Lyria</name>
+  <icon src="icon.png" />
+  <content src="index.html" />
+  <access origin="https://lyria-halonkira-23lpdarkshadow-3392s-projects.vercel.app" subdomains="true" />
+  <access origin="https://img.youtube.com" subdomains="true" />
+  <access origin="https://i.ytimg.com" subdomains="true" />
+  <access origin="https://s.ytimg.com" subdomains="true" />
+  <access origin="https://www.youtube.com" subdomains="true" />
+  <access origin="https://www.youtube-nocookie.com" subdomains="true" />
+  <access origin="https://youtube.com" subdomains="true" />
+  <access origin="https://googlevideo.com" subdomains="true" />
+  <access origin="https://googleapis.com" subdomains="true" />
+  <access origin="https://youtubei.googleapis.com" subdomains="true" />
+  <access origin="https://lrclib.net" subdomains="true" />
+  <access origin="https://flagcdn.com" subdomains="true" />
+  <feature name="http://tizen.org/feature/screen.size.all" />
+  <tizen:application id="LyriaTV001.lyria" package="LyriaTV001" required_version="5.5" />
+  <tizen:setting
+    pointing-device-support="disable"
+    screen-orientation="landscape"
+    context-menu="disable"
+    background-support="disable"
+    encryption="disable"
+    install-location="auto"
+    hwkey-event="enable"
+  />
+</widget>

@@ -24,9 +24,25 @@
     onToggleFullscreen?: () => void;
     onSeekInteractionStart?: () => void;
     onSeekInteractionEnd?: () => void;
+    seekNavId?: string;
+    playPauseNavId?: string;
+    muteNavId?: string;
+    originalSubtitleNavId?: string;
+    translatedSubtitleNavId?: string;
+    fullscreenNavId?: string;
   }
 
-  let { onToggleFullscreen, onSeekInteractionStart, onSeekInteractionEnd }: Props = $props();
+  let {
+    onToggleFullscreen,
+    onSeekInteractionStart,
+    onSeekInteractionEnd,
+    seekNavId,
+    playPauseNavId,
+    muteNavId,
+    originalSubtitleNavId,
+    translatedSubtitleNavId,
+    fullscreenNavId
+  }: Props = $props();
   const TOUCH_FULLSCREEN_QUERY = '(max-width: 768px) and (pointer: coarse)';
 
   let seekBarElement: HTMLInputElement | null = null;
@@ -191,6 +207,8 @@
       max={playerState.duration}
       value={playerState.currentTime}
       step="0.1"
+      data-tv-player-nav-id={seekNavId}
+      aria-label="Seek video"
       oninput={handleSeek}
       onpointerdown={handleSeekPointerDown}
       onpointermove={stopControlEvent}
@@ -210,6 +228,7 @@
     <button
       class="play-pause-btn"
       onclick={togglePlayPause}
+      data-tv-player-nav-id={playPauseNavId}
       aria-label={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}
       title={playerState.isPlaying ? $LL.controls.pause() : $LL.controls.play()}
     >
@@ -224,6 +243,7 @@
       <button
         class="volume-btn"
         onclick={toggleMute}
+        data-tv-player-nav-id={muteNavId}
         aria-label={playerState.isMuted || playerState.volume === 0
           ? $LL.controls.unmute()
           : $LL.controls.mute()}
@@ -251,6 +271,7 @@
     <div class="subtitles-controls">
       <button
         class="subtitles-btn"
+        data-tv-player-nav-id={originalSubtitleNavId}
         onclick={() => {
           if (playerState.lyricsAreSynced) {
             toggleOriginalSubtitleVisibility();
@@ -270,6 +291,7 @@
       </button>
       <button
         class="subtitles-btn"
+        data-tv-player-nav-id={translatedSubtitleNavId}
         onclick={() => {
           if (playerState.lyricsAreSynced) {
             playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
@@ -292,6 +314,7 @@
     <button
       class="fullscreen-btn"
       onclick={toggleFullscreen}
+      data-tv-player-nav-id={fullscreenNavId}
       aria-label={playerState.isFullscreen
         ? $LL.controls.exitFullscreen()
         : $LL.controls.enterFullscreen()}
@@ -363,6 +386,30 @@
     cursor: not-allowed;
     opacity: 0.4;
     pointer-events: none;
+  }
+
+  :global(.play-pause-btn[data-tv-player-active='true']),
+  :global(.volume-btn[data-tv-player-active='true']),
+  :global(.fullscreen-btn[data-tv-player-active='true']),
+  :global(.subtitles-btn[data-tv-player-active='true']),
+  :global(.seek-bar[data-tv-player-active='true']) {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
+    background-color: rgba(var(--primary-color-rgb), 0.26);
+    transform: var(--tv-focus-lift, translateY(-1px) scale(1.01));
+  }
+
+  :global(.seek-bar[data-tv-player-active='true']) {
+    opacity: 1;
+  }
+
+  :global(html.tv-mode) .play-pause-btn:hover,
+  :global(html.tv-mode) .volume-btn:hover,
+  :global(html.tv-mode) .fullscreen-btn:hover,
+  :global(html.tv-mode) .subtitles-btn:hover:not(:disabled) {
+    background-color: transparent;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
 
   .subtitles-controls {

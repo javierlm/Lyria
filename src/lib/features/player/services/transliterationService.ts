@@ -1,4 +1,5 @@
 import type { SyncedLine } from './lrclib';
+import { apiFetch } from '$lib/shared/apiClient';
 
 // AbortController para cancelar operaciones en curso
 let currentAbortController: AbortController | null = null;
@@ -22,7 +23,7 @@ export async function transliterateLyrics(
   const abortSignal = signal || currentAbortController.signal;
 
   try {
-    const response = await fetch('/api/transliterate', {
+    const response = await apiFetch('/api/transliterate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

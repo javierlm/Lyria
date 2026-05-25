@@ -39,6 +39,15 @@
     z-index: 1;
   }
 
+  :global(html.tv-mode) .home-page-wrapper {
+    position: relative;
+    top: auto;
+    left: auto;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   :global(html.ios-safe-area) .home-page-wrapper {
     position: relative;
     top: auto;

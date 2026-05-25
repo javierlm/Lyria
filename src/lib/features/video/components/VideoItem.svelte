@@ -13,6 +13,7 @@
       thumbnailUrl?: string;
       timestamp?: number | null;
       isGhost?: boolean;
+      isCatalogResult?: boolean;
       source?: 'user-recent' | 'user-favorite' | 'catalog' | 'ghost';
       ghostProvider?: 'wikidata' | 'discogs';
     };
@@ -84,7 +85,7 @@
         <div class="video-new-badge">
           <span>{$LL.video.unplayed()}</span>
         </div>
-      {:else if video.source === 'catalog'}
+      {:else if video.isCatalogResult}
         <div class="video-global-badge">
           <span>{$LL.video.globalResult()}</span>
         </div>

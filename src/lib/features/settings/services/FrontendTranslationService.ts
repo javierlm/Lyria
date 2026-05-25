@@ -1,6 +1,7 @@
 import { ChromeAITranslationProvider } from './ChromeAITranslationProvider';
 import { translationStore } from '../stores/translationStore.svelte';
 import type { DetectedLanguageCandidate, TranslationResponse } from '../domain/TranslationProvider';
+import { apiFetch } from '$lib/shared/apiClient';
 
 class FrontendTranslationService {
   private readonly chromeProvider: ChromeAITranslationProvider;
@@ -94,7 +95,7 @@ class FrontendTranslationService {
     context?: { id?: string | number; artist?: string; track?: string }
   ): Promise<TranslationResponse | null> {
     try {
-      const response = await fetch('/api/translate', {
+      const response = await apiFetch('/api/translate', {
         method: 'POST',
         body: JSON.stringify({
           sourceLanguage: sourceLang,

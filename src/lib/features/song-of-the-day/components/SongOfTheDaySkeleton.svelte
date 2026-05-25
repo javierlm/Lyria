@@ -15,6 +15,7 @@
     display: flex;
     gap: 12px;
     padding: 12px;
+    box-sizing: border-box;
     background-color: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: 12px;

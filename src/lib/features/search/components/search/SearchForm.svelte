@@ -10,14 +10,22 @@
 
   let {
     centered = false,
-    inputRef = $bindable<HTMLInputElement | null>(null)
-  }: { centered?: boolean; inputRef?: HTMLInputElement | null } = $props();
+    inputRef = $bindable<HTMLInputElement | null>(null),
+    inputNavId,
+    submitNavId
+  }: {
+    centered?: boolean;
+    inputRef?: HTMLInputElement | null;
+    inputNavId?: string;
+    submitNavId?: string;
+  } = $props();
 
   function autofocus(node: HTMLElement) {
     const isMobile = window.matchMedia('(max-width: 768px)').matches;
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isTvMode = document.documentElement.classList.contains('tv-mode');
 
-    if (!isMobile && !isTouchDevice) {
+    if (!isMobile && !isTouchDevice && !isTvMode) {
       node.focus();
     }
   }
@@ -102,6 +110,7 @@
     bind:this={inputRef}
     type="text"
     name="url"
+    data-tv-nav-id={inputNavId}
     placeholder={$LL.search.placeholder()}
     use:autofocus
     bind:value={searchStore.searchValue}
@@ -109,7 +118,7 @@
     oninput={handleSearchInput}
   />
 
-  <button type="submit" class="submit-button">
+  <button type="submit" class="submit-button" data-tv-nav-id={submitNavId}>
     <PlayIcon size="20" weight="bold" />
     <span class="search-button-text">{$LL.search.loadVideo()}</span>
   </button>
@@ -136,6 +145,8 @@
     border-radius: 0.5rem;
     flex-grow: 1;
     min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     font-size: 1rem;
     transition: all 0.3s ease;
   }
@@ -165,6 +176,32 @@
     transform: scale(1.02);
     filter: brightness(1.1);
     box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
+  }
+
+  .submit-button:focus-visible,
+  input[type='text']:focus-visible {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 2px;
+  }
+
+  :global(html.tv-mode) form {
+    padding: 0.7rem;
+    border-radius: 1.1rem;
+    box-shadow: 0 16px 28px rgba(0, 0, 0, 0.16);
+  }
+
+  :global(html.tv-mode) input[type='text'] {
+    min-height: 58px;
+    padding: 0.95rem 1.1rem;
+    border-radius: 0.9rem;
+    font-size: 1rem;
+  }
+
+  :global(html.tv-mode) .submit-button {
+    min-height: 58px;
+    padding: 0.95rem 1.4rem;
+    border-radius: 0.9rem;
+    font-size: 0.95rem;
   }
 
   @media (max-width: 768px) {

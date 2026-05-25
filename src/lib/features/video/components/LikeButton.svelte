@@ -5,9 +5,10 @@
     isLiked?: boolean;
     onclick?: () => void;
     size?: number;
+    navId?: string;
   };
 
-  let { isLiked = false, onclick, size = 24 }: Props = $props();
+  let { isLiked = false, onclick, size = 24, navId }: Props = $props();
   let isAnimating = $state(false);
 
   const handleClick = () => {
@@ -24,6 +25,7 @@
   class="like-button"
   class:liked={isLiked}
   class:animating={isAnimating}
+  data-tv-player-nav-id={navId}
   style={isLiked
     ? 'background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); color: var(--on-primary-color); box-shadow: 0 10px 15px -3px rgba(var(--primary-color-rgb), 0.3);'
     : ''}
@@ -76,6 +78,13 @@
 
   .like-button:not(.animating):hover {
     transform: scale(1.05);
+  }
+
+  :global(.like-button[data-tv-player-active='true']) {
+    outline: var(--tv-focus-ring, 3px solid rgba(var(--primary-color-rgb), 0.95));
+    outline-offset: 3px;
+    box-shadow: var(--tv-focus-shadow, 0 0 0 6px rgba(var(--primary-color-rgb), 0.2));
+    border-color: var(--primary-color);
   }
 
   /* Heart icon */
