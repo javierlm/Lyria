@@ -75,7 +75,9 @@ const es = {
     loading: 'Cargando...',
     selectLyrics: 'Seleccionar Letra',
     enterHorizontalMode: 'Entrar al modo horizontal',
-    exitHorizontalMode: 'Salir del modo horizontal'
+    exitHorizontalMode: 'Salir del modo horizontal',
+    enterImmersiveMode: 'Entrar al modo inmersivo',
+    exitImmersiveMode: 'Salir del modo inmersivo'
   },
   // Footer
   footer: {

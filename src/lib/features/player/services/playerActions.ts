@@ -438,7 +438,7 @@ function handlePlaybackQualityChange(event: YT.OnPlaybackQualityChangeEvent) {
   console.debug(`[YouTube] Playback quality changed to: ${event.data}`);
 }
 
-function resetPlayerState() {
+export function resetPlayerState() {
   playerState.artist = '';
   playerState.track = '';
   playerState.lines = [];
@@ -467,6 +467,11 @@ function resetPlayerState() {
   playerState.videoError = null;
   playerState.parsedTitle = null;
   playerState.buffered = 0;
+  playerState.isImmersiveMode = false;
+}
+
+export function toggleImmersiveMode() {
+  playerState.isImmersiveMode = !playerState.isImmersiveMode;
 }
 
 export async function loadVideo(

@@ -90,7 +90,9 @@ export const playerState = $state({
   transliteratedLines: [] as SyncedLine[],
   showTransliteration: true,
   transliterationAvailable: false,
-  transliterationLang: null as string | null
+  transliterationLang: null as string | null,
+  // Immersive mode
+  isImmersiveMode: false
 });
 
 let playerInstance: YT.Player | null = null;

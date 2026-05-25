@@ -75,7 +75,9 @@ const en = {
     loading: 'Loading...',
     selectLyrics: 'Select Lyrics',
     enterHorizontalMode: 'Enter horizontal mode',
-    exitHorizontalMode: 'Exit horizontal mode'
+    exitHorizontalMode: 'Exit horizontal mode',
+    enterImmersiveMode: 'Enter immersive mode',
+    exitImmersiveMode: 'Exit immersive mode'
   },
   // Footer
   footer: {

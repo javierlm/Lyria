@@ -3,6 +3,11 @@
   import { resolve } from '$app/paths';
   import { playerState } from '$lib/features/player/stores/playerStore.svelte';
   import { seekTo } from '$lib/features/player/services/playerActions';
+  import {
+    cancelScrollRecovery,
+    scheduleScrollRecovery,
+    type ScrollRecoveryHandle
+  } from '$lib/features/player/services/lyricsScrollRecovery';
   import PlayerView from '$lib/features/player/components/PlayerView.svelte';
   import TimingControls from '$lib/features/player/components/TimingControls.svelte';
   import SearchBar from '$lib/features/search/components/SearchBar.svelte';
@@ -22,6 +27,10 @@
   import LL from '$i18n/i18n-svelte';
   import { LyricsStates } from '$lib/features/player/stores/playerStore.svelte';
   import { isTransliterableLanguage } from '$lib/features/settings/stores/transliterationStore.svelte';
+  import ImmersiveLyricsView from '$lib/features/player/components/ImmersiveLyricsView.svelte';
+  import { toggleImmersiveMode } from '$lib/features/player/services/playerActions';
+  import ArrowsInIcon from 'phosphor-svelte/lib/ArrowsIn';
+  import ArrowsOutIcon from 'phosphor-svelte/lib/ArrowsOut';
 
   let {
     showSearch = true,
@@ -54,6 +63,11 @@
   }
   let previousLineIndex = $state(-1);
   let copied = $state(false);
+  let wasImmersiveMode = $state(playerState.isImmersiveMode);
+  const restoreScrollRecovery: ScrollRecoveryHandle = {
+    frameId: undefined,
+    retryTimeout: undefined
+  };
 
   // ── Derived ────────────────────────────────────────────────────────────
   const adjustedTimes = $derived(
@@ -146,7 +160,30 @@
       if (autoScrollSettleTimeout) {
         clearTimeout(autoScrollSettleTimeout);
       }
+
+      cancelScrollRecovery(restoreScrollRecovery);
     };
+  });
+
+  function scrollToCurrentTargetAfterImmersiveExit() {
+    const targetIndex = visualTargetLineIndex;
+    if (targetIndex < 0) {
+      return;
+    }
+
+    scrollToLine(targetIndex);
+  }
+
+  // When exiting immersive mode, normal lyrics panel becomes visible again.
+  // Force a snap to current target line immediately + one short retry.
+  $effect(() => {
+    const isImmersiveMode = playerState.isImmersiveMode;
+
+    if (wasImmersiveMode && !isImmersiveMode) {
+      scheduleScrollRecovery(restoreScrollRecovery, scrollToCurrentTargetAfterImmersiveExit);
+    }
+
+    wasImmersiveMode = isImmersiveMode;
   });
 
   function scheduleAutoScrollCompletion() {
@@ -272,12 +309,14 @@
 
 <div class="mobile-layout">
   {#if showSearch}
-    <SearchBar />
+    <div class:hidden-immersive={playerState.isImmersiveMode}>
+      <SearchBar />
+    </div>
   {/if}
 
   {#if showHeader}
     <!-- ── Top Logo ─────────────────────────────────────────────────── -->
-    <div class="top-logo-container">
+    <div class="top-logo-container" class:hidden-immersive={playerState.isImmersiveMode}>
       <button
         class="top-nav-button"
         onclick={goToHome}
@@ -294,14 +333,14 @@
   {/if}
 
   {#if showPlayer}
-    <!-- ── Video section (Standard 16:9) ────────────────────────────── -->
+    <!-- ── Video section ───────────────────────────────────────────── -->
     <div class="video-section">
       <PlayerView />
     </div>
   {/if}
 
   <!-- ── Info row ─────────────────────────────────────────────────── -->
-  <div class="song-info">
+  <div class="song-info" class:hidden-immersive={playerState.isImmersiveMode}>
     <div class="song-meta">
       <h1 class="song-title">
         {#if playerState.track}
@@ -340,19 +379,31 @@
       >
         <ListBulletsIcon size={20} />
       </button>
+      <button
+        class="action-button list-button"
+        onclick={toggleImmersiveMode}
+        aria-label={playerState.isImmersiveMode ? $LL.controls.exitImmersiveMode() : $LL.controls.enterImmersiveMode()}
+        title={playerState.isImmersiveMode ? $LL.controls.exitImmersiveMode() : $LL.controls.enterImmersiveMode()}
+      >
+        {#if playerState.isImmersiveMode}
+          <ArrowsOutIcon size={20} />
+        {:else}
+          <ArrowsInIcon size={20} />
+        {/if}
+      </button>
     </div>
   </div>
 
   {#if showTimingControls}
-    <!-- ── Timing Controls (Original appearance, inline layout) ─────── -->
-    <div class="timing-controls-wrapper">
+    <!-- ── Timing Controls ────────────────────────────────────────── -->
+    <div class="timing-controls-wrapper" class:hidden-immersive={playerState.isImmersiveMode}>
       <TimingControls layout="row" />
     </div>
   {/if}
 
   <!-- ── Translation Controls ─────────────────────────────────────── -->
   {#if playerState.translatedLines.length > 0}
-    <div class="translation-controls">
+    <div class="translation-controls" class:hidden-immersive={playerState.isImmersiveMode}>
       <button
         class="toggle-button"
         onclick={() => {
@@ -408,6 +459,7 @@
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="lyrics-panel"
+    class:hidden-immersive={playerState.isImmersiveMode}
     bind:this={lyricsContainer}
     onscroll={handleLyricsScroll}
     onpointerdown={handleManualBrowsingStart}
@@ -462,6 +514,11 @@
       {/if}
     </div>
   </div>
+
+  <!-- ── Immersive lyrics overlay ─────────────────────────────────── -->
+  {#if playerState.isImmersiveMode}
+    <ImmersiveLyricsView />
+  {/if}
 </div>
 
 <style>
@@ -529,6 +586,11 @@
     padding: 0 1rem; /* Espaciado lateral para el reproductor */
     margin-top: 0.5rem; /* Bajar un poco el reproductor desde la cabecera */
     box-sizing: border-box;
+  }
+
+  /* Hidden in immersive mode — keeps elements mounted but invisible */
+  .hidden-immersive {
+    display: none !important;
   }
 
   /* Info */

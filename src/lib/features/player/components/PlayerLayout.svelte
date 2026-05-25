@@ -16,6 +16,9 @@
   import ListBulletsIcon from 'phosphor-svelte/lib/ListBulletsIcon';
   import SquareSplitHorizontalIcon from 'phosphor-svelte/lib/SquareSplitHorizontalIcon';
   import SquareSplitVerticalIcon from 'phosphor-svelte/lib/SquareSplitVerticalIcon';
+  import ArrowUpIcon from 'phosphor-svelte/lib/ArrowUp';
+  import PlusIcon from 'phosphor-svelte/lib/Plus';
+  import MinusIcon from 'phosphor-svelte/lib/Minus';
   import LL from '$i18n/i18n-svelte';
   import BackToTop from '$lib/features/ui/components/BackToTop.svelte';
   import { tvModeStore } from '$lib/features/settings/stores/tvModeStore.svelte';
@@ -24,8 +27,15 @@
     pause,
     play,
     seekTo,
-    toggleFullscreen
+    toggleFullscreen,
+    toggleImmersiveMode
   } from '$lib/features/player/services/playerActions';
+  import {
+    clampScale,
+    distanceBetweenPoints,
+    MINI_PLAYER_MIN_SCALE,
+    MINI_PLAYER_MAX_SCALE
+  } from '$lib/features/player/services/miniPlayerScale';
 
   import { isFavoritesLimitError } from '$lib/features/video/domain/videoRepositoryErrors';
   import { videoService } from '$lib/features/video/services/videoService';
@@ -78,6 +88,95 @@
   const TV_VIDEO_CONTROLS_SECTION_ID = 'video-controls';
   const TV_SEEK_NAV_ID = 'video-seek';
   const TV_SEEK_AMOUNT = 5;
+
+  // ── Mini player pinch-to-zoom ──────────────────────────────────────
+  const MINI_PLAYER_SCALE_KEY = 'lyria_mini_player_scale';
+  const MINI_PLAYER_SCALE_STEP = 0.1;
+
+  function loadMiniPlayerScale(): number {
+    if (typeof window === 'undefined') return 1;
+    try {
+      const stored = localStorage.getItem(MINI_PLAYER_SCALE_KEY);
+      if (stored) {
+        const parsed = Number(stored);
+        if (!Number.isNaN(parsed) && parsed >= MINI_PLAYER_MIN_SCALE && parsed <= MINI_PLAYER_MAX_SCALE) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return 1;
+  }
+
+  function saveMiniPlayerScale(scale: number) {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(MINI_PLAYER_SCALE_KEY, scale.toFixed(2));
+    } catch {
+      // ignore
+    }
+  }
+
+  let miniPlayerScale = $state(loadMiniPlayerScale());
+  let pinchStartDistance = 0;
+  let pinchStartScale = 1;
+  let activePointers = new Map<number, PointerEvent>();
+
+  function handleMiniPointerDown(event: PointerEvent) {
+    if (!isMobileLayout || !playerState.isImmersiveMode) return;
+    activePointers.set(event.pointerId, event);
+    if (activePointers.size === 2) {
+      const pointers = [...activePointers.values()];
+      pinchStartDistance = distanceBetweenPoints(
+        pointers[0].clientX, pointers[0].clientY,
+        pointers[1].clientX, pointers[1].clientY
+      );
+      pinchStartScale = miniPlayerScale;
+    }
+  }
+
+  function handleMiniPointerMove(event: PointerEvent) {
+    if (!isMobileLayout || !playerState.isImmersiveMode) return;
+    if (!activePointers.has(event.pointerId)) return;
+    activePointers.set(event.pointerId, event);
+    if (activePointers.size === 2) {
+      const pointers = [...activePointers.values()];
+      const currentDistance = distanceBetweenPoints(
+        pointers[0].clientX, pointers[0].clientY,
+        pointers[1].clientX, pointers[1].clientY
+      );
+      if (pinchStartDistance > 0) {
+        const ratio = currentDistance / pinchStartDistance;
+        let newScale = clampScale(pinchStartScale * ratio);
+        // Viewport constraint: effective width must not exceed 40% of window.innerWidth
+        const baseWidth = 150;
+        const maxAllowedScale = (window.innerWidth * 0.4) / baseWidth;
+        newScale = Math.min(newScale, maxAllowedScale);
+        miniPlayerScale = clampScale(newScale);
+      }
+    }
+  }
+
+  function handleMiniPointerUp(event: PointerEvent) {
+    if (!isMobileLayout || !playerState.isImmersiveMode) return;
+    activePointers.delete(event.pointerId);
+    if (activePointers.size < 2) {
+      saveMiniPlayerScale(miniPlayerScale);
+      pinchStartDistance = 0;
+    }
+  }
+
+  function adjustMiniPlayerScale(delta: number) {
+    miniPlayerScale = clampScale(miniPlayerScale + delta);
+    saveMiniPlayerScale(miniPlayerScale);
+  }
+
+  const miniPlayerTransform = $derived(
+    isMobileLayout && playerState.isImmersiveMode
+      ? `scale(${miniPlayerScale})`
+      : 'none'
+  );
 
   const showHorizontalLayout = $derived(
     playerState.lyricsState === 'found' &&
@@ -691,7 +790,47 @@
     class:tv-horizontal={!isMobileLayout && showHorizontalLayout && tvModeStore.enabled}
     class:mobile-player-content={isMobileLayout}
   >
-    <div class="video-wrapper" class:mobile-video-wrapper={isMobileLayout}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="video-wrapper"
+      class:mobile-video-wrapper={isMobileLayout}
+      class:mini-mode={isMobileLayout && playerState.isImmersiveMode}
+      style:transform={miniPlayerTransform}
+      style:transform-origin="bottom right"
+      onpointerdown={handleMiniPointerDown}
+      onpointermove={handleMiniPointerMove}
+      onpointerup={handleMiniPointerUp}
+      onpointercancel={handleMiniPointerUp}
+      onlostpointercapture={handleMiniPointerUp}
+    >
+      {#if isMobileLayout && playerState.isImmersiveMode}
+        <div class="mini-controls">
+          <button
+            class="mini-scale-button"
+            onclick={() => adjustMiniPlayerScale(-MINI_PLAYER_SCALE_STEP)}
+            aria-label="Shrink mini player"
+            title="Shrink"
+          >
+            <MinusIcon size={12} weight="bold" />
+          </button>
+          <button
+            class="mini-exit-button"
+            onclick={toggleImmersiveMode}
+            aria-label={$LL.controls.exitImmersiveMode()}
+            title={$LL.controls.exitImmersiveMode()}
+          >
+            <ArrowUpIcon size={14} weight="bold" />
+          </button>
+          <button
+            class="mini-scale-button"
+            onclick={() => adjustMiniPlayerScale(MINI_PLAYER_SCALE_STEP)}
+            aria-label="Enlarge mini player"
+            title="Enlarge"
+          >
+            <PlusIcon size={12} weight="bold" />
+          </button>
+        </div>
+      {/if}
       <PlayerView
         loadingNavId="loading-play"
         activeTvNavId={activeNavElement?.dataset.tvPlayerNavId ?? null}
@@ -877,6 +1016,70 @@
     margin-bottom: 0;
     padding: 0 1rem;
     margin-top: 0.5rem;
+  }
+
+  /* Mini-mode: real PlayerView shrinks to floating player over immersive lyrics */
+  .mobile-video-wrapper.mini-mode {
+    position: fixed;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+    width: 150px;
+    padding: 0;
+    margin: 0;
+    aspect-ratio: 16 / 9;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    z-index: 70;
+    touch-action: none;
+  }
+
+  /* Mini controls container */
+  .mini-controls {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    pointer-events: auto;
+  }
+
+  .mini-exit-button,
+  .mini-scale-button {
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+    pointer-events: auto;
+  }
+
+  .mini-exit-button {
+    width: 24px;
+    height: 24px;
+  }
+
+  .mini-scale-button {
+    width: 20px;
+    height: 20px;
+  }
+
+  .mini-exit-button:hover,
+  .mini-scale-button:hover {
+    opacity: 1;
+  }
+
+  /* En mini reproductor inmersivo no mostramos controles de vídeo */
+  .mobile-video-wrapper.mini-mode :global(.video-controls-wrapper) {
+    display: none !important;
   }
 
   :global(.lyrics-container) {

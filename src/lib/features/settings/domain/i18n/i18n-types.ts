@@ -270,7 +270,15 @@ type RootTranslation = {
     /**
      * E​x​i​t​ ​h​o​r​i​z​o​n​t​a​l​ ​m​o​d​e
      */
-    exitHorizontalMode: string;
+     exitHorizontalMode: string;
+    /**
+     * E​n​t​e​r​ ​i​m​m​e​r​s​i​v​e​ ​m​o​d​e
+     */
+    enterImmersiveMode: string;
+    /**
+     * E​x​i​t​ ​i​m​m​e​r​s​i​v​e​ ​m​o​d​e
+     */
+    exitImmersiveMode: string;
   };
   footer: {
     /**
@@ -1205,7 +1213,15 @@ export type TranslationFunctions = {
     /**
      * Exit horizontal mode
      */
-    exitHorizontalMode: () => LocalizedString;
+     exitHorizontalMode: () => LocalizedString;
+    /**
+     * Enter immersive mode
+     */
+    enterImmersiveMode: () => LocalizedString;
+    /**
+     * Exit immersive mode
+     */
+    exitImmersiveMode: () => LocalizedString;
   };
   footer: {
     /**
