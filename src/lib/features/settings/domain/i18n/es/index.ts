@@ -41,7 +41,8 @@ const es = {
     hideTranslated: 'Ocultar subtítulos traducidos',
     showTranslated: 'Mostrar subtítulos traducidos',
     hideTransliteration: 'Ocultar transliteración',
-    showTransliteration: 'Mostrar transliteración'
+    showTransliteration: 'Mostrar transliteración',
+    toggleTransliteration: 'Activar transliteración'
   },
   lyricSelector: {
     title: 'Seleccionar Letra',
@@ -53,7 +54,9 @@ const es = {
     close: 'Cerrar',
     searchPlaceholder: 'Buscar letras...',
     searching: 'Buscando...',
-    searchHint: 'Escribe el nombre de la canción o el artista para buscar'
+    searchHint: 'Escribe el nombre de la canción o el artista para buscar',
+    clearSearch: 'Borrar búsqueda',
+    autoSelected: 'Selección automática'
   },
   // Video Controls
   controls: {
@@ -77,7 +80,8 @@ const es = {
     enterHorizontalMode: 'Entrar al modo horizontal',
     exitHorizontalMode: 'Salir del modo horizontal',
     enterImmersiveMode: 'Entrar al modo inmersivo',
-    exitImmersiveMode: 'Salir del modo inmersivo'
+    exitImmersiveMode: 'Salir del modo inmersivo',
+    seekVideo: 'Buscar en el video'
   },
   // Footer
   footer: {
@@ -204,7 +208,7 @@ const es = {
     emailSection: 'Email y password',
     namePlaceholder: 'Nombre',
     emailPlaceholder: 'Email',
-    passwordPlaceholder: 'Password',
+    passwordPlaceholder: 'Contraseña',
     createAccount: 'Crear cuenta',
     signInWithEmail: 'Iniciar sesión',
     createNewAccount: 'Crear cuenta nueva',
@@ -221,7 +225,33 @@ const es = {
     description: 'Ver en Lyria'
   },
   songOfTheDay: {
-    label: 'Tal día como hoy en {year}'
+    label: 'Tal día como hoy en {year}',
+    loading: 'Cargando canción del día'
+  },
+  tvHome: {
+    searchResults: 'Resultados de búsqueda',
+    searchingSubtitle: 'Buscando coincidencias locales y remotas en segundo plano.',
+    resultsSubtitle: 'Coincidencias principales para la consulta actual.',
+    searchingForMatches: 'Buscando coincidencias',
+    searchingForMatchesDetail:
+      'Estamos revisando el historial local y fuentes remotas para "{query}".',
+    ghostResultsSubtitle: 'Más coincidencias remotas que podrían interesarte.',
+    continueWatching: 'Seguir viendo',
+    continueWatchingSubtitle: 'Tus últimos videos, listos para retomar.',
+    favoritesSubtitle: 'Acceso rápido a los videos que guardaste.'
+  },
+  player: {
+    shrinkMiniPlayer: 'Reducir mini reproductor',
+    shrink: 'Reducir',
+    enlargeMiniPlayer: 'Ampliar mini reproductor',
+    enlarge: 'Ampliar'
+  },
+  playerView: {
+    togglePlayback: 'Reproducir o pausar',
+    videoControls: 'Controles del video'
+  },
+  ui: {
+    toggle: 'Alternar'
   },
   notifications: {
     close: 'Cerrar notificación',

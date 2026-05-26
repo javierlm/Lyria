@@ -307,7 +307,7 @@
   class:fullscreen={playerState.isFullscreen}
   class:hide-cursor={hideCursor}
   role="button"
-  aria-label="Toggle playback"
+  aria-label={$LL.playerView.togglePlayback()}
   tabindex="0"
   style:view-transition-name="video-{playerState.videoId}"
   onmouseenter={(e) => {
@@ -379,7 +379,7 @@
     class="video-controls-wrapper"
     class:show={showControls}
     role="group"
-    aria-label="Video controls"
+    aria-label={$LL.playerView.videoControls()}
     onpointerdown={(e) => e.stopPropagation()}
     onpointerenter={(e) => {
       if (!isTouch) {

@@ -491,10 +491,10 @@
       >
         {#if section.id === 'results'}
           <TVRow
-            title="Search results"
+            title={$LL.tvHome.searchResults()}
             subtitle={isSearchBusy
-              ? 'Searching local and remote matches in the background.'
-              : 'Primary matches for the current query.'}
+              ? $LL.tvHome.searchingSubtitle()
+              : $LL.tvHome.resultsSubtitle()}
           >
             {#if localResults.length > 0}
               {#each localResults as video, index (video.videoId)}
@@ -512,10 +512,8 @@
                 data-tv-nav-id="results-empty"
               >
                 <Sparkle size={28} weight="duotone" />
-                <strong>Searching for matches</strong>
-                <span
-                  >We are checking local history and remote sources for &quot;{query}&quot;.</span
-                >
+                <strong>{$LL.tvHome.searchingForMatches()}</strong>
+                <span>{$LL.tvHome.searchingForMatchesDetail({ query })}</span>
               </div>
             {:else}
               <div class="empty-row-card" tabindex="-1" data-tv-nav-id="results-empty">
@@ -528,7 +526,7 @@
         {:else if section.id === 'ghost-results'}
           <TVRow
             title={$LL.search.alsoInterested()}
-            subtitle="Additional remote matches worth checking next."
+            subtitle={$LL.tvHome.ghostResultsSubtitle()}
           >
             {#each ghostResults as video, index (video.videoId)}
               <TVVideoCard
@@ -551,7 +549,7 @@
             {/if}
           </TVRow>
         {:else if section.id === 'recent'}
-          <TVRow title="Continue watching" subtitle="Your latest videos, ready to resume.">
+          <TVRow title={$LL.tvHome.continueWatching()} subtitle={$LL.tvHome.continueWatchingSubtitle()}>
             {#each searchStore.recentVideos as video, index (video.videoId)}
               <TVVideoCard
                 {video}
@@ -564,7 +562,7 @@
         {:else if section.id === 'favorites'}
           <TVRow
             title={$LL.search.favorites()}
-            subtitle="Quick access to the videos you keep close."
+            subtitle={$LL.tvHome.favoritesSubtitle()}
           >
             {#each favoriteVideos as video, index (video.videoId)}
               <TVVideoCard

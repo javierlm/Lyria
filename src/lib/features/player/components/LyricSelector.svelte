@@ -365,7 +365,7 @@
             <button
               onclick={clearSearch}
               class="clear-search-button"
-              aria-label="Clear search"
+              aria-label={$LL.lyricSelector.clearSearch()}
               data-tv-lyric-nav-id="lyric-selector-clear"
             >
               <X size={16} weight="bold" />
@@ -430,7 +430,7 @@
                 </div>
                 <div class="option-icons">
                   {#if isAutoSelected(candidate.id)}
-                    <div class="auto-selected-badge" title="Auto-selected">
+                    <div class="auto-selected-badge" title={$LL.lyricSelector.autoSelected()}>
                       <Sparkle size={14} weight="fill" />
                     </div>
                   {/if}

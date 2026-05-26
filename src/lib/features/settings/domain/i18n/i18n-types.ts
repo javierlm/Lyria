@@ -151,6 +151,10 @@ type RootTranslation = {
      * S​h​o​w​ ​t​r​a​n​s​l​i​t​e​r​a​t​i​o​n
      */
     showTransliteration: string;
+    /**
+     * T​o​g​g​l​e​ ​t​r​a​n​s​l​i​t​e​r​a​t​i​o​n
+     */
+    toggleTransliteration: string;
   };
   lyricSelector: {
     /**
@@ -193,6 +197,14 @@ type RootTranslation = {
      * T​y​p​e​ ​a​ ​s​o​n​g​ ​o​r​ ​a​r​t​i​s​t​ ​n​a​m​e​ ​t​o​ ​s​e​a​r​c​h
      */
     searchHint: string;
+    /**
+     * C​l​e​a​r​ ​s​e​a​r​c​h
+     */
+    clearSearch: string;
+    /**
+     * A​u​t​o​-​s​e​l​e​c​t​e​d
+     */
+    autoSelected: string;
   };
   controls: {
     /**
@@ -279,6 +291,10 @@ type RootTranslation = {
      * E​x​i​t​ ​i​m​m​e​r​s​i​v​e​ ​m​o​d​e
      */
     exitImmersiveMode: string;
+    /**
+     * S​e​e​k​ ​v​i​d​e​o
+     */
+    seekVideo: string;
   };
   footer: {
     /**
@@ -774,6 +790,83 @@ type RootTranslation = {
      * @param {unknown} year
      */
     label: RequiredParams<'year'>;
+    /**
+     * L​o​a​d​i​n​g​ ​s​o​n​g​ ​o​f​ ​t​h​e​ ​d​a​y
+     */
+    loading: string;
+  };
+  tvHome: {
+    /**
+     * S​e​a​r​c​h​ ​r​e​s​u​l​t​s
+     */
+    searchResults: string;
+    /**
+     * S​e​a​r​c​h​i​n​g​ ​l​o​c​a​l​ ​a​n​d​ ​r​e​m​o​t​e​ ​m​a​t​c​h​e​s​ ​i​n​ ​t​h​e​ ​b​a​c​k​g​r​o​u​n​d​.
+     */
+    searchingSubtitle: string;
+    /**
+     * P​r​i​m​a​r​y​ ​m​a​t​c​h​e​s​ ​f​o​r​ ​t​h​e​ ​c​u​r​r​e​n​t​ ​q​u​e​r​y​.
+     */
+    resultsSubtitle: string;
+    /**
+     * S​e​a​r​c​h​i​n​g​ ​f​o​r​ ​m​a​t​c​h​e​s
+     */
+    searchingForMatches: string;
+    /**
+     * W​e​ ​a​r​e​ ​c​h​e​c​k​i​n​g​ ​l​o​c​a​l​ ​h​i​s​t​o​r​y​ ​a​n​d​ ​r​e​m​o​t​e​ ​s​o​u​r​c​e​s​ ​f​o​r​ ​"​{​q​u​e​r​y​}​"​.
+     * @param {unknown} query
+     */
+    searchingForMatchesDetail: RequiredParams<'query'>;
+    /**
+     * A​d​d​i​t​i​o​n​a​l​ ​r​e​m​o​t​e​ ​m​a​t​c​h​e​s​ ​w​o​r​t​h​ ​c​h​e​c​k​i​n​g​ ​n​e​x​t​.
+     */
+    ghostResultsSubtitle: string;
+    /**
+     * C​o​n​t​i​n​u​e​ ​w​a​t​c​h​i​n​g
+     */
+    continueWatching: string;
+    /**
+     * Y​o​u​r​ ​l​a​t​e​s​t​ ​v​i​d​e​o​s​,​ ​r​e​a​d​y​ ​t​o​ ​r​e​s​u​m​e​.
+     */
+    continueWatchingSubtitle: string;
+    /**
+     * Q​u​i​c​k​ ​a​c​c​e​s​s​ ​t​o​ ​t​h​e​ ​v​i​d​e​o​s​ ​y​o​u​ ​k​e​e​p​ ​c​l​o​s​e​.
+     */
+    favoritesSubtitle: string;
+  };
+  player: {
+    /**
+     * S​h​r​i​n​k​ ​m​i​n​i​ ​p​l​a​y​e​r
+     */
+    shrinkMiniPlayer: string;
+    /**
+     * S​h​r​i​n​k
+     */
+    shrink: string;
+    /**
+     * E​n​l​a​r​g​e​ ​m​i​n​i​ ​p​l​a​y​e​r
+     */
+    enlargeMiniPlayer: string;
+    /**
+     * E​n​l​a​r​g​e
+     */
+    enlarge: string;
+  };
+  playerView: {
+    /**
+     * T​o​g​g​l​e​ ​p​l​a​y​b​a​c​k
+     */
+    togglePlayback: string;
+    /**
+     * V​i​d​e​o​ ​c​o​n​t​r​o​l​s
+     */
+    videoControls: string;
+  };
+  ui: {
+    /**
+     * T​o​g​g​l​e
+     */
+    toggle: string;
   };
   notifications: {
     /**
@@ -1094,6 +1187,10 @@ export type TranslationFunctions = {
      * Show transliteration
      */
     showTransliteration: () => LocalizedString;
+    /**
+     * Toggle transliteration
+     */
+    toggleTransliteration: () => LocalizedString;
   };
   lyricSelector: {
     /**
@@ -1136,6 +1233,14 @@ export type TranslationFunctions = {
      * Type a song or artist name to search
      */
     searchHint: () => LocalizedString;
+    /**
+     * Clear search
+     */
+    clearSearch: () => LocalizedString;
+    /**
+     * Auto-selected
+     */
+    autoSelected: () => LocalizedString;
   };
   controls: {
     /**
@@ -1222,6 +1327,10 @@ export type TranslationFunctions = {
      * Exit immersive mode
      */
     exitImmersiveMode: () => LocalizedString;
+    /**
+     * Seek video
+     */
+    seekVideo: () => LocalizedString;
   };
   footer: {
     /**
@@ -1706,6 +1815,82 @@ export type TranslationFunctions = {
      * On this day in {year}
      */
     label: (arg: { year: unknown }) => LocalizedString;
+    /**
+     * Loading song of the day
+     */
+    loading: () => LocalizedString;
+  };
+  tvHome: {
+    /**
+     * Search results
+     */
+    searchResults: () => LocalizedString;
+    /**
+     * Searching local and remote matches in the background.
+     */
+    searchingSubtitle: () => LocalizedString;
+    /**
+     * Primary matches for the current query.
+     */
+    resultsSubtitle: () => LocalizedString;
+    /**
+     * Searching for matches
+     */
+    searchingForMatches: () => LocalizedString;
+    /**
+     * We are checking local history and remote sources for "{query}".
+     */
+    searchingForMatchesDetail: (arg: { query: unknown }) => LocalizedString;
+    /**
+     * Additional remote matches worth checking next.
+     */
+    ghostResultsSubtitle: () => LocalizedString;
+    /**
+     * Continue watching
+     */
+    continueWatching: () => LocalizedString;
+    /**
+     * Your latest videos, ready to resume.
+     */
+    continueWatchingSubtitle: () => LocalizedString;
+    /**
+     * Quick access to the videos you keep close.
+     */
+    favoritesSubtitle: () => LocalizedString;
+  };
+  player: {
+    /**
+     * Shrink mini player
+     */
+    shrinkMiniPlayer: () => LocalizedString;
+    /**
+     * Shrink
+     */
+    shrink: () => LocalizedString;
+    /**
+     * Enlarge mini player
+     */
+    enlargeMiniPlayer: () => LocalizedString;
+    /**
+     * Enlarge
+     */
+    enlarge: () => LocalizedString;
+  };
+  playerView: {
+    /**
+     * Toggle playback
+     */
+    togglePlayback: () => LocalizedString;
+    /**
+     * Video controls
+     */
+    videoControls: () => LocalizedString;
+  };
+  ui: {
+    /**
+     * Toggle
+     */
+    toggle: () => LocalizedString;
   };
   notifications: {
     /**

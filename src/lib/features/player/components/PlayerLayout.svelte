@@ -837,8 +837,8 @@
             <button
               class="mini-scale-button"
               onclick={() => adjustMiniPlayerScale(-MINI_PLAYER_SCALE_STEP)}
-              aria-label="Shrink mini player"
-              title="Shrink"
+              aria-label={$LL.player.shrinkMiniPlayer()}
+              title={$LL.player.shrink()}
             >
               <MinusIcon size={12} weight="bold" />
             </button>
@@ -853,8 +853,8 @@
             <button
               class="mini-scale-button"
               onclick={() => adjustMiniPlayerScale(MINI_PLAYER_SCALE_STEP)}
-              aria-label="Enlarge mini player"
-              title="Enlarge"
+              aria-label={$LL.player.enlargeMiniPlayer()}
+              title={$LL.player.enlarge()}
             >
               <PlusIcon size={12} weight="bold" />
             </button>

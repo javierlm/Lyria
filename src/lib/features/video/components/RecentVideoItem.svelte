@@ -3,6 +3,7 @@
   import IconX from 'phosphor-svelte/lib/X';
   import { createEventDispatcher, onMount } from 'svelte';
   import { swipe } from '$lib/features/ui/actions/swipe';
+  import LL from '$i18n/i18n-svelte';
 
   type Props = {
     video: {
@@ -96,7 +97,7 @@
       <VideoItem {video} {isFavorite} isGhost={video.isGhost} {priority}>
         {#if !video.isGhost && canDelete}
           <div class="desktop-delete-action">
-            <button class="delete-button" onclick={handleDelete} aria-label="Delete video">
+            <button class="delete-button" onclick={handleDelete} aria-label={$LL.controls.deleteVideo()}>
               <IconX size="20" weight="bold" />
             </button>
           </div>
@@ -107,7 +108,7 @@
 
   {#if !video.isGhost && canDelete}
     <div class="mobile-delete-action">
-      <button class="delete-button" onclick={handleDelete} aria-label="Delete video">
+      <button class="delete-button" onclick={handleDelete} aria-label={$LL.controls.deleteVideo()}>
         <IconX size="20" weight="bold" />
       </button>
     </div>

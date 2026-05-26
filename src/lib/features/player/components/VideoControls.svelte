@@ -208,7 +208,7 @@
       value={playerState.currentTime}
       step="0.1"
       data-tv-player-nav-id={seekNavId}
-      aria-label="Seek video"
+      aria-label={$LL.controls.seekVideo()}
       oninput={handleSeek}
       onpointerdown={handleSeekPointerDown}
       onpointermove={stopControlEvent}

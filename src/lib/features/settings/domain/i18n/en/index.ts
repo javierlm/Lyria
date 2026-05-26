@@ -41,7 +41,8 @@ const en = {
     hideTranslated: 'Hide translated subtitles',
     showTranslated: 'Show translated subtitles',
     hideTransliteration: 'Hide transliteration',
-    showTransliteration: 'Show transliteration'
+    showTransliteration: 'Show transliteration',
+    toggleTransliteration: 'Toggle transliteration'
   },
   lyricSelector: {
     title: 'Select Lyrics',
@@ -53,7 +54,9 @@ const en = {
     close: 'Close',
     searchPlaceholder: 'Search for lyrics...',
     searching: 'Searching...',
-    searchHint: 'Type a song or artist name to search'
+    searchHint: 'Type a song or artist name to search',
+    clearSearch: 'Clear search',
+    autoSelected: 'Auto-selected'
   },
   // Video Controls
   controls: {
@@ -77,7 +80,8 @@ const en = {
     enterHorizontalMode: 'Enter horizontal mode',
     exitHorizontalMode: 'Exit horizontal mode',
     enterImmersiveMode: 'Enter immersive mode',
-    exitImmersiveMode: 'Exit immersive mode'
+    exitImmersiveMode: 'Exit immersive mode',
+    seekVideo: 'Seek video'
   },
   // Footer
   footer: {
@@ -221,7 +225,32 @@ const en = {
     description: 'Watch on Lyria'
   },
   songOfTheDay: {
-    label: 'On this day in {year}'
+    label: 'On this day in {year}',
+    loading: 'Loading song of the day'
+  },
+  tvHome: {
+    searchResults: 'Search results',
+    searchingSubtitle: 'Searching local and remote matches in the background.',
+    resultsSubtitle: 'Primary matches for the current query.',
+    searchingForMatches: 'Searching for matches',
+    searchingForMatchesDetail: 'We are checking local history and remote sources for "{query}".',
+    ghostResultsSubtitle: 'Additional remote matches worth checking next.',
+    continueWatching: 'Continue watching',
+    continueWatchingSubtitle: 'Your latest videos, ready to resume.',
+    favoritesSubtitle: 'Quick access to the videos you keep close.'
+  },
+  player: {
+    shrinkMiniPlayer: 'Shrink mini player',
+    shrink: 'Shrink',
+    enlargeMiniPlayer: 'Enlarge mini player',
+    enlarge: 'Enlarge'
+  },
+  playerView: {
+    togglePlayback: 'Toggle playback',
+    videoControls: 'Video controls'
+  },
+  ui: {
+    toggle: 'Toggle'
   },
   notifications: {
     close: 'Close notification',

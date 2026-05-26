@@ -1,7 +1,8 @@
 <script lang="ts">
+  import LL from '$i18n/i18n-svelte';
 </script>
 
-<div class="skeleton-card" aria-busy="true" aria-label="Loading song of the day">
+<div class="skeleton-card" aria-busy="true" aria-label={$LL.songOfTheDay.loading()}>
   <div class="thumbnail-skeleton"></div>
   <div class="info">
     <div class="label-skeleton"></div>

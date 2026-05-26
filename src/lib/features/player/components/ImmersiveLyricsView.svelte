@@ -315,8 +315,8 @@
   <button
     class="exit-button"
     onclick={handleExitImmersive}
-    aria-label="Exit immersive mode"
-    title="Exit immersive mode"
+    aria-label={$LL.controls.exitImmersiveMode()}
+    title={$LL.controls.exitImmersiveMode()}
   >
     <ArrowDownIcon size={20} weight="bold" />
   </button>
@@ -343,7 +343,7 @@
           onclick={() => {
             playerState.showTransliteration = !playerState.showTransliteration;
           }}
-          aria-label="Toggle transliteration"
+          aria-label={$LL.lyrics.toggleTransliteration()}
         >
           Aa
         </button>

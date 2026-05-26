@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import LL from '$i18n/i18n-svelte';
 
   interface Props {
     checked: boolean;
@@ -65,7 +66,7 @@
       type="button"
       role="switch"
       aria-checked={checked}
-      aria-label="Toggle"
+        aria-label={$LL.ui.toggle()}
       {id}
       {disabled}
       data-tv-player-nav-id={navId}
