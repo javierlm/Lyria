@@ -1171,6 +1171,12 @@ async function handlePlayerReady(event: YT.PlayerEvent, videoId: string, loadId:
   if (iframe) {
     iframe.setAttribute('tabindex', '-1');
 
+    // Explicitly set allow attribute for Firefox 152+ strict iframe permission policies.
+    // Without this, playVideo() from a user gesture can still be blocked because the
+    // iframe lacks the autoplay permission grant.
+    iframe.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+    iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+
     // Apply styles to remove white borders in Firefox Android (visual bug)
     iframe.style.border = 'none';
     iframe.style.outline = 'none';

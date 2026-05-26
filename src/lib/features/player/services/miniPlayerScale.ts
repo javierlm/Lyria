@@ -4,7 +4,7 @@
  */
 
 export const MINI_PLAYER_MIN_SCALE = 0.8;
-export const MINI_PLAYER_MAX_SCALE = 1.6;
+export const MINI_PLAYER_MAX_SCALE = 2.0;
 
 export function clampScale(scale: number): number {
   return Math.max(MINI_PLAYER_MIN_SCALE, Math.min(MINI_PLAYER_MAX_SCALE, scale));

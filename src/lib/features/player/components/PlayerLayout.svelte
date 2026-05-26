@@ -128,8 +128,33 @@
   let pinchStartScale = 1;
   let activePointers = new Map<number, PointerEvent>();
 
+  // ── Mini controls auto-hide ────────────────────────────────────────
+  let showMiniControls = $state(true);
+  let miniControlsTimer: ReturnType<typeof setTimeout> | null = null;
+  const MINI_CONTROLS_TIMEOUT = 3000;
+
+  function resetMiniControlsTimer() {
+    showMiniControls = true;
+    if (miniControlsTimer !== null) clearTimeout(miniControlsTimer);
+    miniControlsTimer = setTimeout(() => {
+      showMiniControls = false;
+      miniControlsTimer = null;
+    }, MINI_CONTROLS_TIMEOUT);
+  }
+
+  $effect(() => {
+    if (isMobileLayout && playerState.isImmersiveMode) {
+      resetMiniControlsTimer();
+    } else {
+      if (miniControlsTimer !== null) clearTimeout(miniControlsTimer);
+      miniControlsTimer = null;
+      showMiniControls = true;
+    }
+  });
+
   function handleMiniPointerDown(event: PointerEvent) {
     if (!isMobileLayout || !playerState.isImmersiveMode) return;
+    resetMiniControlsTimer();
     activePointers.set(event.pointerId, event);
     if (activePointers.size === 2) {
       // Refresh both pointer coordinates right before calculating the start distance
@@ -808,7 +833,7 @@
     >
       {#snippet controls()}
         {#if isMobileLayout && playerState.isImmersiveMode}
-          <div class="mini-controls">
+          <div class="mini-controls" class:controls-hidden={!showMiniControls}>
             <button
               class="mini-scale-button"
               onclick={() => adjustMiniPlayerScale(-MINI_PLAYER_SCALE_STEP)}
@@ -1013,8 +1038,17 @@
     z-index: 80;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    gap: 8px;
     pointer-events: auto;
+    opacity: 1;
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+  }
+
+  .mini-controls.controls-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .mini-exit-button,
