@@ -56,9 +56,7 @@ describe('miniPlayerScale utilities', () => {
     });
 
     it('should handle negative coordinates', () => {
-      expect(distanceBetweenPoints(-10, -10, 10, 10)).toBeCloseTo(
-        Math.sqrt(20 * 20 + 20 * 20)
-      );
+      expect(distanceBetweenPoints(-10, -10, 10, 10)).toBeCloseTo(Math.sqrt(20 * 20 + 20 * 20));
     });
   });
 

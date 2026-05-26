@@ -23,6 +23,29 @@
     activeTvNavId = null
   }: { loadingNavId?: string; activeTvNavId?: string | null } = $props();
 
+  // ── Mini-player detection (mirrors PlayerLayout logic) ───────────────
+  const MOBILE_LAYOUT_MAX_SMALLEST_SIDE = 768;
+
+  function detectCoarsePointer(): boolean {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.matchMedia('(pointer: coarse)').matches;
+  }
+
+  let windowWidth = $state(0);
+  let windowHeight = $state(0);
+  let isCoarsePointer = $state(detectCoarsePointer());
+
+  const isMobileLayout = $derived(
+    !tvModeStore.enabled &&
+      isCoarsePointer &&
+      windowWidth > 0 &&
+      windowHeight > 0 &&
+      Math.min(windowWidth, windowHeight) < MOBILE_LAYOUT_MAX_SMALLEST_SIDE
+  );
+
   let showControls = $state(false);
   let hideControlsTimeout: ReturnType<typeof setTimeout> | undefined;
   let isTouch = $state(false);
@@ -276,6 +299,8 @@
   }
 </script>
 
+<svelte:window bind:innerWidth={windowWidth} bind:innerHeight={windowHeight} />
+
 <div
   bind:this={playerContainer}
   class="player-container"
@@ -332,7 +357,7 @@
 >
   <div id="player" bind:this={playerHost}></div>
 
-  {#if playerState.lyricsAreSynced}
+  {#if playerState.lyricsAreSynced && (!isMobileLayout || playerState.isFullscreen)}
     {#key currentLine}
       <div class="subtitles" in:slide={{ duration: 300 }}>
         {#if playerState.showOriginalSubtitle && currentLine}

@@ -3,14 +3,6 @@ import MiniPlayer from './MiniPlayer.svelte';
 import { playerState } from '$lib/features/player/stores/playerStore.svelte';
 import * as playerActions from '$lib/features/player/services/playerActions';
 
-vi.mock('$lib/features/player/components/PlayerView.svelte', () => ({
-  default: class MockPlayerView {
-    $$render() {
-      return '<div data-testid="mock-player-view">Mock PlayerView</div>';
-    }
-  }
-}));
-
 describe('MiniPlayer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -30,12 +22,16 @@ describe('MiniPlayer', () => {
   });
 
   it('should reflect state changes reactively', () => {
-    // Test that the component's derived value reacts to state changes
     playerState.isImmersiveMode = false;
     const checkVisibility = () => playerState.isImmersiveMode;
 
     expect(checkVisibility()).toBe(false);
     playerState.isImmersiveMode = true;
     expect(checkVisibility()).toBe(true);
+  });
+
+  it('should be importable without errors', () => {
+    expect(MiniPlayer).toBeDefined();
+    expect(typeof MiniPlayer).toBe('function');
   });
 });

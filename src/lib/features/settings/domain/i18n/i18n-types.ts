@@ -270,7 +270,7 @@ type RootTranslation = {
     /**
      * E​x​i​t​ ​h​o​r​i​z​o​n​t​a​l​ ​m​o​d​e
      */
-     exitHorizontalMode: string;
+    exitHorizontalMode: string;
     /**
      * E​n​t​e​r​ ​i​m​m​e​r​s​i​v​e​ ​m​o​d​e
      */
@@ -1213,7 +1213,7 @@ export type TranslationFunctions = {
     /**
      * Exit horizontal mode
      */
-     exitHorizontalMode: () => LocalizedString;
+    exitHorizontalMode: () => LocalizedString;
     /**
      * Enter immersive mode
      */

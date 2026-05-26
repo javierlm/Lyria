@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import ImmersiveLyricsView from './ImmersiveLyricsView.svelte';
 import { playerState, LyricsStates } from '$lib/features/player/stores/playerStore.svelte';
 import * as playerActions from '$lib/features/player/services/playerActions';
 
@@ -39,10 +38,7 @@ describe('ImmersiveLyricsView', () => {
 
   describe('adjustedTimes computation', () => {
     it('should compute adjustedTimes correctly with positive offset', () => {
-      playerState.lines = [
-        createSyncedLine('Line 1', 1000),
-        createSyncedLine('Line 2', 5000)
-      ];
+      playerState.lines = [createSyncedLine('Line 1', 1000), createSyncedLine('Line 2', 5000)];
       playerState.timingOffset = 500;
 
       const adjustedTimes = playerState.lines.map((line) =>
@@ -102,19 +98,13 @@ describe('ImmersiveLyricsView', () => {
     }
 
     it('should return currentLineIndex when line has text', () => {
-      playerState.lines = [
-        createSyncedLine('Line 1', 0),
-        createSyncedLine('Line 2', 5000)
-      ];
+      playerState.lines = [createSyncedLine('Line 1', 0), createSyncedLine('Line 2', 5000)];
       playerState.currentLineIndex = 1;
       expect(getActiveVisibleLineIndex()).toBe(1);
     });
 
     it('should return -1 when current line is empty', () => {
-      playerState.lines = [
-        createSyncedLine('Line 1', 0),
-        createSyncedLine('', 5000)
-      ];
+      playerState.lines = [createSyncedLine('Line 1', 0), createSyncedLine('', 5000)];
       playerState.currentLineIndex = 1;
       expect(getActiveVisibleLineIndex()).toBe(-1);
     });

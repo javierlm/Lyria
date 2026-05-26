@@ -8,6 +8,7 @@
   import PlayerView from '$lib/features/player/components/PlayerView.svelte';
   import TimingControls from '$lib/features/player/components/TimingControls.svelte';
   import LyricsView from '$lib/features/player/components/LyricsView.svelte';
+  import MiniPlayer from '$lib/features/player/components/MiniPlayer.svelte';
   import LikeButton from '$lib/features/video/components/LikeButton.svelte';
   import MobilePlayerLayout from '$lib/features/player/components/MobilePlayerLayout.svelte';
   import CaretLeft from 'phosphor-svelte/lib/CaretLeft';
@@ -99,7 +100,11 @@
       const stored = localStorage.getItem(MINI_PLAYER_SCALE_KEY);
       if (stored) {
         const parsed = Number(stored);
-        if (!Number.isNaN(parsed) && parsed >= MINI_PLAYER_MIN_SCALE && parsed <= MINI_PLAYER_MAX_SCALE) {
+        if (
+          !Number.isNaN(parsed) &&
+          parsed >= MINI_PLAYER_MIN_SCALE &&
+          parsed <= MINI_PLAYER_MAX_SCALE
+        ) {
           return parsed;
         }
       }
@@ -129,8 +134,10 @@
     if (activePointers.size === 2) {
       const pointers = [...activePointers.values()];
       pinchStartDistance = distanceBetweenPoints(
-        pointers[0].clientX, pointers[0].clientY,
-        pointers[1].clientX, pointers[1].clientY
+        pointers[0].clientX,
+        pointers[0].clientY,
+        pointers[1].clientX,
+        pointers[1].clientY
       );
       pinchStartScale = miniPlayerScale;
     }
@@ -143,8 +150,10 @@
     if (activePointers.size === 2) {
       const pointers = [...activePointers.values()];
       const currentDistance = distanceBetweenPoints(
-        pointers[0].clientX, pointers[0].clientY,
-        pointers[1].clientX, pointers[1].clientY
+        pointers[0].clientX,
+        pointers[0].clientY,
+        pointers[1].clientX,
+        pointers[1].clientY
       );
       if (pinchStartDistance > 0) {
         const ratio = currentDistance / pinchStartDistance;
@@ -173,9 +182,7 @@
   }
 
   const miniPlayerTransform = $derived(
-    isMobileLayout && playerState.isImmersiveMode
-      ? `scale(${miniPlayerScale})`
-      : 'none'
+    isMobileLayout && playerState.isImmersiveMode ? `scale(${miniPlayerScale})` : 'none'
   );
 
   const showHorizontalLayout = $derived(
@@ -790,47 +797,43 @@
     class:tv-horizontal={!isMobileLayout && showHorizontalLayout && tvModeStore.enabled}
     class:mobile-player-content={isMobileLayout}
   >
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div
-      class="video-wrapper"
-      class:mobile-video-wrapper={isMobileLayout}
-      class:mini-mode={isMobileLayout && playerState.isImmersiveMode}
-      style:transform={miniPlayerTransform}
-      style:transform-origin="bottom right"
-      onpointerdown={handleMiniPointerDown}
-      onpointermove={handleMiniPointerMove}
-      onpointerup={handleMiniPointerUp}
-      onpointercancel={handleMiniPointerUp}
-      onlostpointercapture={handleMiniPointerUp}
+    <MiniPlayer
+      isMiniMode={isMobileLayout && playerState.isImmersiveMode}
+      transform={miniPlayerTransform}
+      onPointerDown={handleMiniPointerDown}
+      onPointerMove={handleMiniPointerMove}
+      onPointerUp={handleMiniPointerUp}
     >
-      {#if isMobileLayout && playerState.isImmersiveMode}
-        <div class="mini-controls">
-          <button
-            class="mini-scale-button"
-            onclick={() => adjustMiniPlayerScale(-MINI_PLAYER_SCALE_STEP)}
-            aria-label="Shrink mini player"
-            title="Shrink"
-          >
-            <MinusIcon size={12} weight="bold" />
-          </button>
-          <button
-            class="mini-exit-button"
-            onclick={toggleImmersiveMode}
-            aria-label={$LL.controls.exitImmersiveMode()}
-            title={$LL.controls.exitImmersiveMode()}
-          >
-            <ArrowUpIcon size={14} weight="bold" />
-          </button>
-          <button
-            class="mini-scale-button"
-            onclick={() => adjustMiniPlayerScale(MINI_PLAYER_SCALE_STEP)}
-            aria-label="Enlarge mini player"
-            title="Enlarge"
-          >
-            <PlusIcon size={12} weight="bold" />
-          </button>
-        </div>
-      {/if}
+      {#snippet controls()}
+        {#if isMobileLayout && playerState.isImmersiveMode}
+          <div class="mini-controls">
+            <button
+              class="mini-scale-button"
+              onclick={() => adjustMiniPlayerScale(-MINI_PLAYER_SCALE_STEP)}
+              aria-label="Shrink mini player"
+              title="Shrink"
+            >
+              <MinusIcon size={12} weight="bold" />
+            </button>
+            <button
+              class="mini-exit-button"
+              onclick={toggleImmersiveMode}
+              aria-label={$LL.controls.exitImmersiveMode()}
+              title={$LL.controls.exitImmersiveMode()}
+            >
+              <ArrowUpIcon size={14} weight="bold" />
+            </button>
+            <button
+              class="mini-scale-button"
+              onclick={() => adjustMiniPlayerScale(MINI_PLAYER_SCALE_STEP)}
+              aria-label="Enlarge mini player"
+              title="Enlarge"
+            >
+              <PlusIcon size={12} weight="bold" />
+            </button>
+          </div>
+        {/if}
+      {/snippet}
       <PlayerView
         loadingNavId="loading-play"
         activeTvNavId={activeNavElement?.dataset.tvPlayerNavId ?? null}
@@ -844,7 +847,7 @@
           syncNavId="timing-sync"
         />
       </div>
-    </div>
+    </MiniPlayer>
 
     {#if isMobileLayout}
       <MobilePlayerLayout
@@ -986,7 +989,6 @@
     overflow: hidden;
   }
 
-  .video-wrapper,
   :global(.lyrics-container) {
     width: 100%;
     max-width: clamp(800px, calc(46.875vw), 1200px);
@@ -995,44 +997,9 @@
   }
 
   @media (min-width: 2561px) {
-    .video-wrapper,
     :global(.lyrics-container) {
       max-width: clamp(1200px, calc(52.083vw), 2000px);
     }
-  }
-
-  .video-wrapper {
-    margin-bottom: 1rem;
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .tv-player-layout .video-wrapper {
-    margin-bottom: 0.5rem;
-  }
-
-  .mobile-video-wrapper {
-    width: 100%;
-    max-width: none;
-    margin-bottom: 0;
-    padding: 0 1rem;
-    margin-top: 0.5rem;
-  }
-
-  /* Mini-mode: real PlayerView shrinks to floating player over immersive lyrics */
-  .mobile-video-wrapper.mini-mode {
-    position: fixed;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    right: 16px;
-    width: 150px;
-    padding: 0;
-    margin: 0;
-    aspect-ratio: 16 / 9;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    z-index: 70;
-    touch-action: none;
   }
 
   /* Mini controls container */
@@ -1075,11 +1042,6 @@
   .mini-exit-button:hover,
   .mini-scale-button:hover {
     opacity: 1;
-  }
-
-  /* En mini reproductor inmersivo no mostramos controles de vídeo */
-  .mobile-video-wrapper.mini-mode :global(.video-controls-wrapper) {
-    display: none !important;
   }
 
   :global(.lyrics-container) {
@@ -1219,11 +1181,6 @@
 
     .action-button {
       font-size: 0.5rem;
-    }
-
-    .mobile-video-wrapper {
-      padding: 0 1rem;
-      margin-top: 0.75rem;
     }
   }
 

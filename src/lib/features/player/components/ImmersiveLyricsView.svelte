@@ -3,6 +3,9 @@
   import { seekTo, toggleImmersiveMode } from '$lib/features/player/services/playerActions';
   import {
     cancelScrollRecovery,
+    getInitialTargetLineIndex,
+    getUpcomingVisibleLineIndex,
+    hasVisibleText,
     scheduleScrollRecovery,
     type ScrollRecoveryHandle
   } from '$lib/features/player/services/lyricsScrollRecovery';
@@ -19,8 +22,7 @@
   let autoScrollMonitorFrame: number | undefined;
   let autoScrollLastTop = 0;
   let autoScrollStableFrames = 0;
-  let userScrollIntentUntil = 0;
-  let clearUserBrowsingTimeout: ReturnType<typeof setTimeout> | undefined;
+  let manualScrollSettleTimeout: ReturnType<typeof setTimeout> | undefined;
   const initialScrollRecovery: ScrollRecoveryHandle = {
     frameId: undefined,
     retryTimeout: undefined
@@ -40,41 +42,10 @@
     playerState.lines.map((line) => Math.max(0, line.startTimeMs + playerState.timingOffset))
   );
 
-  function hasVisibleText(index: number): boolean {
-    return !!playerState.lines[index]?.text?.trim();
-  }
-
-  function findNextVisibleLineIndex(startIndex: number): number {
-    for (let i = Math.max(0, startIndex); i < playerState.lines.length; i++) {
-      if (hasVisibleText(i)) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  function getUpcomingVisibleLineIndex(): number {
-    const currentIndex = playerState.currentLineIndex;
-
-    if (currentIndex >= 0) {
-      return findNextVisibleLineIndex(currentIndex + 1);
-    }
-
-    const adjustedTime = playerState.currentTime * 1000 - playerState.timingOffset;
-
-    for (let i = 0; i < playerState.lines.length; i++) {
-      if (playerState.lines[i].startTimeMs > adjustedTime && hasVisibleText(i)) {
-        return i;
-      }
-    }
-
-    return -1;
-  }
-
   const activeVisibleLineIndex = $derived.by(() => {
     const currentIndex = playerState.currentLineIndex;
 
-    if (currentIndex >= 0 && hasVisibleText(currentIndex)) {
+    if (currentIndex >= 0 && hasVisibleText(playerState.lines, currentIndex)) {
       return currentIndex;
     }
 
@@ -86,7 +57,13 @@
       return -1;
     }
 
-    return getUpcomingVisibleLineIndex();
+    return getUpcomingVisibleLineIndex({
+      lines: playerState.lines,
+      currentLineIndex: playerState.currentLineIndex,
+      currentTimeSeconds: playerState.currentTime,
+      timingOffsetMs: playerState.timingOffset,
+      lyricsAreSynced: playerState.lyricsAreSynced
+    });
   });
 
   const visualTargetLineIndex = $derived.by(() => {
@@ -116,6 +93,12 @@
       previousLineIndex = currentIndex;
       return;
     }
+
+    if (isUserBrowsing) {
+      previousLineIndex = currentIndex;
+      return;
+    }
+
     previousLineIndex = currentIndex;
     scrollToLine(currentIndex);
   });
@@ -131,26 +114,29 @@
         autoScrollMonitorFrame = undefined;
       }
 
-      if (clearUserBrowsingTimeout) {
-        clearTimeout(clearUserBrowsingTimeout);
-        clearUserBrowsingTimeout = undefined;
+      if (manualScrollSettleTimeout) {
+        clearTimeout(manualScrollSettleTimeout);
+        manualScrollSettleTimeout = undefined;
       }
 
       cancelScrollRecovery(initialScrollRecovery);
     };
   });
 
-  function markUserScrollIntent(durationMs = 550) {
-    userScrollIntentUntil = Date.now() + durationMs;
-
-    if (clearUserBrowsingTimeout) {
-      clearTimeout(clearUserBrowsingTimeout);
+  function scheduleManualBrowsingCompletion() {
+    if (manualScrollSettleTimeout) {
+      clearTimeout(manualScrollSettleTimeout);
     }
 
-    clearUserBrowsingTimeout = setTimeout(() => {
+    manualScrollSettleTimeout = setTimeout(() => {
       isUserBrowsing = false;
-      clearUserBrowsingTimeout = undefined;
-    }, durationMs + 40);
+      manualScrollSettleTimeout = undefined;
+
+      const targetIndex = visualTargetLineIndex;
+      if (targetIndex >= 0) {
+        scrollToLine(targetIndex, false);
+      }
+    }, 220);
   }
 
   function scheduleAutoScrollCompletion() {
@@ -198,7 +184,6 @@
       if (autoScrollStableFrames >= 3) {
         isAutoScrolling = false;
         isUserBrowsing = false;
-        userScrollIntentUntil = 0;
 
         if (autoScrollSettleTimeout) {
           clearTimeout(autoScrollSettleTimeout);
@@ -215,7 +200,7 @@
     autoScrollMonitorFrame = requestAnimationFrame(monitor);
   }
 
-  function scrollToLine(index: number) {
+  function scrollToLine(index: number, smooth = true) {
     const row = lyricLineElements[index];
     const container = lyricsContainer;
     if (!row || !container) return;
@@ -226,7 +211,11 @@
 
     isAutoScrolling = true;
     isUserBrowsing = false;
-    userScrollIntentUntil = 0;
+
+    if (manualScrollSettleTimeout) {
+      clearTimeout(manualScrollSettleTimeout);
+      manualScrollSettleTimeout = undefined;
+    }
 
     const rowRect = row.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
@@ -243,7 +232,7 @@
 
     container.scrollTo({
       top: targetScrollTop,
-      behavior: 'smooth'
+      behavior: smooth ? 'smooth' : 'auto'
     });
 
     startAutoScrollMonitor(container);
@@ -263,7 +252,7 @@
     stopAutoScrollMonitor();
     isAutoScrolling = false;
     isUserBrowsing = true;
-    markUserScrollIntent();
+    scheduleManualBrowsingCompletion();
   }
 
   function handleLyricsScroll() {
@@ -276,9 +265,11 @@
       return;
     }
 
-    if (Date.now() <= userScrollIntentUntil) {
-      isUserBrowsing = true;
+    if (!isUserBrowsing) {
+      return;
     }
+
+    scheduleManualBrowsingCompletion();
   }
 
   function getDistance(i: number): number {
@@ -286,20 +277,14 @@
     return Math.abs(i - proximityAnchorIndex);
   }
 
-  function getInitialTargetLineIndex(): number {
-    if (activeVisibleLineIndex >= 0) {
-      return activeVisibleLineIndex;
-    }
-
-    if (upcomingVisibleLineIndex >= 0) {
-      return upcomingVisibleLineIndex;
-    }
-
-    return findNextVisibleLineIndex(0);
-  }
-
   function scrollToInitialTarget() {
-    const targetIndex = getInitialTargetLineIndex();
+    const targetIndex = getInitialTargetLineIndex({
+      lines: playerState.lines,
+      currentLineIndex: playerState.currentLineIndex,
+      currentTimeSeconds: playerState.currentTime,
+      timingOffsetMs: playerState.timingOffset,
+      lyricsAreSynced: playerState.lyricsAreSynced
+    });
     if (targetIndex < 0) {
       return;
     }
@@ -323,7 +308,6 @@
   function handleExitImmersive() {
     toggleImmersiveMode();
   }
-
 </script>
 
 <div class="immersive-lyrics-view">
@@ -346,7 +330,9 @@
           playerState.showOriginalSubtitle = !playerState.showOriginalSubtitle;
         }}
         disabled={!playerState.lyricsAreSynced}
-        aria-label={playerState.showOriginalSubtitle ? $LL.lyrics.hideOriginal() : $LL.lyrics.showOriginal()}
+        aria-label={playerState.showOriginalSubtitle
+          ? $LL.lyrics.hideOriginal()
+          : $LL.lyrics.showOriginal()}
       >
         {playerState.showOriginalSubtitle ? '👁' : '👁‍🗨'}
       </button>
@@ -369,7 +355,9 @@
           playerState.showTranslatedSubtitle = !playerState.showTranslatedSubtitle;
         }}
         disabled={!playerState.lyricsAreSynced}
-        aria-label={playerState.showTranslatedSubtitle ? $LL.lyrics.hideTranslated() : $LL.lyrics.showTranslated()}
+        aria-label={playerState.showTranslatedSubtitle
+          ? $LL.lyrics.hideTranslated()
+          : $LL.lyrics.showTranslated()}
       >
         {playerState.showTranslatedSubtitle ? '🌐' : '🌐‍🗨'}
       </button>
@@ -391,7 +379,6 @@
         {#each playerState.lines as line, i (i)}
           {#if line.text}
             {@const dist = getDistance(i)}
-            <!-- svelte-ignore a11y_interactive_supports_focus -->
             <div
               class="lyric-item"
               class:d0={activeVisibleLineIndex === i}
@@ -530,7 +517,13 @@
 
   .lyrics-mask {
     mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      black 15%,
+      black 85%,
+      transparent 100%
+    );
   }
 
   .lyrics-list {

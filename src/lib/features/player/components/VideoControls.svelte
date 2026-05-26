@@ -544,6 +544,14 @@
       display: flex;
     }
 
+    .fullscreen-btn {
+      margin-left: auto;
+    }
+
+    :global(.player-container.fullscreen) .fullscreen-btn {
+      margin-left: 0.25rem;
+    }
+
     .controls-container {
       padding: 4px;
       gap: 0.3rem;

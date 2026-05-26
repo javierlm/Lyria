@@ -5,6 +5,8 @@
   import { seekTo } from '$lib/features/player/services/playerActions';
   import {
     cancelScrollRecovery,
+    getUpcomingVisibleLineIndex,
+    hasVisibleText,
     scheduleScrollRecovery,
     type ScrollRecoveryHandle
   } from '$lib/features/player/services/lyricsScrollRecovery';
@@ -74,42 +76,10 @@
     playerState.lines.map((line) => Math.max(0, line.startTimeMs + playerState.timingOffset))
   );
 
-  function hasVisibleText(index: number): boolean {
-    return !!playerState.lines[index]?.text?.trim();
-  }
-
-  function findNextVisibleLineIndex(startIndex: number): number {
-    for (let i = Math.max(0, startIndex); i < playerState.lines.length; i++) {
-      if (hasVisibleText(i)) {
-        return i;
-      }
-    }
-
-    return -1;
-  }
-
-  function getUpcomingVisibleLineIndex(): number {
-    const currentIndex = playerState.currentLineIndex;
-
-    if (currentIndex >= 0) {
-      return findNextVisibleLineIndex(currentIndex + 1);
-    }
-
-    const adjustedTime = playerState.currentTime * 1000 - playerState.timingOffset;
-
-    for (let i = 0; i < playerState.lines.length; i++) {
-      if (playerState.lines[i].startTimeMs > adjustedTime && hasVisibleText(i)) {
-        return i;
-      }
-    }
-
-    return -1;
-  }
-
   const activeVisibleLineIndex = $derived.by(() => {
     const currentIndex = playerState.currentLineIndex;
 
-    if (currentIndex >= 0 && hasVisibleText(currentIndex)) {
+    if (currentIndex >= 0 && hasVisibleText(playerState.lines, currentIndex)) {
       return currentIndex;
     }
 
@@ -121,7 +91,13 @@
       return -1;
     }
 
-    return getUpcomingVisibleLineIndex();
+    return getUpcomingVisibleLineIndex({
+      lines: playerState.lines,
+      currentLineIndex: playerState.currentLineIndex,
+      currentTimeSeconds: playerState.currentTime,
+      timingOffsetMs: playerState.timingOffset,
+      lyricsAreSynced: playerState.lyricsAreSynced
+    });
   });
 
   const visualTargetLineIndex = $derived.by(() => {
@@ -382,8 +358,12 @@
       <button
         class="action-button list-button"
         onclick={toggleImmersiveMode}
-        aria-label={playerState.isImmersiveMode ? $LL.controls.exitImmersiveMode() : $LL.controls.enterImmersiveMode()}
-        title={playerState.isImmersiveMode ? $LL.controls.exitImmersiveMode() : $LL.controls.enterImmersiveMode()}
+        aria-label={playerState.isImmersiveMode
+          ? $LL.controls.exitImmersiveMode()
+          : $LL.controls.enterImmersiveMode()}
+        title={playerState.isImmersiveMode
+          ? $LL.controls.exitImmersiveMode()
+          : $LL.controls.enterImmersiveMode()}
       >
         {#if playerState.isImmersiveMode}
           <ArrowsOutIcon size={20} />
@@ -471,7 +451,6 @@
         {#each playerState.lines as line, i (i)}
           {#if line.text}
             {@const dist = getDistance(i)}
-            <!-- svelte-ignore a11y_interactive_supports_focus -->
             <div
               class="lyric-item"
               class:d0={activeVisibleLineIndex === i}
