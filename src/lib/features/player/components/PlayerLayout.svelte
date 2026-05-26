@@ -132,6 +132,8 @@
     if (!isMobileLayout || !playerState.isImmersiveMode) return;
     activePointers.set(event.pointerId, event);
     if (activePointers.size === 2) {
+      // Refresh both pointer coordinates right before calculating the start distance
+      // to avoid stale positions from the first finger that touched earlier.
       const pointers = [...activePointers.values()];
       pinchStartDistance = distanceBetweenPoints(
         pointers[0].clientX,
@@ -156,13 +158,13 @@
         pointers[1].clientY
       );
       if (pinchStartDistance > 0) {
+        // Dead zone: ignore micro-movements (< 8px) to prevent accidental
+        // shrink when fingers first touch the screen.
+        const distanceDelta = Math.abs(currentDistance - pinchStartDistance);
+        if (distanceDelta < 8) return;
+
         const ratio = currentDistance / pinchStartDistance;
-        let newScale = clampScale(pinchStartScale * ratio);
-        // Viewport constraint: effective width must not exceed 40% of window.innerWidth
-        const baseWidth = 150;
-        const maxAllowedScale = (window.innerWidth * 0.4) / baseWidth;
-        newScale = Math.min(newScale, maxAllowedScale);
-        miniPlayerScale = clampScale(newScale);
+        miniPlayerScale = clampScale(pinchStartScale * ratio);
       }
     }
   }
