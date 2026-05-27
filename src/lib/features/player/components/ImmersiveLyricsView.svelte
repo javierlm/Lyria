@@ -12,6 +12,7 @@
   import LL from '$i18n/i18n-svelte';
   import { isTransliterableLanguage } from '$lib/features/settings/stores/transliterationStore.svelte';
   import ArrowDownIcon from 'phosphor-svelte/lib/ArrowDown';
+  import ImmersivePlayerBar from './ImmersivePlayerBar.svelte';
 
   // ── State ──────────────────────────────────────────────────────────────
   let lyricsContainer: HTMLDivElement;
@@ -23,6 +24,7 @@
   let autoScrollLastTop = 0;
   let autoScrollStableFrames = 0;
   let manualScrollSettleTimeout: ReturnType<typeof setTimeout> | undefined;
+  let wasPlaying = $state(false);
   const initialScrollRecovery: ScrollRecoveryHandle = {
     frameId: undefined,
     retryTimeout: undefined
@@ -101,6 +103,26 @@
 
     previousLineIndex = currentIndex;
     scrollToLine(currentIndex);
+  });
+
+  $effect(() => {
+    const isPlaying = playerState.isPlaying;
+    const targetIndex = visualTargetLineIndex;
+    const resumedPlayback = isPlaying && !wasPlaying;
+
+    wasPlaying = isPlaying;
+
+    if (!resumedPlayback || !playerState.lyricsAreSynced || targetIndex < 0) {
+      return;
+    }
+
+    if (manualScrollSettleTimeout) {
+      clearTimeout(manualScrollSettleTimeout);
+      manualScrollSettleTimeout = undefined;
+    }
+
+    isUserBrowsing = false;
+    scrollToLine(targetIndex);
   });
 
   $effect(() => {
@@ -421,6 +443,9 @@
       {/if}
     </div>
   </div>
+
+  <!-- ── Immersive player bar ─────────────────────────────────────────── -->
+  <ImmersivePlayerBar />
 </div>
 
 <style>
@@ -508,7 +533,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
     padding-top: 60px;
-    padding-bottom: 60px;
+    padding-bottom: 120px;
   }
 
   .lyrics-panel::-webkit-scrollbar {
@@ -516,12 +541,12 @@
   }
 
   .lyrics-mask {
-    mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 12%, black 70%, transparent 100%);
     -webkit-mask-image: linear-gradient(
       to bottom,
       transparent 0%,
-      black 15%,
-      black 85%,
+      black 12%,
+      black 70%,
       transparent 100%
     );
   }

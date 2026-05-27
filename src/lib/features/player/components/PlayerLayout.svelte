@@ -95,7 +95,7 @@
   const MINI_PLAYER_SCALE_STEP = 0.1;
 
   function loadMiniPlayerScale(): number {
-    if (typeof window === 'undefined') return 1;
+    if (typeof window === 'undefined') return MINI_PLAYER_MAX_SCALE;
     try {
       const stored = localStorage.getItem(MINI_PLAYER_SCALE_KEY);
       if (stored) {

@@ -54,7 +54,7 @@
 
   .mobile-video-wrapper.mini-mode {
     position: fixed;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    bottom: calc(100px + env(safe-area-inset-bottom, 0px));
     right: 16px;
     width: 150px;
     padding: 0;
