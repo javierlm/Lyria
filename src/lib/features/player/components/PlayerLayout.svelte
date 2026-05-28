@@ -1176,6 +1176,7 @@
     .player-content.horizontal > :global(.video-wrapper) {
       width: 100%;
       max-width: none;
+      margin-top: 0;
     }
 
     .player-content.horizontal > :global(.lyrics-container) {

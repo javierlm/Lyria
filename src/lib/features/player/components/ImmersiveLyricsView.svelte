@@ -32,6 +32,7 @@
   let previousLineIndex = $state(-1);
   let initialScrollDone = $state(false);
   const ACTIVE_LINE_CENTER_BIAS_PX = 20;
+  const IMMERSIVE_BAR_HEIGHT_PX = 100;
 
   const shouldShowTransliteration = $derived(
     playerState.transliterationAvailable &&
@@ -243,7 +244,7 @@
     const containerRect = container.getBoundingClientRect();
 
     const visibleTop = Math.max(containerRect.top, 0);
-    const visibleBottom = Math.min(containerRect.bottom, window.innerHeight);
+    const visibleBottom = Math.min(containerRect.bottom, window.innerHeight) - IMMERSIVE_BAR_HEIGHT_PX;
     const visibleCenterInViewport = (visibleTop + visibleBottom) / 2;
     const targetCenterInContainer =
       visibleCenterInViewport - containerRect.top - ACTIVE_LINE_CENTER_BIAS_PX;

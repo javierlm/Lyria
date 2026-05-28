@@ -195,8 +195,8 @@
   .progress-track {
     position: relative;
     width: 100%;
-    height: 3px;
-    background: rgba(255, 255, 255, 0.12);
+    height: 4px;
+    background: rgba(var(--primary-color-rgb), 0.16);
     border-radius: 999px;
     overflow: hidden;
   }
@@ -206,7 +206,7 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(var(--primary-color-rgb), 0.28);
     border-radius: 999px;
     transition: width 0.3s ease;
   }
@@ -216,13 +216,13 @@
     top: 0;
     left: 0;
     height: 100%;
-    background: var(--primary-color, #ef4444);
+    background: linear-gradient(135deg, var(--primary-color, #ef4444), var(--secondary-color, #d43b74));
     border-radius: 999px;
     transition: width 0.15s linear;
   }
 
   .progress-bar:hover .progress-track {
-    height: 5px;
+    height: 6px;
   }
 
   /* Player controls */
@@ -239,14 +239,14 @@
     place-items: center;
     border: none;
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.75);
+    color: color-mix(in srgb, var(--text-color) 72%, transparent);
     background: none;
     transition: color 0.2s ease, transform 0.15s ease;
     border-radius: 50%;
   }
 
   .control-button:hover {
-    color: white;
+    color: var(--primary-color);
   }
 
   .control-button:active {
@@ -261,16 +261,44 @@
   .play-button {
     width: 48px;
     height: 48px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: 1px solid rgba(var(--primary-color-rgb), 0.36);
+    color: var(--on-primary-color, #ffffff);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
 
   .play-button:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: linear-gradient(135deg, var(--primary-color-hover), var(--secondary-color));
+    color: var(--on-primary-color, #ffffff);
     transform: scale(1.05);
+  }
+
+  :global(html.dark-mode) .progress-track {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  :global(html.dark-mode) .progress-buffer {
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  :global(html.dark-mode) .control-button {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  :global(html.dark-mode) .control-button:hover {
+    color: white;
+  }
+
+  :global(html.dark-mode) .play-button {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: white;
+  }
+
+  :global(html.dark-mode) .play-button:hover {
+    background: rgba(255, 255, 255, 0.18);
+    color: white;
   }
 
   .play-button:active {
