@@ -4,6 +4,7 @@ import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 
 export default defineConfig({
   test: {
+    allowOnly: false,
     exclude: ['**/node_modules/**', '**/.git/**', 'src/lib/tests/server/**/*.integration.test.ts']
   },
   server: {

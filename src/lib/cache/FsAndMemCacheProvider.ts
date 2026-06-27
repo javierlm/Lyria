@@ -1,20 +1,20 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { TranslationResponse } from '$lib/features/settings/domain/TranslationProvider';
 import type { CacheProvider, CacheValue } from './CacheProvider';
 
 const CACHE_DIR = path.join(process.cwd(), 'cache');
-const CACHE_FILE = path.join(CACHE_DIR, 'translationCache.json');
 
-export class FileSystemAndMemoryCacheProvider implements CacheProvider<TranslationResponse> {
-  private cache = new Map<string, CacheValue<TranslationResponse>>();
+export class FileSystemAndMemoryCacheProvider<T = unknown> implements CacheProvider<T> {
+  private cache = new Map<string, CacheValue<T>>();
   private saveTimeout: NodeJS.Timeout | null = null;
+
+  constructor(private readonly fileName = 'translationCache.json') {}
 
   async initialize(): Promise<void> {
     await this.loadCache();
   }
 
-  async get(key: string): Promise<TranslationResponse | undefined> {
+  async get(key: string): Promise<T | undefined> {
     const entry = this.cache.get(key);
     if (!entry) return undefined;
 
@@ -29,10 +29,10 @@ export class FileSystemAndMemoryCacheProvider implements CacheProvider<Translati
 
   async set(
     key: string,
-    value: TranslationResponse,
+    value: T,
     opts?: { ttlMs?: number | null; meta?: Record<string, unknown> }
   ): Promise<void> {
-    const entry: CacheValue<TranslationResponse> = {
+    const entry: CacheValue<T> = {
       value,
       expiresAt: opts?.ttlMs ? Date.now() + opts.ttlMs : null,
       meta: opts?.meta
@@ -58,20 +58,24 @@ export class FileSystemAndMemoryCacheProvider implements CacheProvider<Translati
     return this.cache.size;
   }
 
+  private get cacheFile(): string {
+    return path.join(CACHE_DIR, this.fileName);
+  }
+
   private async loadCache(): Promise<void> {
     try {
       await fs.mkdir(CACHE_DIR, { recursive: true });
-      const data = await fs.readFile(CACHE_FILE, 'utf-8');
+      const data = await fs.readFile(this.cacheFile, 'utf-8');
       const parsedData = JSON.parse(data);
-      this.cache = new Map<string, CacheValue<TranslationResponse>>(parsedData);
-      console.log('Translation cache loaded from disk.');
+      this.cache = new Map<string, CacheValue<T>>(parsedData);
+      console.log(`Cache loaded from disk: ${this.fileName}`);
     } catch (error: unknown) {
       if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-        console.log('Translation cache file not found, starting with empty cache.');
+        console.log(`Cache file not found, starting with empty cache: ${this.fileName}`);
       } else {
-        console.error('Error loading translation cache:', error);
+        console.error(`Error loading cache ${this.fileName}:`, error);
       }
-      this.cache = new Map<string, CacheValue<TranslationResponse>>();
+      this.cache = new Map<string, CacheValue<T>>();
     }
   }
 
@@ -79,10 +83,10 @@ export class FileSystemAndMemoryCacheProvider implements CacheProvider<Translati
     try {
       await fs.mkdir(CACHE_DIR, { recursive: true });
       const data = JSON.stringify(Array.from(this.cache.entries()));
-      await fs.writeFile(CACHE_FILE, data, 'utf-8');
-      console.log('Translation cache saved to disk.');
+      await fs.writeFile(this.cacheFile, data, 'utf-8');
+      console.log(`Cache saved to disk: ${this.fileName}`);
     } catch (error) {
-      console.error('Error saving translation cache:', error);
+      console.error(`Error saving cache ${this.fileName}:`, error);
     }
   }
 

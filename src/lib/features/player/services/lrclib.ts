@@ -1,4 +1,6 @@
 const BASE_URL_SEARCH = 'https://lrclib.net/api/search';
+const INTERNAL_SEARCH_CACHE_URL = '/api/lrclib/cache/search';
+const INTERNAL_LYRIC_CACHE_URL = '/api/lrclib/cache/lyric';
 
 const SIMILARITY_THRESHOLD = 0.8;
 const ARTIST_HINT_THRESHOLD = 0.78;
@@ -51,6 +53,84 @@ export interface LyricsResult {
   artistName?: string;
   trackName?: string;
   candidates?: LRCLibResponse[];
+}
+
+function buildInternalUrl(path: string, params?: Record<string, string>): string {
+  const searchParams = new URLSearchParams(params);
+  const query = searchParams.toString();
+  return query ? `${path}?${query}` : path;
+}
+
+export function isValidLRCLibResponse(value: unknown): value is LRCLibResponse {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+
+  return (
+    Number.isInteger(candidate.id) &&
+    typeof candidate.trackName === 'string' &&
+    typeof candidate.artistName === 'string' &&
+    typeof candidate.name === 'string' &&
+    typeof candidate.albumName === 'string' &&
+    typeof candidate.plainLyrics === 'string' &&
+    typeof candidate.instrumental === 'boolean' &&
+    typeof candidate.duration === 'number' &&
+    Number.isFinite(candidate.duration) &&
+    (typeof candidate.syncedLyrics === 'string' || candidate.syncedLyrics === null)
+  );
+}
+
+async function fetchTrustedSearchResults(
+  track: string,
+  artist: string,
+  duration: number,
+  artistHint?: string
+): Promise<LRCLibResponse[]> {
+  const params: Record<string, string> = {
+    track,
+    artist,
+    duration: String(duration)
+  };
+
+  if (artistHint) {
+    params.artistHint = artistHint;
+  }
+
+  try {
+    const response = await fetch(buildInternalUrl(INTERNAL_SEARCH_CACHE_URL, params));
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return [];
+      }
+
+      throw new Error('Error fetching synced lyrics');
+    }
+
+    const data = await response.json();
+    return Array.isArray(data) ? data.filter(isValidLRCLibResponse) : [];
+  } catch (error) {
+    console.error('Error fetching trusted LRCLib search results:', error);
+    return [];
+  }
+}
+
+async function fetchTrustedLyricById(id: number): Promise<LRCLibResponse | undefined> {
+  try {
+    const response = await fetch(`${INTERNAL_LYRIC_CACHE_URL}/${id}`);
+
+    if (!response.ok) {
+      return undefined;
+    }
+
+    const data = await response.json();
+    return isValidLRCLibResponse(data) ? data : undefined;
+  } catch (error) {
+    console.error('Error fetching trusted lyric by id:', error);
+    return undefined;
+  }
 }
 
 // Jaro-Winkler implementation
@@ -383,7 +463,7 @@ function getTrueDuration(result: LRCLibResponse): number {
   return result.duration;
 }
 
-function findBestMatch(
+export function findBestMatch(
   results: LRCLibResponse[],
   track: string,
   artist: string,
@@ -455,7 +535,7 @@ function findBestMatch(
   return finalMatch;
 }
 
-function parseLyrics(match: LRCLibResponse): LyricsResult {
+export function parseLyrics(match: LRCLibResponse): LyricsResult {
   if (match.syncedLyrics) {
     const lyrics = match.syncedLyrics
       .split('\n')
@@ -512,12 +592,15 @@ function normalizeForSearch(text: string): string {
   );
 }
 
-export async function getSyncedLyrics(
+export function buildSearchRequest(
   track: string,
   artist: string,
-  duration: number,
-  options?: { artistHint?: string }
-): Promise<LyricsResult> {
+  duration: number
+): {
+  sanitizedTrack: string;
+  sanitizedArtist: string;
+  url: string;
+} {
   const japaneseCharRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/gu;
   const punctuationRegex = /\p{P}/gu;
 
@@ -535,20 +618,31 @@ export async function getSyncedLyrics(
 
   const query = sanitizedArtist ? `${sanitizedArtist} ${sanitizedTrack}` : sanitizedTrack;
   const url = `${BASE_URL_SEARCH}?q=${encodeURIComponent(query)}&duration=${duration}`;
+
+  return {
+    sanitizedTrack,
+    sanitizedArtist,
+    url
+  };
+}
+
+export async function getSyncedLyrics(
+  track: string,
+  artist: string,
+  duration: number,
+  options?: { artistHint?: string }
+): Promise<LyricsResult> {
+  const { sanitizedTrack, sanitizedArtist, url } = buildSearchRequest(track, artist, duration);
   console.log('🌐 URL:', url);
   console.log('🔧 Normalized:', { track: sanitizedTrack, artist: sanitizedArtist });
 
   try {
-    const res = await fetch(url);
+    const data = await fetchTrustedSearchResults(track, artist, duration, options?.artistHint);
 
-    if (res.status === 404) {
+    if (data.length === 0) {
       return { lyrics: [], found: false, synced: false };
     }
-    if (!res.ok) {
-      throw new Error('Error fetching synced lyrics');
-    }
 
-    const data: LRCLibResponse[] = await res.json();
     console.log(`📦 Results received: ${data.length}`);
 
     const finalMatch = findBestMatch(
@@ -579,23 +673,7 @@ export async function searchCandidates(
   duration: number,
   signal?: AbortSignal
 ): Promise<LRCLibResponse[]> {
-  const japaneseCharRegex = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/gu;
-  const punctuationRegex = /\p{P}/gu;
-
-  const normalizedTrack = normalizeForSearch(track);
-  const normalizedArtist = normalizeForSearch(artist);
-
-  const sanitizedTrack = normalizedTrack
-    .replace(japaneseCharRegex, '')
-    .replace(punctuationRegex, '')
-    .trim();
-  const sanitizedArtist = normalizedArtist
-    .replace(japaneseCharRegex, '')
-    .replace(punctuationRegex, '')
-    .trim();
-
-  const query = sanitizedArtist ? `${sanitizedArtist} ${sanitizedTrack}` : sanitizedTrack;
-  const url = `${BASE_URL_SEARCH}?q=${encodeURIComponent(query)}&duration=${duration}`;
+  const { url } = buildSearchRequest(track, artist, duration);
 
   try {
     const res = await fetch(url, { signal });
@@ -614,13 +692,12 @@ export async function searchCandidates(
 }
 
 export async function getLyricById(id: number): Promise<LyricsResult> {
-  const url = `https://lrclib.net/api/get/${id}`;
-
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch lyric by ID');
+    const data = await fetchTrustedLyricById(id);
+    if (!data) {
+      return { lyrics: [], found: false, synced: false };
+    }
 
-    const data: LRCLibResponse = await res.json();
     const result = parseLyrics(data);
     result.candidates = [data];
     return result;

@@ -13,7 +13,9 @@ import type { CacheProvider } from '$lib/cache/CacheProvider';
 import { env } from '$env/dynamic/private';
 
 const cacheProvider: CacheProvider<TranslationResponse> =
-  env.VERCEL === '1' ? new VercelKvCacheProvider() : new FileSystemAndMemoryCacheProvider();
+  env.VERCEL === '1'
+    ? new VercelKvCacheProvider<TranslationResponse>()
+    : new FileSystemAndMemoryCacheProvider<TranslationResponse>();
 
 // Initialize the persistent cache when the server starts
 cacheProvider.initialize();

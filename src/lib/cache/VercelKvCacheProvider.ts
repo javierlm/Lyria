@@ -3,7 +3,7 @@ import type { CacheProvider, CacheValue } from './CacheProvider';
 
 const KEY_PREFIX = 'lyria-cache:';
 
-export class VercelKvCacheProvider implements CacheProvider {
+export class VercelKvCacheProvider<T = unknown> implements CacheProvider<T> {
   private redis: Redis;
   private isInitialized = false;
 
@@ -27,7 +27,7 @@ export class VercelKvCacheProvider implements CacheProvider {
     return `${KEY_PREFIX}${key}`;
   }
 
-  async get<T>(key: string): Promise<T | undefined> {
+  async get(key: string): Promise<T | undefined> {
     if (!this.isInitialized) {
       await this.initialize();
     }
@@ -46,7 +46,7 @@ export class VercelKvCacheProvider implements CacheProvider {
     return cachedData.value;
   }
 
-  async set<T>(
+  async set(
     key: string,
     value: T,
     opts?: { ttlMs?: number | null; meta?: Record<string, unknown> }
