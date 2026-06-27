@@ -60,6 +60,67 @@ let currentSearchId = 0;
 let currentVideoLoadId = 0;
 let stopPlayerSizeSync: (() => void) | null = null;
 
+export function getLineIndexAtAdjustedTime(
+  lines: { startTimeMs: number }[],
+  adjustedTimeMs: number,
+  startingIndex = -1
+): number {
+  if (lines.length === 0 || adjustedTimeMs < 0) {
+    return -1;
+  }
+
+  let newIndex = Math.max(-1, Math.min(startingIndex, lines.length - 1));
+
+  if (newIndex < lines.length - 1) {
+    const nextLine = lines[newIndex + 1];
+    if (adjustedTimeMs >= nextLine.startTimeMs) {
+      for (let i = newIndex + 1; i < lines.length; i++) {
+        if (adjustedTimeMs >= lines[i].startTimeMs) {
+          newIndex = i;
+        } else {
+          break;
+        }
+      }
+
+      return newIndex;
+    }
+  }
+
+  if (newIndex >= 0) {
+    const currentLine = lines[newIndex];
+    if (adjustedTimeMs < currentLine.startTimeMs) {
+      const previousIndex = newIndex;
+      newIndex = -1;
+      for (let i = previousIndex - 1; i >= 0; i--) {
+        if (adjustedTimeMs >= lines[i].startTimeMs) {
+          newIndex = i;
+          break;
+        }
+      }
+    }
+  }
+
+  return newIndex;
+}
+
+function syncCurrentLineIndexForTime(currentTimeSeconds = playerState.currentTime): void {
+  if (!playerState.lyricsAreSynced || playerState.lines.length === 0) {
+    playerState.currentLineIndex = -1;
+    return;
+  }
+
+  const adjustedTimeMs = currentTimeSeconds * 1000 - playerState.timingOffset;
+  const newIndex = getLineIndexAtAdjustedTime(
+    playerState.lines,
+    adjustedTimeMs,
+    playerState.currentLineIndex
+  );
+
+  if (newIndex !== playerState.currentLineIndex) {
+    playerState.currentLineIndex = newIndex;
+  }
+}
+
 function loadYouTubeAPI() {
   return new Promise<void>((resolve) => {
     if (globalThis.YT?.Player) {
@@ -176,6 +237,7 @@ function syncWithIframe() {
     lastSyncedTime = player.getCurrentTime();
     lastSyncTimestamp = performance.now();
     playerState.currentTime = lastSyncedTime;
+    syncCurrentLineIndexForTime(lastSyncedTime);
   } catch (error) {
     console.error('Error syncing with iframe:', error);
   }
@@ -206,61 +268,7 @@ function updateFrame() {
     lastBufferSync = now;
   }
 
-  if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
-    const t = playerState.currentTime * 1000;
-    const adjustedTime = t - playerState.timingOffset;
-
-    let needsUpdate = false;
-    let newIndex = playerState.currentLineIndex;
-
-    if (newIndex < playerState.lines.length - 1) {
-      const nextLine = playerState.lines[newIndex + 1];
-      if (adjustedTime >= nextLine.startTimeMs) {
-        needsUpdate = true;
-        for (let i = newIndex + 1; i < playerState.lines.length; i++) {
-          if (adjustedTime >= playerState.lines[i].startTimeMs) {
-            newIndex = i;
-          } else {
-            break;
-          }
-        }
-      }
-    }
-
-    if (!needsUpdate && newIndex >= 0) {
-      const currentLine = playerState.lines[newIndex];
-      if (adjustedTime < currentLine.startTimeMs) {
-        needsUpdate = true;
-        const oldIndex = newIndex;
-        newIndex = -1;
-        for (let i = oldIndex - 1; i >= 0; i--) {
-          if (adjustedTime >= playerState.lines[i].startTimeMs) {
-            newIndex = i;
-            break;
-          }
-        }
-      }
-    }
-
-    if (!needsUpdate && newIndex === -1 && adjustedTime >= 0) {
-      if (playerState.lines.length > 0 && adjustedTime >= playerState.lines[0].startTimeMs) {
-        needsUpdate = true;
-        for (let i = 0; i < playerState.lines.length; i++) {
-          if (adjustedTime >= playerState.lines[i].startTimeMs) {
-            newIndex = i;
-          } else {
-            break;
-          }
-        }
-      }
-    }
-
-    if (needsUpdate && newIndex !== playerState.currentLineIndex) {
-      playerState.currentLineIndex = newIndex;
-    }
-  } else {
-    playerState.currentLineIndex = -1;
-  }
+  syncCurrentLineIndexForTime();
 
   if (isPlayerPlaying && !playerState.isSeeking) {
     animationFrameId = requestAnimationFrame(updateFrame);
@@ -575,6 +583,7 @@ export async function loadVideo(
           } else if (event.data === YT.PlayerState.ENDED) {
             stopSync();
             playerState.currentTime = playerState.duration;
+            syncCurrentLineIndexForTime(playerState.duration);
           }
         }
       }
@@ -1221,16 +1230,7 @@ export function seekTo(time: number) {
     lastSyncedTime = time;
     lastSyncTimestamp = performance.now();
     playerState.currentTime = time;
-
-    if (playerState.lyricsAreSynced && playerState.lines.length > 0) {
-      const t = time * 1000;
-      const adjustedTime = t - playerState.timingOffset;
-      const activeIndex = playerState.lines.findLastIndex((l) => adjustedTime >= l.startTimeMs);
-
-      if (activeIndex !== playerState.currentLineIndex) {
-        playerState.currentLineIndex = activeIndex;
-      }
-    }
+    syncCurrentLineIndexForTime(time);
   }
 }
 

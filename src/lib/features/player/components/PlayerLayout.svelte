@@ -865,15 +865,17 @@
         loadingNavId="loading-play"
         activeTvNavId={activeNavElement?.dataset.tvPlayerNavId ?? null}
       />
-      <div class="timing-controls-container" class:mobile-timing-controls={isMobileLayout}>
-        <TimingControls
-          layout={isMobileLayout ? 'row' : tvModeStore.enabled ? 'tv' : 'column'}
-          decreaseNavId="timing-decrease"
-          centerNavId="timing-center"
-          increaseNavId="timing-increase"
-          syncNavId="timing-sync"
-        />
-      </div>
+      {#if !(isMobileLayout && playerState.isImmersiveMode)}
+        <div class="timing-controls-container" class:mobile-timing-controls={isMobileLayout}>
+          <TimingControls
+            layout={isMobileLayout ? 'row' : tvModeStore.enabled ? 'tv' : 'column'}
+            decreaseNavId="timing-decrease"
+            centerNavId="timing-center"
+            increaseNavId="timing-increase"
+            syncNavId="timing-sync"
+          />
+        </div>
+      {/if}
     </MiniPlayer>
 
     {#if isMobileLayout}
@@ -1053,16 +1055,26 @@
 
   .mini-exit-button,
   .mini-scale-button {
+    -webkit-appearance: none;
+    appearance: none;
     display: grid;
     place-items: center;
+    flex: 0 0 auto;
+    padding: 0;
     border: none;
     border-radius: 6px;
     background: rgba(0, 0, 0, 0.6);
     color: white;
     cursor: pointer;
+    line-height: 1;
     opacity: 0.8;
     transition: opacity 0.2s ease;
     pointer-events: auto;
+  }
+
+  .mini-exit-button :global(svg),
+  .mini-scale-button :global(svg) {
+    display: block;
   }
 
   .mini-exit-button {

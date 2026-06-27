@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { playerState } from '$lib/features/player/stores/playerStore.svelte';
-import { toggleImmersiveMode, resetPlayerState } from '$lib/features/player/services/playerActions';
+import {
+  getLineIndexAtAdjustedTime,
+  toggleImmersiveMode,
+  resetPlayerState
+} from '$lib/features/player/services/playerActions';
 import {
   getInitialTargetLineIndex,
   getUpcomingVisibleLineIndex,
@@ -116,6 +120,26 @@ describe('Immersive Mode Integration', () => {
         lyricsAreSynced: true
       });
       expect(result).toBe(1);
+    });
+  });
+
+  describe('line index synchronization', () => {
+    const lines: ScrollLine[] = [
+      { text: 'Line 1', startTimeMs: 1000 },
+      { text: 'Line 2', startTimeMs: 3000 },
+      { text: 'Line 3', startTimeMs: 5000 }
+    ];
+
+    it('finds the active line from -1 after playback resumes mid-song', () => {
+      expect(getLineIndexAtAdjustedTime(lines, 3500, -1)).toBe(1);
+    });
+
+    it('moves backwards when iframe sync reports an earlier time', () => {
+      expect(getLineIndexAtAdjustedTime(lines, 2500, 2)).toBe(0);
+    });
+
+    it('returns -1 before the first timestamp', () => {
+      expect(getLineIndexAtAdjustedTime(lines, 500, 1)).toBe(-1);
     });
   });
 });

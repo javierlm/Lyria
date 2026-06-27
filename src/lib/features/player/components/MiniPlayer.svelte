@@ -56,6 +56,7 @@
     position: fixed;
     bottom: calc(100px + env(safe-area-inset-bottom, 0px));
     right: 16px;
+    display: block;
     width: 150px;
     padding: 0;
     margin: 0;
@@ -66,9 +67,14 @@
     border: 2px solid rgba(255, 255, 255, 0.15);
     z-index: 70;
     touch-action: none;
+    contain: layout paint;
   }
 
   .mobile-video-wrapper.mini-mode :global(.video-controls-wrapper) {
+    display: none !important;
+  }
+
+  .mobile-video-wrapper.mini-mode :global(.timing-controls-container) {
     display: none !important;
   }
 </style>
